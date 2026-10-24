@@ -6,13 +6,15 @@ import { defaultTonic } from '../core/key.js';
 import { convertNotation, transposeChord } from '../core/transpose.js';
 import {
   FUNCTIONS, KEY_TEXT, loopText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
-  MODE_INFO, VARIANT_INFO, MODES_TEXT, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText,
+  MODE_INFO, VARIANT_INFO, MODES_TEXT, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText, modeListenTitle,
 } from './texts.js';
 import { GLOSSARY, linkTerms, termText } from './glossary.js';
 import { normalVersion } from '../core/build.js';
 import { guitarVoicings } from '../core/fretboard.js';
 import { renderPiano } from './piano.js';
 import { renderGuitar } from './guitar.js';
+import { modeScale } from '../core/modes.js';
+import { Note } from '../../vendor/tonal.mjs';
 
 export function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -105,7 +107,8 @@ export function renderKey(result, { transposedFrom = null } = {}) {
 }
 
 // marked: posiciones que forman una progresión conocida (ver progressionRanges).
-export function renderChords(items, { selected = null, marked = new Set() } = {}) {
+// turns: dónde empieza cada vuelta de una progresión repetida (ver progressionTurns).
+export function renderChords(items, { selected = null, marked = new Set(), turns = new Map() } = {}) {
   return items
     .map((item, i) => {
       const f = fnKey(item.fn);
@@ -113,6 +116,7 @@ export function renderChords(items, { selected = null, marked = new Set() } = {}
       const cls = `${i === selected ? ' selected' : ''}${marked.has(i) ? ' marked' : ''}`;
       return `
         <button type="button" class="chord fn-${f}${cls}" data-index="${i}" aria-pressed="${i === selected}">
+          ${turns.has(i) ? `<span class="turn">↻ ${turns.get(i)}.ª vuelta</span>` : ''}
           <span class="roman">${item.roman}</span>
           <span class="symbol">${chordLabel(item.chord)}</span>
           <span class="badge">${FUNCTIONS[f].name}${special ? ' ✦' : ''}</span>
@@ -129,15 +133,24 @@ const shownProgressions = (result) =>
   result.progressions.filter((m, i, all) => all.findIndex((o) => o.id === m.id) === i).slice(0, 2);
 const finalCadence = (result) => result.cadences.find((c) => c.atEnd) ?? null;
 
-// Las posiciones que se marcan en las tarjetas de los acordes: solo si la
-// progresión conocida es un trozo de otra más larga.
+// Las posiciones que se marcan en las tarjetas de los acordes: si la
+// progresión conocida es un trozo de otra más larga, o si se repite (todas
+// sus vueltas).
 export function progressionRanges(result) {
   const marked = new Set();
   for (const m of shownProgressions(result)) {
-    if (m.whole) continue;
+    if (m.whole && m.times === 1) continue;
     for (let i = m.start; i <= m.end; i++) marked.add(i);
   }
   return marked;
+}
+
+// Primer acorde de cada vuelta, a partir de la segunda, de las progresiones
+// que se repiten: Map(posición → número de vuelta).
+export function progressionTurns(result) {
+  const turns = new Map();
+  for (const m of shownProgressions(result)) m.turns.slice(1).forEach((t, i) => turns.set(t, i + 2));
+  return turns;
 }
 
 // unique: junta los repetidos seguidos («F7 → C7 → C7» → «F7 → C7»).
@@ -150,9 +163,14 @@ function playRange(m, label) {
   return `<button type="button" class="btn secondary small" data-action="play-range" data-start="${m.start}" data-end="${m.end}">▶ ${label}</button>`;
 }
 
+const TIMES = { 2: 'dos', 3: 'tres', 4: 'cuatro', 5: 'cinco', 6: 'seis' };
+
 function whereText(result, m) {
   const parts = [];
-  if (m.whole) parts.push('Es tu progresión entera.');
+  if (m.times > 1) {
+    const times = `${TIMES[m.times] ?? m.times} veces`;
+    parts.push(m.whole ? `Se repite ${times}: es tu progresión entera, marcada abajo.` : `Se repite ${times}, en los acordes ${m.start + 1} a ${m.end + 1}, marcados abajo.`);
+  } else if (m.whole) parts.push('Es tu progresión entera.');
   else parts.push(`Son los acordes ${m.start + 1} a ${m.end + 1} (${chordsIn(result, m, ' ')}), marcados abajo.`);
   if (m.key.mode !== result.key.mode) parts.push(`Los grados se cuentan desde ${keyName(m.key)}, su tonalidad relativa.`);
   return parts.join(' ');
@@ -218,16 +236,27 @@ function renderDiagram(chord, f, instrument, position) {
     if (v.barre) notes.push(`Con cejilla en el traste ${v.barre}: un dedo pisa varias cuerdas a la vez.`);
     body = `
       ${renderGuitar(chord, v)}
-      ${notes.length ? `<p class="hint">${notes.join(' ')}</p>` : ''}
-      <div class="button-row">
-        <button type="button" class="btn secondary small" data-action="strum">▶ Rasgueo</button>
-        ${voicings.length > 1 ? `<button type="button" class="btn secondary small" data-action="next-position">Otra posición (${(position % voicings.length) + 1}/${voicings.length})</button>` : ''}
-      </div>`;
+      ${notes.length ? `<p class="hint">${notes.join(' ')}</p>` : ''}`;
   }
   return `
     <div class="diagram fn-${f}">
       <div class="segmented" role="group" aria-label="Instrumento">${tabs}</div>
       ${body}
+    </div>`;
+}
+
+// Una sola fila para oír el acorde. Con la guitarra, «Acorde» suena rasgueado
+// y «Nota a nota» sigue la posición dibujada; y se puede pasar a otra posición.
+function listenButtons(chord, instrument, position) {
+  const voicings = instrument === 'guitar' ? guitarVoicings(chord) : [];
+  const next = voicings.length > 1
+    ? `<button type="button" class="btn secondary" data-action="next-position" aria-label="Otra posición (${(position % voicings.length) + 1} de ${voicings.length})">↻ Posición ${(position % voicings.length) + 1}/${voicings.length}</button>`
+    : '';
+  return `
+    <div class="button-row listen">
+      <button type="button" class="btn secondary" data-action="play-selected">▶ Acorde</button>
+      <button type="button" class="btn secondary" data-action="arpeggio-selected">▶ Nota a nota</button>
+      ${next}
     </div>`;
 }
 
@@ -255,10 +284,7 @@ export function renderDetail(item, key, { instrument = 'piano', position = 0 } =
       <p class="muted">${chordName(item.chord)} · notas ${notes}</p>
     </div>
     ${renderDiagram(item.chord, f, instrument, position)}
-    <div class="button-row listen">
-      <button type="button" class="btn secondary" data-action="play-selected">▶ Acorde</button>
-      <button type="button" class="btn secondary" data-action="arpeggio-selected">▶ Nota a nota</button>
-    </div>
+    ${listenButtons(item.chord, instrument, position)}
     <p><span class="badge fn-${f}">${fn.name} · ${fn.short}</span></p>
     <p>${linkTerms(fn.text)}</p>
     ${extra ? `<div class="special"><p><strong>✦ Algo especial.</strong> ${linkTerms(extra)}</p>${compare}</div>` : ''}
@@ -338,18 +364,42 @@ function plainModeName(m) {
   return modeName(m);
 }
 
+// La escala del modo, con marcadas las notas que cambian frente al mayor o
+// el menor de siempre (dos en el frigio dominante).
+function scaleNotes(m) {
+  const plain = modeScale(m.id === 'lydian' || m.id === 'mixolydian' ? 'ionian' : 'aeolian', m.tonic);
+  return `<p class="scale-notes">${m.scale.map((n, i) => `<span class="${Note.chroma(n) !== Note.chroma(plain[i]) ? 'char' : ''}">${noteName(n)}</span>`).join('')}</p>`;
+}
+
 // Solo cuando la progresión es claramente modal (ver isClearlyModal); si no,
 // cadena vacía y la tarjeta no se muestra.
 export function renderModes(result) {
   const { modes, key, modal } = result;
   if (!modal) return '';
   const m = modes.main;
+  const parallel = parallelKeyName(m);
+  const listen = `
+    <div class="button-row">
+      <button type="button" class="btn secondary small" data-action="mode-compare">▶ Oír la diferencia con ${parallel}</button>
+      <button type="button" class="btn secondary small" data-action="mode-typical">▶ Ejemplo típico</button>
+    </div>`;
+
+  // Si la tonalidad ya es el modo (La dórico), la tarjeta de tonalidad lo
+  // explica: aquí solo se escucha, con la escala y las notas que cambian.
+  if (key.modal) {
+    return `
+      <p class="eyebrow">Modo</p>
+      <h2 class="key-name">${modeListenTitle(m)}</h2>
+      ${scaleNotes(m)}
+      ${listen}
+      <p class="hint">Suena primero la escala de ${parallel} y después la de ${modeName(m)}: ${m.variant === 'phrygian-dominant' ? 'las notas marcadas son las que cambian' : 'la nota marcada es la que cambia'}.</p>`;
+  }
+
   const info = MODE_INFO[m.id];
   const char = modeCharText(m);
   const heard = m.charChords.length ? ` La oyes en ${m.charChords.map((c) => chordLabel(c)).join(', ')}.` : '';
   const foreign = modeForeignText(m);
   const songs = info.songs.length ? `<p class="muted">Lo oirás en: ${info.songs.join(' · ')}</p>` : '';
-  const parallel = parallelKeyName(m);
 
   const others = modes.others.length
     ? `
@@ -372,12 +422,9 @@ export function renderModes(result) {
     <p class="eyebrow">Modo</p>
     <h2 class="key-name">${modeName(m)}</h2>
     <p>${linkTerms(modeIntroText(m))}</p>
-    <p class="scale-notes">${m.scale.map((n) => `<span class="${n === m.charNote ? 'char' : ''}">${noteName(n)}</span>`).join('')}</p>
+    ${scaleNotes(m)}
     ${char ? `<p><strong>${char}</strong>${heard}</p>` : ''}
-    <div class="button-row">
-      <button type="button" class="btn secondary small" data-action="mode-compare">▶ Oír la diferencia con ${parallel}</button>
-      <button type="button" class="btn secondary small" data-action="mode-typical">▶ Ejemplo típico</button>
-    </div>
+    ${listen}
     <p class="hint">Suena primero la escala de ${parallel} y después la de ${modeName(m)}: la nota marcada es la que cambia.</p>
     <details class="more" data-keep="mode">
       <summary>Más sobre el modo</summary>

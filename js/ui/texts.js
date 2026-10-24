@@ -119,6 +119,9 @@ export function modeCharText(m) {
   return `Frente a ${parallel}, cambia una nota: ${changed[0]}.`;
 }
 
+// Título de la tarjeta del modo cuando la tonalidad ya lo nombra: «Escucha el color dórico».
+export const modeListenTitle = (m) => `Escucha el color ${m.variant === 'phrygian-dominant' ? 'frigio dominante' : m.name}`;
+
 // Bajo el nombre de la tonalidad, cuando es un modo: cómo se relaciona con
 // el mayor o el menor de siempre. m: el modo principal (detectModes).
 export function modalKeyText(m) {

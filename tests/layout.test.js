@@ -19,7 +19,7 @@ test('la casilla es un área de texto que crece y se analiza con Intro', () => {
   assert.doesNotMatch(html, /<input id="chords"/);
   assert.match(css, /#chords,\s*\.input-marks \{[^}]*white-space: pre-wrap/);
   assert.match(app, /function fitInput\(\)/);
-  assert.match(app, /e\.key === 'Enter' && !e\.shiftKey[\s\S]*requestSubmit\(\)/);
+  assert.match(app, /e\.key === 'Enter' && !e\.isComposing[\s\S]*requestSubmit\(\)/);
 });
 
 test('en móvil, el botón Analizar va debajo de la casilla, a todo el ancho', () => {
@@ -87,4 +87,26 @@ test('el cifrado, el ejemplo de la casilla y el tema guardados se aplican antes 
   assert.match(css, /html\[data-notation="latin"\] \.seg\[data-notation="latin"\]/);
   assert.match(css, /html\[data-notation="american"\] \.seg\[data-notation="american"\]/);
   assert.match(app, /document\.documentElement\.dataset\.notation = notation\(\)/);
+});
+
+test('la fila de nombres del piano solo se ve en pantallas estrechas', () => {
+  assert.match(css, /\.piano-names \{ display: none; \}/);
+  assert.match(narrowCss, /\.piano \.key-label \{ display: none; \}/);
+  assert.match(narrowCss, /\.piano-names \{[^}]*display: block/);
+});
+
+test('con la guitarra, «Acorde» suena rasgueado y «Nota a nota» sigue la posición', () => {
+  assert.match(app, /case 'play-selected':[\s\S]*?state\.instrument === 'guitar'\) playNotes\(guitarMidis\(\), \{ step: 0\.035/);
+  assert.match(app, /case 'arpeggio-selected':[\s\S]*?state\.instrument === 'guitar'\) playNotes\(guitarMidis\(\)/);
+  assert.doesNotMatch(app, /case 'strum'/);
+  // En móvil, una sola fila.
+  assert.match(narrowCss, /\.button-row\.listen \{ flex-wrap: nowrap; \}/);
+});
+
+test('la casilla crece hasta 4 líneas y después se desplaza, con el subrayado a la par', () => {
+  assert.match(css, /#chords \{[^}]*max-height: calc\(4 \* 1\.4em \+ 28px\)/);
+  assert.match(css, /#chords,\s*\.input-marks \{[^}]*scrollbar-gutter: stable/);
+  const fit = /function fitInput[\s\S]*?\n\}/.exec(app)[0];
+  assert.match(fit, /overflowY = els\.input\.scrollHeight > els\.input\.clientHeight \? 'auto' : 'hidden'/);
+  assert.match(app, /addEventListener\('scroll', \(\) => \{\s*els\.marks\.scrollTop = els\.input\.scrollTop;/);
 });

@@ -146,3 +146,27 @@ test('las dos progresiones básicas, con su cadencia perfecta', () => {
     assert.equal(end(r), 'perfect', text);
   }
 });
+
+test('una progresión que se repite entera es una sola, con sus vueltas', async () => {
+  const { renderProgressionCard, renderChords, progressionRanges, progressionTurns } = await import('../js/ui/render.js');
+  for (const [text, id] of [['Am G F E Am G F E', 'andalusian'], ['C G Am F C G Am F', 'pop']]) {
+    const r = analyze(text);
+    const all = r.progressions.filter((m) => m.id === id);
+    assert.equal(all.length, 1, text);
+    assert.equal(all[0].times, 2, text);
+    assert.deepEqual(all[0].turns, [0, 4], text);
+    assert.ok(all[0].whole, text);
+    const html = renderProgressionCard(r);
+    assert.match(html, /Se repite dos veces/, text);
+    assert.doesNotMatch(html, /Son los acordes 1 a 4/, text);
+    // Se marcan las dos vueltas, y dónde empieza la segunda.
+    assert.deepEqual([...progressionRanges(r)], [0, 1, 2, 3, 4, 5, 6, 7], text);
+    assert.match(renderChords(r.items, { turns: progressionTurns(r) }), /data-index="4"[^>]*>\s*<span class="turn">↻ 2\.ª vuelta<\/span>/, text);
+  }
+  // Compartiendo el acorde del medio, también cuenta como repetida.
+  assert.equal(find(analyze('C F G C F G C'), 'basic-major').times, 2);
+  // Sin repetir, una vuelta y sin marcar.
+  const once = analyze('Am G F E');
+  assert.equal(find(once, 'andalusian').times, 1);
+  assert.deepEqual([...progressionRanges(once)], []);
+});

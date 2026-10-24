@@ -9,7 +9,7 @@ import { defaultTonic } from './core/key.js';
 import { convertNotation, transposeText } from './core/transpose.js';
 import { playChords, playChord, playNotes, stop } from './audio.js';
 import {
-  escapeHtml, renderErrors, renderKey, renderProgressionCard, progressionRanges, renderChords, renderDetail, renderGlossaryList, renderTerm, renderTranspose, renderModes,
+  escapeHtml, renderErrors, renderKey, renderProgressionCard, progressionRanges, progressionTurns, renderChords, renderDetail, renderGlossaryList, renderTerm, renderTranspose, renderModes,
 } from './ui/render.js';
 import { modeScale, typicalProgression } from './core/modes.js';
 import { Interval } from '../vendor/tonal.mjs';
@@ -167,13 +167,17 @@ function markErrors() {
     pos = end;
   }
   els.marks.innerHTML = html + escapeHtml(text.slice(pos));
+  els.marks.scrollTop = els.input.scrollTop;
 }
 
 // La casilla crece con lo escrito: una progresión larga se ve entera, en
 // varias líneas si hace falta.
+// Hasta 4 líneas (el tope está en el CSS); con más, se desplaza.
 function fitInput() {
   els.input.style.height = 'auto';
   els.input.style.height = `${els.input.scrollHeight + els.input.offsetHeight - els.input.clientHeight}px`;
+  els.input.style.overflowY = els.input.scrollHeight > els.input.clientHeight ? 'auto' : 'hidden';
+  els.marks.scrollTop = els.input.scrollTop;
 }
 
 // Se calcula al pintar, para que siga el cifrado elegido.
@@ -181,7 +185,7 @@ const originalKeyName = () => (state.original ? keyName(state.original.key) : nu
 
 function renderGrid() {
   const r = state.result;
-  els.grid.innerHTML = renderChords(r.items, { selected: state.selected, marked: progressionRanges(r) });
+  els.grid.innerHTML = renderChords(r.items, { selected: state.selected, marked: progressionRanges(r), turns: progressionTurns(r) });
   const progression = renderProgressionCard(r);
   els.progressionCard.hidden = !progression;
   els.progressionCard.innerHTML = progression;
@@ -254,6 +258,12 @@ function playList(chords, { highlightGrid = false, offset = 0 } = {}) {
 function playProgression() {
   if (state.playing) return stopPlayback();
   playList(state.result.chords, { highlightGrid: true });
+}
+
+// Las notas de la posición de guitarra que se está viendo, de grave a agudo.
+function guitarMidis() {
+  const voicings = guitarVoicings(state.result.items[state.selected].chord);
+  return voicings[state.position % voicings.length].midis.filter((m) => m !== null);
 }
 
 // Escala hacia arriba desde la tónica (entre Do4 y Si4), con la octava.
@@ -350,12 +360,17 @@ els.input.addEventListener('input', () => {
   els.input.removeAttribute('aria-invalid');
   fitInput();
 });
-// Es un área de texto para que quepa en varias líneas, pero Intro analiza.
+// Es un área de texto para que quepa en varias líneas, pero Intro analiza
+// (también con Mayúsculas: los acordes no necesitan saltos de línea).
 els.input.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+  if (e.key === 'Enter' && !e.isComposing) {
     e.preventDefault();
     els.form.requestSubmit();
   }
+});
+// Con más de 4 líneas se desplaza: el subrayado de los errores, con ella.
+els.input.addEventListener('scroll', () => {
+  els.marks.scrollTop = els.input.scrollTop;
 });
 // Al cambiar el ancho (girar el móvil), cambia cuántas líneas hacen falta.
 addEventListener('resize', fitInput);
@@ -410,13 +425,16 @@ document.addEventListener('click', (e) => {
       state.forcedKey = null;
       run();
       break;
+    // Con la guitarra, el acorde suena rasgueado y nota a nota en la posición dibujada.
     case 'play-selected':
       stopPlayback();
-      playChord(r.items[state.selected].chord);
+      if (state.instrument === 'guitar') playNotes(guitarMidis(), { step: 0.035, hold: 2 });
+      else playChord(r.items[state.selected].chord);
       break;
     case 'arpeggio-selected':
       stopPlayback();
-      playChord(r.items[state.selected].chord, { arpeggio: true });
+      if (state.instrument === 'guitar') playNotes(guitarMidis(), { step: 0.45, hold: 1.2 });
+      else playChord(r.items[state.selected].chord, { arpeggio: true });
       break;
     case 'context':
     case 'context-normal': {
@@ -437,13 +455,6 @@ document.addEventListener('click', (e) => {
       state.position += 1;
       renderSelected();
       break;
-    case 'strum': {
-      const chord = r.items[state.selected].chord;
-      const voicings = guitarVoicings(chord);
-      const midis = voicings[state.position % voicings.length].midis.filter((m) => m !== null);
-      playNotes(midis, { step: 0.035, hold: 2 });
-      break;
-    }
     case 'transpose':
       transposeTo(Number(btn.dataset.pc));
       break;

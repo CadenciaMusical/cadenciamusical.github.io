@@ -98,6 +98,35 @@ function findRuns(entry, seq, key) {
   );
 }
 
+// Junta las apariciones seguidas de un mismo patrón en una sola, con el
+// número de vueltas: Am G F E Am G F E es una andaluza que se repite dos
+// veces, no dos andaluzas. Valen seguidas o compartiendo un acorde (C F G C
+// F G C: el C del medio cierra una vuelta y abre la otra). Cada tramo lleva
+// turns: dónde empieza cada vuelta (posiciones en seq).
+function groupRuns(entry, runs) {
+  const n = entry.compiled.length;
+  if (entry.cyclic) {
+    // Un bucle ya sale como un solo tramo: se cuentan las vueltas enteras.
+    return runs.map((r) => {
+      const len = r.end - r.start + 1;
+      const times = len % n === 0 ? len / n : 1;
+      return { ...r, turns: Array.from({ length: times }, (_, i) => r.start + i * n) };
+    });
+  }
+  const sorted = [...runs].sort((a, b) => a.start - b.start);
+  const out = [];
+  for (const r of sorted) {
+    const last = out[out.length - 1];
+    if (last && (r.start === last.end + 1 || r.start === last.end)) {
+      last.end = r.end;
+      last.turns.push(r.start);
+    } else {
+      out.push({ ...r, turns: [r.start] });
+    }
+  }
+  return out;
+}
+
 function toMatch(entry, run, seq, key, total) {
   const start = seq[run.start].start;
   const end = seq[run.end].end;
@@ -112,6 +141,9 @@ function toMatch(entry, run, seq, key, total) {
     label: entry.label ?? steps.join('–'),
     start,
     end,
+    // Vueltas: cuántas veces se repite seguida y dónde empieza cada una.
+    times: run.turns?.length ?? 1,
+    turns: (run.turns ?? [run.start]).map((t) => seq[t].start),
     key: { pc: key.pc, mode: key.mode, tonic: key.tonic },
     whole: start === 0 && end === total - 1,
     atEnd: end === total - 1,
@@ -138,7 +170,7 @@ export function findMatches(chords, key, relativeKey = null) {
     const k = entry.mode === key.mode ? key : relativeKey;
     if (!k || k.mode !== entry.mode) continue;
     const seq = entry.bars ? bars : collapsed;
-    for (const run of findRuns(entry, seq, k)) progressions.push(toMatch(entry, run, seq, k, total));
+    for (const run of groupRuns(entry, findRuns(entry, seq, k))) progressions.push(toMatch(entry, run, seq, k, total));
   }
 
   // Una progresión que forma parte de otra más larga encontrada no se muestra

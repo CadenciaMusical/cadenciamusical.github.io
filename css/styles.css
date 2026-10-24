@@ -167,6 +167,13 @@ main {
 
 .button-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
 
+/* Los botones para oír el acorde, siempre en una fila: en móvil se reparten
+   el ancho y llevan menos relleno para que quepan los tres de la guitarra. */
+@media (max-width: 599px) {
+  .button-row.listen { flex-wrap: nowrap; }
+  .button-row.listen .btn { flex: 1 1 auto; min-width: 0; padding: 0 8px; font-size: 0.95rem; white-space: nowrap; }
+}
+
 .link {
   background: none;
   border: 0;
@@ -214,12 +221,17 @@ main {
   /* Si no cabe en una línea, sigue en la siguiente (la casilla crece). */
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  /* Con barra de desplazamiento o sin ella, el mismo ancho de texto en las
+     dos capas: si no, cortarían las líneas en sitios distintos. */
+  scrollbar-gutter: stable;
 }
 #chords {
   position: relative;
   display: block;
   width: 100%;
   min-height: 52px;
+  /* Crece hasta 4 líneas (más el relleno y el borde); después, se desplaza. */
+  max-height: calc(4 * 1.4em + 28px);
   resize: none;
   overflow: hidden;
   border-color: var(--border);
@@ -344,6 +356,21 @@ details summary {
 .match .btn { margin-top: 4px; }
 
 /* Los acordes de una progresión conocida dentro de otra más larga. */
+/* Donde empieza otra vuelta de una progresión que se repite. */
+.chord { position: relative; }
+.chord .turn {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
 .chord.marked { background: var(--surface-2); box-shadow: inset 0 0 0 2px var(--accent); }
 .chord.marked.playing { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 3px var(--fn); }
 
@@ -508,11 +535,32 @@ html[data-notation="american"] .seg[data-notation="american"] {
 .piano .key.on { fill: var(--fn); stroke: var(--fn); }
 /* El bajo: el mismo color, pero solo el borde, para distinguirlo. */
 .piano .key.on.bass { fill: var(--fn-bg); stroke: var(--fn); stroke-width: 3; }
-.piano .key-label { fill: var(--on-accent); font-size: 10px; font-weight: 700; pointer-events: none; }
+.piano .key-label { fill: var(--on-accent); font-weight: 700; pointer-events: none; }
 .piano .key.bass + .key-label { fill: var(--fn); }
 @media (hover: hover) {
   .piano .key.white:not(.on):hover { fill: var(--surface-2); }
   .piano .key.black:not(.on):hover { fill: var(--muted); }
+}
+
+/* La fila de nombres bajo el teclado: solo en pantallas estrechas, donde las
+   etiquetas de dentro de las teclas serían diminutas. */
+.piano-names { display: none; }
+@media (max-width: 599px) {
+  .piano .key-label { display: none; }
+  .piano-names {
+    display: block;
+    position: relative;
+    height: 1.5em;
+    margin: 4px 0 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--fn);
+  }
+  .piano-names.two-lines { height: 3em; }
+  .piano-names span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+  .piano-names span.second { top: 1.5em; }
+  /* El bajo, como su tecla: con borde. */
+  .piano-names span.bass { padding: 0 4px; border: 2px solid var(--fn); border-radius: 6px; line-height: 1.2; }
 }
 
 /* --- Guitarra: cuerdas en vertical, trastes en horizontal --- */

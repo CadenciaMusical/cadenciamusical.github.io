@@ -106,7 +106,6 @@ test('la tarjeta del modo: explicación sencilla y botón para oír la diferenci
   setLatin(false);
   assert.equal(renderModes(analyze('C G Am F')), '');
   const html = renderModes(analyze('D C G D'));
-  assert.match(html, /no suena del todo a D mayor/);
   assert.match(html, /data-action="mode-compare">▶ Oír la diferencia con D mayor/);
   assert.doesNotMatch(html, /jónico|eólico/);
   setLatin(true);
@@ -191,4 +190,26 @@ test('cadencia frigia: acabar en ♭II → I', async () => {
   assert.equal(`${andaluza.key.tonic} ${andaluza.key.mode}`, 'A minor');
   assert.ok(andaluza.progressions.some((p) => p.id === 'andalusian'));
   assert.equal(end('Am G F E'), 'half');
+});
+
+test('si la tonalidad ya es el modo, la tarjeta del modo no repite la explicación', async () => {
+  const { renderModes, renderKey } = await import('../js/ui/render.js');
+  setLatin(true);
+  const r = analyze('Lam Re Lam Re');
+  const modes = renderModes(r);
+  assert.match(renderKey(r), /<h2 class="key-name">La dórico<\/h2>[\s\S]*Fa♯ en lugar de Fa/);
+  assert.match(modes, /<h2 class="key-name">Escucha el color dórico<\/h2>/);
+  assert.doesNotMatch(modes, /La dórico<\/h2>|en lugar de|no suena del todo|Más sobre el modo/);
+  // Solo la escala, con la nota que cambia marcada, y los dos botones.
+  assert.match(modes, /<span class="">La<\/span><span class="">Si<\/span><span class="">Do<\/span><span class="">Re<\/span><span class="">Mi<\/span><span class="char">Fa♯<\/span><span class="">Sol<\/span>/);
+  assert.match(modes, /data-action="mode-compare">▶ Oír la diferencia con La menor/);
+  assert.match(modes, /data-action="mode-typical">▶ Ejemplo típico/);
+  // Adaptado a cada modo; en el frigio dominante, las dos notas que cambian.
+  assert.match(renderModes(analyze('Re Do Sol Re')), /Escucha el color mixolidio/);
+  const flamenco = renderModes(analyze('Mi Fa Mi Fa'));
+  assert.match(flamenco, /Escucha el color frigio dominante/);
+  assert.equal(flamenco.match(/class="char"/g).length, 2);
+  // Si eliges a mano otra tonalidad, la tarjeta del modo sigue explicándolo todo.
+  const forced = renderModes(analyze('Lam Re Lam Re', { forcedKey: { pc: 7, mode: 'major', tonic: 'G' } }));
+  assert.match(forced, /La dórico<\/h2>[\s\S]*no suena del todo a La menor/);
 });

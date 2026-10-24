@@ -66,3 +66,16 @@ test('detalle del acorde: nombre y grado, notas debajo, diagrama y botones antes
     ]) assert.ok(at(before) >= 0 && at(before) < at(after), `${instrument}: ${before} antes que ${after}`);
   }
 });
+
+test('con la guitarra, una sola fila: Acorde, Nota a nota y Otra posición; con el piano, igual que antes', async () => {
+  const { renderDetail } = await import('../js/ui/render.js');
+  setLatin(false);
+  const r = analyze('C A7 Dm G7 C');
+  const actions = (html) => [...html.matchAll(/data-action="(play-selected|arpeggio-selected|next-position|strum)"/g)].map((m) => m[1]);
+  const guitar = renderDetail(r.items[1], r.key, { instrument: 'guitar' });
+  assert.deepEqual(actions(guitar), ['play-selected', 'arpeggio-selected', 'next-position']);
+  assert.doesNotMatch(guitar, /Rasgueo/);
+  assert.match(guitar, /aria-label="Otra posición \(1 de 2\)">↻ Posición 1\/2</);
+  assert.equal(guitar.match(/class="button-row listen"/g).length, 1);
+  assert.deepEqual(actions(renderDetail(r.items[1], r.key, { instrument: 'piano' })), ['play-selected', 'arpeggio-selected']);
+});
