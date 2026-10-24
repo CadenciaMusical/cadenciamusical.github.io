@@ -1,6 +1,6 @@
 // Generación del HTML de los resultados. Sin estado: recibe datos, devuelve HTML.
 
-import { chordLabel, chordName, keyName, latinNote, prettyNote } from '../core/names.js';
+import { chordLabel, chordName, keyName, noteName } from '../core/names.js';
 import { parseChord } from '../core/parser.js';
 import { defaultTonic } from '../core/key.js';
 import { transposeChord } from '../core/transpose.js';
@@ -8,7 +8,7 @@ import {
   FUNCTIONS, KEY_TEXT, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, CADENCE_TEXT, NO_PROGRESSION_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
   MODE_INFO, VARIANT_INFO, MODES_TEXT, modeName, modeCharText, modeForeignText, modeVsKeyText,
 } from './texts.js';
-import { GLOSSARY, linkTerms } from './glossary.js';
+import { GLOSSARY, linkTerms, termText } from './glossary.js';
 import { normalVersion } from '../core/build.js';
 import { guitarVoicings } from '../core/fretboard.js';
 import { renderPiano } from './piano.js';
@@ -56,8 +56,8 @@ export function renderKey(result, { transposedFrom = null } = {}) {
       <div class="alternative">
         <p><strong>¿O ${keyName(alternative)}?</strong> ${linkTerms(alternativeText(key, alternative, alternativeIsRelative))}</p>
         <div class="button-row">
-          <button type="button" class="btn secondary" data-action="end-on" data-which="key">▶ Terminar en ${latinNote(key.tonic)}</button>
-          <button type="button" class="btn secondary" data-action="end-on" data-which="alt">▶ Terminar en ${latinNote(alternative.tonic)}</button>
+          <button type="button" class="btn secondary" data-action="end-on" data-which="key">▶ Terminar en ${noteName(key.tonic)}</button>
+          <button type="button" class="btn secondary" data-action="end-on" data-which="alt">▶ Terminar en ${noteName(alternative.tonic)}</button>
         </div>
         <button type="button" class="link" data-action="use-alt">Analizar en ${keyName(alternative)}</button>
       </div>`;
@@ -77,7 +77,7 @@ export function renderKey(result, { transposedFrom = null } = {}) {
     ${alt}`;
 }
 
-export function renderChords(items, { selected = null, latin = false } = {}) {
+export function renderChords(items, { selected = null } = {}) {
   return items
     .map((item, i) => {
       const f = fnKey(item.fn);
@@ -85,8 +85,7 @@ export function renderChords(items, { selected = null, latin = false } = {}) {
       return `
         <button type="button" class="chord fn-${f} ${i === selected ? 'selected' : ''}" data-index="${i}" aria-pressed="${i === selected}">
           <span class="roman">${item.roman}</span>
-          <span class="symbol">${chordLabel(item.chord, latin)}</span>
-          <span class="alt-symbol">${chordLabel(item.chord, !latin)}</span>
+          <span class="symbol">${chordLabel(item.chord)}</span>
           <span class="badge">${FUNCTIONS[f].name}${special ? ' ✦' : ''}</span>
         </button>`;
     })
@@ -124,23 +123,23 @@ function renderDiagram(chord, instrument, position) {
     </div>`;
 }
 
-export function renderDetail(item, key, { latin = false, instrument = 'piano', position = 0 } = {}) {
+export function renderDetail(item, key, { instrument = 'piano', position = 0 } = {}) {
   const f = fnKey(item.fn);
   const fn = FUNCTIONS[f];
-  const notes = item.chord.notes.map(latinNote).join(' · ');
-  const extra = kindText(item, key, { latin });
+  const notes = item.chord.notes.map((n) => noteName(n)).join(' · ');
+  const extra = kindText(item, key);
   const normal = normalVersion(item, key);
   // Para los acordes especiales: oírlo en su contexto y con el acorde «normal».
   const compare = extra
     ? `<div class="button-row">
         <button type="button" class="btn secondary small" data-action="context">▶ Así suena</button>
-        ${normal ? `<button type="button" class="btn secondary small" data-action="context-normal">▶ Con ${chordLabel(normal, latin)} en su lugar</button>` : ''}
+        ${normal ? `<button type="button" class="btn secondary small" data-action="context-normal">▶ Con ${chordLabel(normal)} en su lugar</button>` : ''}
       </div>`
     : '';
   return `
     <div class="detail-head fn-${f}">
       <div>
-        <h3>${chordLabel(item.chord)} <span class="muted">· ${chordLabel(item.chord, true)}</span></h3>
+        <h3>${chordLabel(item.chord)}</h3>
         <p class="muted">${chordName(item.chord)} · notas ${notes}</p>
       </div>
       <span class="roman big">${item.roman}</span>
@@ -173,8 +172,8 @@ export function renderLegend() {
 }
 
 // unique: junta los repetidos seguidos («F7 → C7 → C7» → «F7 → C7»).
-function chordsIn(result, m, latin, sep, { unique = false } = {}) {
-  const labels = result.chords.slice(m.start, m.end + 1).map((c) => chordLabel(c, latin));
+function chordsIn(result, m, sep, { unique = false } = {}) {
+  const labels = result.chords.slice(m.start, m.end + 1).map((c) => chordLabel(c));
   return (unique ? labels.filter((l, i) => l !== labels[i - 1]) : labels).join(sep);
 }
 
@@ -182,15 +181,15 @@ function playButton(m, label) {
   return `<button type="button" class="btn secondary small" data-action="play-range" data-start="${m.start}" data-end="${m.end}">▶ ${label}</button>`;
 }
 
-function whereText(result, m, latin) {
+function whereText(result, m) {
   const parts = [];
   if (m.whole) parts.push('Es tu progresión entera.');
-  else parts.push(`Aparece en los acordes ${m.start + 1} a ${m.end + 1}: ${chordsIn(result, m, latin, ' ')}.`);
+  else parts.push(`Aparece en los acordes ${m.start + 1} a ${m.end + 1}: ${chordsIn(result, m, ' ')}.`);
   if (m.key.mode !== result.key.mode) parts.push(`Se ve desde ${keyName(m.key)}, su tonalidad relativa.`);
   return parts.join(' ');
 }
 
-function renderProgression(result, m, latin) {
+function renderProgression(result, m) {
   const songs = m.songs.length ? `<p class="muted">La oirás en: ${m.songs.join(' · ')}</p>` : '';
   return `
     <div class="match">
@@ -198,7 +197,7 @@ function renderProgression(result, m, latin) {
         <h3>${m.name}</h3>
         ${m.label !== m.name ? `<span class="steps">${m.label}</span>` : ''}
       </div>
-      <p class="where">${whereText(result, m, latin)}</p>
+      <p class="where">${whereText(result, m)}</p>
       <p>${linkTerms(m.text)}</p>
       ${songs}
       ${playButton(m, 'Escuchar')}
@@ -206,7 +205,7 @@ function renderProgression(result, m, latin) {
 }
 
 // Las cadencias se agrupan por tipo: «Cadencia plagal», con cada aparición.
-function renderCadences(result, latin) {
+function renderCadences(result) {
   const groups = new Map();
   for (const c of result.cadences) {
     if (!groups.has(c.id)) groups.set(c.id, []);
@@ -216,7 +215,7 @@ function renderCadences(result, latin) {
     .map((list) => {
       const [first] = list;
       const final = list.some((c) => c.atEnd) ? '<span class="tag">Al final</span>' : '';
-      const buttons = list.map((c) => playButton(c, chordsIn(result, c, latin, ' → ', { unique: true }))).join('');
+      const buttons = list.map((c) => playButton(c, chordsIn(result, c, ' → ', { unique: true }))).join('');
       return `
         <div class="match">
           <div class="match-head"><h3>${first.name}</h3>${final}</div>
@@ -227,9 +226,9 @@ function renderCadences(result, latin) {
     .join('');
 }
 
-export function renderMatches(result, { latin = false } = {}) {
+export function renderMatches(result) {
   const progressions = result.progressions.length
-    ? result.progressions.map((m) => renderProgression(result, m, latin)).join('')
+    ? result.progressions.map((m) => renderProgression(result, m)).join('')
     : `<p class="muted">${linkTerms(NO_PROGRESSION_TEXT)}</p>`;
   const cadences = result.cadences.length
     ? `
@@ -238,7 +237,7 @@ export function renderMatches(result, { latin = false } = {}) {
         <summary>¿Qué es una cadencia?</summary>
         <p>${linkTerms(CADENCE_TEXT, { exclude: 'cadencia' })}</p>
       </details>
-      ${renderCadences(result, latin)}`
+      ${renderCadences(result)}`
     : '';
   return `
     <h3 class="subhead first">Progresiones conocidas</h3>
@@ -253,7 +252,7 @@ export function renderGlossaryList() {
 // Contenido de la ventana de un término. example: lo que devuelve entry.example().
 export function renderTerm(entry, example) {
   return `
-    <p>${linkTerms(entry.text, { exclude: entry.id })}</p>
+    <p>${linkTerms(termText(entry), { exclude: entry.id })}</p>
     <p class="muted">${example.caption}</p>`;
 }
 
@@ -263,12 +262,9 @@ function easyOnGuitar(chords) {
 }
 
 // original: { keyName } si la progresión está transportada.
-export function renderTranspose(result, { latin = false, original = null } = {}) {
+export function renderTranspose(result, { original = null } = {}) {
   const { key, chords } = result;
-  const name = (pc) => {
-    const tonic = defaultTonic(pc, key.mode);
-    return latin ? latinNote(tonic) : prettyNote(tonic);
-  };
+  const name = (pc) => noteName(defaultTonic(pc, key.mode));
   let anyEasy = false;
   const chips = Array.from({ length: 12 }, (_, pc) => {
     const to = { pc, mode: key.mode, tonic: defaultTonic(pc, key.mode) };
@@ -294,13 +290,13 @@ export function renderTranspose(result, { latin = false, original = null } = {})
     ${back}`;
 }
 
-export function renderModes(result, { latin = false } = {}) {
+export function renderModes(result) {
   const { modes, key } = result;
   if (!modes) return '';
   const m = modes.main;
   const info = MODE_INFO[m.id];
   const char = modeCharText(m);
-  const heard = m.charChords.length ? ` La oyes en ${m.charChords.map((c) => chordLabel(c, latin)).join(', ')}.` : '';
+  const heard = m.charChords.length ? ` La oyes en ${m.charChords.map((c) => chordLabel(c)).join(', ')}.` : '';
   const foreign = modeForeignText(m);
   const songs = info.songs.length ? `<p class="muted">Lo oirás en: ${info.songs.join(' · ')}</p>` : '';
   const compareLabel = m.charNote ? keyName({ tonic: m.tonic, mode: m.id === 'lydian' || m.id === 'mixolydian' ? 'major' : 'minor' }) : null;
@@ -311,7 +307,7 @@ export function renderModes(result, { latin = false } = {}) {
       ${modes.others
         .map((o) => {
           const why = o.sameNotes
-            ? `Con las mismas notas, si la casa fuera ${latinNote(o.tonic)}.`
+            ? `Con las mismas notas, si la casa fuera ${noteName(o.tonic)}.`
             : `Faltan notas para descartarlo.`;
           return `
             <div class="mode-other">
@@ -329,7 +325,7 @@ export function renderModes(result, { latin = false } = {}) {
       <p>${linkTerms(MODES_TEXT)}</p>
     </details>
     <p class="mode-name">${linkTerms(modeName(m))}</p>
-    <p class="scale-notes">${m.scale.map((n) => `<span class="${n === m.charNote ? 'char' : ''}">${latinNote(n)}</span>`).join('')}</p>
+    <p class="scale-notes">${m.scale.map((n) => `<span class="${n === m.charNote ? 'char' : ''}">${noteName(n)}</span>`).join('')}</p>
     <p>${linkTerms(VARIANT_INFO[m.variant] ?? info.text)}</p>
     ${char ? `<p><strong>${char}</strong>${heard}</p>` : ''}
     ${foreign ? `<p class="special">${linkTerms(foreign)}</p>` : ''}

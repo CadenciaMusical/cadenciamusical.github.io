@@ -3,10 +3,9 @@
 import { analyze } from './core/analysis.js';
 import { tokenize } from './core/parser.js';
 import { chordOnDegree, tonicChord, normalVersion } from './core/build.js';
-import { chordLabel } from './core/names.js';
+import { chordLabel, isLatin, keyName, setLatin } from './core/names.js';
 import { guitarVoicings } from './core/fretboard.js';
 import { defaultTonic } from './core/key.js';
-import { keyName } from './core/names.js';
 import { transposeText } from './core/transpose.js';
 import { playChords, playChord, playNotes, stop } from './audio.js';
 import {
@@ -59,10 +58,9 @@ const state = {
   forcedKey: null,
   selected: null,
   playing: false,
-  latin: false,
   instrument: 'piano',
   position: 0, // posición de guitarra del acorde elegido
-  original: null, // { text, forcedKey, keyName } antes de transportar
+  original: null, // { text, forcedKey, key } antes de transportar
 };
 
 // --- Preferencias (solo comodidad: si el almacenamiento falla, no pasa nada) ---
@@ -123,24 +121,26 @@ function render() {
   document.body.classList.toggle('empty', !hasKey);
   els.play.disabled = !hasKey;
   if (!hasKey) return;
-  els.keyCard.innerHTML = renderKey(r, { transposedFrom: state.original?.keyName });
+  els.keyCard.innerHTML = renderKey(r, { transposedFrom: originalKeyName() });
   renderGrid();
   renderSelected();
 }
 
-// Lo que depende del cifrado elegido (americano o latino).
+// Se calcula al pintar, para que siga el cifrado elegido.
+const originalKeyName = () => (state.original ? keyName(state.original.key) : null);
+
 function renderGrid() {
-  els.grid.innerHTML = renderChords(state.result.items, { selected: state.selected, latin: state.latin });
-  els.matches.innerHTML = renderMatches(state.result, { latin: state.latin });
-  els.transposeCard.innerHTML = renderTranspose(state.result, { latin: state.latin, original: state.original });
-  els.modesCard.innerHTML = renderModes(state.result, { latin: state.latin });
+  els.grid.innerHTML = renderChords(state.result.items, { selected: state.selected });
+  els.matches.innerHTML = renderMatches(state.result);
+  els.transposeCard.innerHTML = renderTranspose(state.result, { original: state.original && { keyName: originalKeyName() } });
+  els.modesCard.innerHTML = renderModes(state.result);
 }
 
 function renderSelected() {
   const item = state.result.items[state.selected];
   els.detail.hidden = !item;
   els.detail.innerHTML = item
-    ? renderDetail(item, state.result.key, { latin: state.latin, instrument: state.instrument, position: state.position })
+    ? renderDetail(item, state.result.key, { instrument: state.instrument, position: state.position })
     : '';
 }
 
@@ -189,7 +189,7 @@ function scaleMidis(scale, pc) {
 function transposeTo(pc) {
   const r = state.result;
   if (!state.original) {
-    state.original = { text: els.input.value, forcedKey: state.forcedKey, keyName: keyName(r.key), pc: r.key.pc };
+    state.original = { text: els.input.value, forcedKey: state.forcedKey, key: r.key, pc: r.key.pc };
   }
   // Volver a la tonalidad original recupera el texto tal cual se escribió.
   if (pc === state.original.pc) return restoreOriginal();
@@ -370,19 +370,18 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Cifrado principal: americano (C) o latino (Do).
+// Cifrado de toda la página: americano (C) o latino (Do). El botón muestra
+// a cuál se cambia al tocarlo.
 function setNotation(latin) {
-  state.latin = latin;
+  setLatin(latin);
   els.notation.textContent = latin ? 'Do → C' : 'C → Do';
-  els.notation.setAttribute('aria-label', latin ? 'Mostrar cifrado americano' : 'Mostrar cifrado latino');
+  els.notation.setAttribute('aria-label', latin ? 'Cambiar a cifrado americano (C, D, E…)' : 'Cambiar a cifrado latino (Do, Re, Mi…)');
+  els.input.placeholder = latin ? 'Lam Fa Do Sol' : 'Am F C G';
   save('cadencia-notation', latin ? 'latin' : 'american');
-  if (state.result?.key) {
-    renderGrid();
-    renderSelected();
-  }
+  render();
 }
 
-els.notation.addEventListener('click', () => setNotation(!state.latin));
+els.notation.addEventListener('click', () => setNotation(!isLatin()));
 
 // Tema: sigue al sistema hasta que el usuario elige uno.
 function setTheme(theme) {
@@ -416,7 +415,7 @@ function showTerm(id) {
 // Los ejemplos suenan en la tonalidad que se está analizando, o en Do mayor.
 function termExample(entry) {
   const key = state.result?.key ?? DEFAULT_KEY;
-  return entry.example(key, (c) => chordLabel(c, state.latin));
+  return entry.example(key, (c) => chordLabel(c));
 }
 
 // Cualquier término subrayado, dentro o fuera de la ventana, la abre.

@@ -331,7 +331,6 @@ details summary {
 }
 .chord .roman { font-family: Georgia, "Times New Roman", serif; font-size: 1.05rem; color: var(--fn); font-weight: 700; }
 .chord .symbol { font-size: 1.5rem; font-weight: 700; }
-.chord .alt-symbol { font-size: 0.85rem; color: var(--muted); }
 .chord .badge { margin-top: 4px; }
 .chord.selected { border-color: var(--fn); border-top-width: 6px; }
 .chord.playing { transform: translateY(-3px); box-shadow: 0 0 0 3px var(--fn); }

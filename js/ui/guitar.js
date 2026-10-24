@@ -2,7 +2,7 @@
 // (izquierda) a la 1.ª (derecha), y trastes en horizontal.
 
 import { Note } from '../../vendor/tonal.mjs';
-import { latinNote } from '../core/names.js';
+import { noteName } from '../core/names.js';
 import { TUNING } from '../core/fretboard.js';
 
 const GAP = 30; // entre cuerdas
@@ -12,10 +12,10 @@ const LEFT = 34;
 const TOP = 34;
 
 // Nombre de la nota que suena en cada cuerda, escrita como en el acorde.
-function noteName(chord, midi) {
+function stringNote(chord, midi) {
   const pc = midi % 12;
   const own = chord.notes.find((n) => Note.chroma(n) === pc);
-  return latinNote(own ?? Note.fromMidi(midi).replace(/\d+$/, ''));
+  return noteName(own ?? Note.fromMidi(midi).replace(/\d+$/, ''));
 }
 
 export function renderGuitar(chord, voicing) {
@@ -56,7 +56,7 @@ export function renderGuitar(chord, voicing) {
     }
     if (f === 0) parts.push(`<circle class="open" cx="${x}" cy="${TOP - 15}" r="6"/>`);
     else parts.push(`<circle class="dot" cx="${x}" cy="${fy(f)}" r="10"/>`);
-    parts.push(`<text class="string-note" x="${x}" y="${height - 6}" text-anchor="middle">${noteName(chord, TUNING[i] + f)}</text>`);
+    parts.push(`<text class="string-note" x="${x}" y="${height - 6}" text-anchor="middle">${stringNote(chord, TUNING[i] + f)}</text>`);
   });
 
   const desc = frets.map((f, i) => `${6 - i}.ª ${f === null ? 'no se toca' : f === 0 ? 'al aire' : `traste ${f}`}`).join(', ');

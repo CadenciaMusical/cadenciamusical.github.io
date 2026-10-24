@@ -1,7 +1,7 @@
 // Textos didácticos. Tono cercano, sin tecnicismos sin explicar.
 
 import { Note } from '../../vendor/tonal.mjs';
-import { keyName, chordLabel, latinNote } from '../core/names.js';
+import { keyName, chordLabel, noteName } from '../core/names.js';
 import { chordOnDegree, normalVersion } from '../core/build.js';
 
 export const FUNCTIONS = {
@@ -93,7 +93,7 @@ export const MODES_TEXT =
 
 // Nombre completo de un modo encontrado: «Re mixolidio», «Mi frigio dominante».
 export function modeName(m) {
-  const tonic = latinNote(m.tonic);
+  const tonic = noteName(m.tonic);
   if (m.variant === 'phrygian-dominant') return `${tonic} frigio dominante`;
   if (m.variant === 'harmonic-minor') return `${tonic} menor armónica`;
   return `${tonic} ${m.name}`;
@@ -103,10 +103,10 @@ export function modeName(m) {
 export function modeCharText(m) {
   if (!m.charNote) return '';
   const parallel = keyName({ tonic: m.tonic, mode: m.id === 'lydian' || m.id === 'mixolydian' ? 'major' : 'minor' });
-  const first = `${latinNote(m.charNote)} en lugar de ${latinNote(m.insteadNote)}`;
+  const first = `${noteName(m.charNote)} en lugar de ${noteName(m.insteadNote)}`;
   if (m.variant === 'phrygian-dominant') {
     const third = m.scale[2];
-    return `Frente a ${parallel}, cambian dos notas: ${first}, y ${latinNote(third)} en lugar de ${latinNote(Note.transpose(m.tonic, '3m'))}.`;
+    return `Frente a ${parallel}, cambian dos notas: ${first}, y ${noteName(third)} en lugar de ${noteName(Note.transpose(m.tonic, '3m'))}.`;
   }
   return `Frente a ${parallel}, cambia una nota: ${first}.`;
 }
@@ -114,7 +114,7 @@ export function modeCharText(m) {
 // Las notas que no caben en el modo.
 export function modeForeignText(m) {
   if (m.foreign.length === 0) return '';
-  const notes = m.foreign.map(latinNote);
+  const notes = m.foreign.map((n) => noteName(n));
   if (m.variant === 'harmonic-minor') {
     return `El ${notes[0]} no es de la escala: sube medio tono para tirar hacia la tónica (es la sensible). Con ese cambio, la escala se llama menor armónica.`;
   }
@@ -133,7 +133,7 @@ export function modeVsKeyText(m, key) {
   if (m.pc === key.pc) {
     return `La tonalidad lo explica como ${k} con algún acorde de fuera; el modo, como una escala propia. Son dos formas de ver lo mismo.`;
   }
-  return `La tonalidad apunta a ${k}; el modo toma ${latinNote(m.tonic)} como casa. Son dos formas de oír lo mismo: escucha cuál te suena a final.`;
+  return `La tonalidad apunta a ${k}; el modo toma ${noteName(m.tonic)} como casa. Son dos formas de oír lo mismo: escucha cuál te suena a final.`;
 }
 
 export const NO_PROGRESSION_TEXT =
@@ -149,9 +149,9 @@ export function alternativeText(key, alt, relative) {
 }
 
 // Explicación extra según el tipo de acorde (ver core/classify.js). Texto sin HTML.
-export function kindText(item, key, { latin = false } = {}) {
+export function kindText(item, key) {
   const name = keyName(key);
-  const label = (c) => chordLabel(c, latin);
+  const label = (c) => chordLabel(c);
   const target = item.target ? chordOnDegree(key, item.target.st, item.target.triad) : null;
   switch (item.kind) {
     case 'secondary': {
@@ -163,7 +163,7 @@ export function kindText(item, key, { latin = false } = {}) {
       // Con los nombres de la dominante normal (Si, no Do♭).
       const shared = normal.notes.filter((n) => item.chord.notes.some((m) => Note.chroma(m) === Note.chroma(n)));
       const towards = item.target.st === 0 ? `la tónica, ${label(target)}` : label(target);
-      return `Es un sustituto tritonal: ocupa el lugar de ${label(normal)}, la dominante de ${towards}. Sus raíces están a un tritono de distancia y comparten las dos notas que crean la tensión (${shared.map(latinNote).join(' y ')}), así que empuja igual hacia ${label(target)}, pero con el bajo bajando medio tono. Es muy típico del jazz.`;
+      return `Es un sustituto tritonal: ocupa el lugar de ${label(normal)}, la dominante de ${towards}. Sus raíces están a un tritono de distancia y comparten las dos notas que crean la tensión (${shared.map((n) => noteName(n)).join(' y ')}), así que empuja igual hacia ${label(target)}, pero con el bajo bajando medio tono. Es muy típico del jazz.`;
     }
     case 'leading':
       return `Es un acorde disminuido «de paso»: está medio tono por debajo de ${label(target)} y lo prepara, igual que la sensible prepara la tónica. Por eso se escribe ${item.roman}.`;

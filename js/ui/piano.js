@@ -1,7 +1,7 @@
 // Teclado de piano en SVG con las notas del acorde marcadas.
 
 import { Note } from '../../vendor/tonal.mjs';
-import { latinNote } from '../core/names.js';
+import { noteName } from '../core/names.js';
 
 const WHITE_PCS = [0, 2, 4, 5, 7, 9, 11];
 const W = 28; // tecla blanca
@@ -47,10 +47,10 @@ export function renderPiano(chord) {
       if (key) blacks.push(label(key, x, BH - 9));
     }
   }
-  const names = keys.map((k) => latinNote(k.name)).join(', ');
+  const names = keys.map((k) => noteName(k.name)).join(', ');
   return `<svg class="piano" viewBox="0 0 ${x} ${H}" role="img" aria-label="Teclado de piano con las notas ${names}">${whites.join('')}${blacks.join('')}</svg>`;
 }
 
 function label(key, x, y) {
-  return `<text class="key-label" x="${x}" y="${y}" text-anchor="middle">${latinNote(key.name)}</text>`;
+  return `<text class="key-label" x="${x}" y="${y}" text-anchor="middle">${noteName(key.name)}</text>`;
 }

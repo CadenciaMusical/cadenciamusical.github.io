@@ -4,6 +4,10 @@ import { analyze } from '../js/core/analysis.js';
 import { MODES, detectModes, modeScale, typicalProgression } from '../js/core/modes.js';
 import { defaultTonic } from '../js/core/key.js';
 import { modeName } from '../js/ui/texts.js';
+import { setLatin } from '../js/core/names.js';
+
+// Estas pruebas comprueban los textos en cifrado latino.
+setLatin(true);
 
 const main = (text) => analyze(text).modes.main;
 const name = (m) => modeName(m);

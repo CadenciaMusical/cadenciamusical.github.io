@@ -6,7 +6,7 @@ import { chordOnDegree, tonicChord } from '../core/build.js';
 import { DEGREES } from '../core/theory.js';
 import { MODES, modeScale } from '../core/modes.js';
 import { MODE_INFO } from './texts.js';
-import { chordLabel, keyName, latinNote } from '../core/names.js';
+import { chordLabel, keyName, noteName } from '../core/names.js';
 
 export const DEFAULT_KEY = { tonic: 'C', mode: 'major', pc: 0 };
 
@@ -25,8 +25,13 @@ function degrees(k) {
 
 // Altura MIDI de una nota contada desde la tónica, que va entre Do4 y Si4.
 const midiFrom = (k, semitones) => 60 + k.pc + semitones;
-const noteName = (k, semitones) => latinNote(Note.transpose(k.tonic, ['1P', '2m', '2M', '3m', '3M', '4P', '4A', '5P', '6m', '6M', '7m', '7M'][semitones]));
+const degreeNote = (k, semitones) => noteName(Note.transpose(k.tonic, ['1P', '2m', '2M', '3m', '3M', '4P', '4A', '5P', '6m', '6M', '7m', '7M'][semitones]));
 
+// Para los textos con ejemplos concretos, que siguen el cifrado elegido.
+const K = (tonic, mode) => keyName({ tonic, mode });
+const sym = (root, suffix = '') => noteName(root) + suffix;
+
+// text: una cadena, o una función si nombra notas (para seguir el cifrado).
 // Cada ejemplo devuelve { chords } o { notes, together }, y un pie de texto.
 // label(c) escribe un acorde con el cifrado elegido.
 export const GLOSSARY = [
@@ -34,7 +39,7 @@ export const GLOSSARY = [
     id: 'tonalidad',
     term: 'Tonalidad',
     match: ['tonalidades', 'tonalidad'],
-    text: 'El «barrio» de una canción: una nota hace de casa (la tónica) y hay un grupo de acordes que suenan bien a su alrededor. Se nombra por su tónica y su modo: Do mayor, La menor…',
+    text: () => `El «barrio» de una canción: una nota hace de casa (la tónica) y hay un grupo de acordes que suenan bien a su alrededor. Se nombra por su tónica y su modo: ${K('C', 'major')}, ${K('A', 'minor')}…`,
     example: (k) => {
       const d = degrees(k);
       return { chords: [d.I, d.IV, d.V, d.I], caption: `Los acordes principales de ${keyName(k)}: ${k.mode === 'major' ? 'I, IV, V y de vuelta al I' : 'i, iv, V y de vuelta al i'}.` };
@@ -98,7 +103,7 @@ export const GLOSSARY = [
     id: 'relativa',
     term: 'Tonalidad relativa',
     match: ['relativas', 'relativa'],
-    text: 'Cada tonalidad mayor tiene una menor «relativa» que usa exactamente las mismas notas, como Do mayor y La menor. Lo que cambia es qué acorde suena a casa.',
+    text: () => `Cada tonalidad mayor tiene una menor «relativa» que usa exactamente las mismas notas, como ${K('C', 'major')} y ${K('A', 'minor')}. Lo que cambia es qué acorde suena a casa.`,
     example: (k, label) => {
       const I = tonicChord(k);
       const rel = k.mode === 'major' ? chordOnDegree(k, 9, 'm') : chordOnDegree(k, 3, 'M');
@@ -140,7 +145,7 @@ export const GLOSSARY = [
     term: 'Semitono',
     match: ['semitonos', 'semitono', 'medio tono'],
     text: 'La distancia más pequeña entre dos notas: de una tecla del piano a la de al lado (contando las negras), o de un traste de la guitarra al siguiente. Dos semitonos forman un tono.',
-    example: (k) => ({ notes: [midiFrom(k, 0), midiFrom(k, 1)], caption: `${noteName(k, 0)} y la nota que está medio tono por encima.` }),
+    example: (k) => ({ notes: [midiFrom(k, 0), midiFrom(k, 1)], caption: `${degreeNote(k, 0)} y la nota que está medio tono por encima.` }),
   },
   {
     id: 'tritono',
@@ -152,7 +157,7 @@ export const GLOSSARY = [
       return {
         notes: [midiFrom(k, 5), midiFrom(k, 11)],
         together: true,
-        caption: `${noteName(k, 5)} y ${noteName(k, 11)}, el tritono que lleva dentro ${label(d.V7)}.`,
+        caption: `${degreeNote(k, 5)} y ${degreeNote(k, 11)}, el tritono que lleva dentro ${label(d.V7)}.`,
       };
     },
   },
@@ -160,8 +165,8 @@ export const GLOSSARY = [
     id: 'sensible',
     term: 'Sensible',
     match: ['sensible'],
-    text: 'La nota que está medio tono por debajo de la tónica (Si en Do mayor). Tira con fuerza hacia ella: por eso el acorde de dominante, que la contiene, pide volver a casa.',
-    example: (k) => ({ notes: [midiFrom(k, -1), midiFrom(k, 0)], caption: `${noteName(k, 11)} sube a ${noteName(k, 0)}: la sensible llega a la tónica.` }),
+    text: () => `La nota que está medio tono por debajo de la tónica (${noteName('B')} en ${K('C', 'major')}). Tira con fuerza hacia ella: por eso el acorde de dominante, que la contiene, pide volver a casa.`,
+    example: (k) => ({ notes: [midiFrom(k, -1), midiFrom(k, 0)], caption: `${degreeNote(k, 11)} sube a ${degreeNote(k, 0)}: la sensible llega a la tónica.` }),
   },
   {
     id: 'resolver',
@@ -177,7 +182,7 @@ export const GLOSSARY = [
     id: 'dominante-secundaria',
     term: 'Dominante secundaria',
     match: ['dominantes secundarias', 'dominante secundaria'],
-    text: 'Un acorde que hace de dominante de otro grado que no es la tónica. En Do mayor, D7 es la dominante de G: se escribe V7/V y se lee «quinto del quinto».',
+    text: () => `Un acorde que hace de dominante de otro grado que no es la tónica. En ${K('C', 'major')}, ${sym('D', '7')} es la dominante de ${sym('G')}: se escribe V7/V y se lee «quinto del quinto».`,
     example: (k, label) => {
       const d = degrees(k);
       const vOfV = chordOnDegree(k, 2, 'M', '7');
@@ -188,7 +193,7 @@ export const GLOSSARY = [
     id: 'prestamo',
     term: 'Préstamo modal',
     match: ['préstamo modal', 'préstamo', 'prestado', 'prestados'],
-    text: 'Un acorde tomado de la tonalidad «paralela», que tiene la misma tónica pero el otro modo. En Do mayor, Fm viene de Do menor y le da un toque melancólico.',
+    text: () => `Un acorde tomado de la tonalidad «paralela», que tiene la misma tónica pero el otro modo. En ${K('C', 'major')}, ${sym('F', 'm')} viene de ${K('C', 'minor')} y le da un toque melancólico.`,
     example: (k, label) => {
       const I = tonicChord(k);
       const own = chordOnDegree(k, 5, k.mode === 'major' ? 'M' : 'm');
@@ -200,7 +205,7 @@ export const GLOSSARY = [
     id: 'sustituto-tritonal',
     term: 'Sustituto tritonal',
     match: ['sustitutos tritonales', 'sustituto tritonal'],
-    text: 'Un acorde con séptima que ocupa el lugar de la dominante y cuya raíz está a un tritono de ella (D♭7 en lugar de G7, en Do). Comparten las dos notas que crean la tensión, así que funcionan igual, pero el bajo baja medio tono hasta la tónica. Muy típico del jazz.',
+    text: () => `Un acorde con séptima que ocupa el lugar de la dominante y cuya raíz está a un tritono de ella (${sym('Db', '7')} en lugar de ${sym('G', '7')}, en ${noteName('C')}). Comparten las dos notas que crean la tensión, así que funcionan igual, pero el bajo baja medio tono hasta la tónica. Muy típico del jazz.`,
     example: (k, label) => {
       const d = degrees(k);
       const sub = chordOnDegree(k, 1, 'M', '7');
@@ -237,7 +242,7 @@ export const GLOSSARY = [
     text: 'La forma de escribir los acordes. El americano usa letras (C D E F G A B) y el latino, sílabas (Do Re Mi Fa Sol La Si). Una «m» indica que es menor y un «7», que lleva séptima.',
     example: (k) => {
       const I = tonicChord(k);
-      return { chords: [I], caption: `${chordLabel(I)} o ${chordLabel(I, true)}: el mismo acorde con sus dos nombres.` };
+      return { chords: [I], caption: `${chordLabel(I, false)} o ${chordLabel(I, true)}: el mismo acorde con sus dos nombres.` };
     },
   },
 ];
@@ -258,7 +263,7 @@ const MODE_TERMS = MODES.map((mode) => ({
     const scale = modeScale(mode.id, k.tonic);
     const start = 60 + k.pc;
     const notes = [...scale.map((n) => start + Interval.semitones(Interval.distance(scale[0], n))), start + 12];
-    return { notes, caption: `La escala de ${latinNote(k.tonic)} ${mode.name}: ${scale.map(latinNote).join(' ')}.` };
+    return { notes, caption: `La escala de ${noteName(k.tonic)} ${mode.name}: ${scale.map((n) => noteName(n)).join(' ')}.` };
   },
 }));
 GLOSSARY.push(...MODE_TERMS);
@@ -267,6 +272,8 @@ const BY_ID = new Map(GLOSSARY.map((e) => [e.id, e]));
 const BY_WORD = new Map(GLOSSARY.flatMap((e) => e.match.map((w) => [w, e])));
 
 export const glossaryEntry = (id) => BY_ID.get(id);
+
+export const termText = (entry) => (typeof entry.text === 'function' ? entry.text() : entry.text);
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const WORDS = [...BY_WORD.keys()].sort((a, b) => b.length - a.length);
