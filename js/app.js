@@ -5,9 +5,12 @@ import { tokenize } from './core/parser.js';
 import { chordOnDegree, tonicChord, normalVersion } from './core/build.js';
 import { chordLabel } from './core/names.js';
 import { guitarVoicings } from './core/fretboard.js';
+import { defaultTonic } from './core/key.js';
+import { keyName } from './core/names.js';
+import { transposeText } from './core/transpose.js';
 import { playChords, playChord, playNotes, stop } from './audio.js';
 import {
-  renderErrors, renderKey, renderChords, renderDetail, renderLegend, renderMatches, renderGlossaryList, renderTerm,
+  renderErrors, renderKey, renderChords, renderDetail, renderLegend, renderMatches, renderGlossaryList, renderTerm, renderTranspose,
 } from './ui/render.js';
 import { glossaryEntry, DEFAULT_KEY } from './ui/glossary.js';
 
@@ -31,6 +34,7 @@ const els = {
   result: $('#result'),
   intro: $('#intro'),
   keyCard: $('#key-card'),
+  transposeCard: $('#transpose-card'),
   grid: $('#chord-grid'),
   detail: $('#detail'),
   matches: $('#matches'),
@@ -53,6 +57,7 @@ const state = {
   latin: false,
   instrument: 'piano',
   position: 0, // posición de guitarra del acorde elegido
+  original: null, // { text, forcedKey, keyName } antes de transportar
 };
 
 // --- Preferencias (solo comodidad: si el almacenamiento falla, no pasa nada) ---
@@ -96,7 +101,7 @@ function render() {
   els.intro.hidden = Boolean(r);
   els.play.disabled = !hasKey;
   if (!hasKey) return;
-  els.keyCard.innerHTML = renderKey(r);
+  els.keyCard.innerHTML = renderKey(r, { transposedFrom: state.original?.keyName });
   renderGrid();
   renderSelected();
 }
@@ -105,6 +110,7 @@ function render() {
 function renderGrid() {
   els.grid.innerHTML = renderChords(state.result.items, { selected: state.selected, latin: state.latin });
   els.matches.innerHTML = renderMatches(state.result, { latin: state.latin });
+  els.transposeCard.innerHTML = renderTranspose(state.result, { latin: state.latin, original: state.original });
 }
 
 function renderSelected() {
@@ -149,6 +155,36 @@ function playProgression() {
   playList(state.result.chords, { highlightGrid: true });
 }
 
+// --- Transportar ---
+
+function transposeTo(pc) {
+  const r = state.result;
+  if (!state.original) {
+    state.original = { text: els.input.value, forcedKey: state.forcedKey, keyName: keyName(r.key), pc: r.key.pc };
+  }
+  // Volver a la tonalidad original recupera el texto tal cual se escribió.
+  if (pc === state.original.pc) return restoreOriginal();
+  const to = { pc, mode: r.key.mode, tonic: defaultTonic(pc, r.key.mode) };
+  els.input.value = transposeText(els.input.value, r.key, to);
+  state.forcedKey = to;
+  const selected = state.selected;
+  run();
+  // Se mantiene el acorde elegido para ver cómo cambia.
+  if (selected !== null && state.result.items[selected]) {
+    state.selected = selected;
+    renderGrid();
+    renderSelected();
+  }
+}
+
+function restoreOriginal() {
+  const { text, forcedKey } = state.original;
+  els.input.value = text;
+  state.forcedKey = forcedKey;
+  state.original = null;
+  run();
+}
+
 // Ejemplos sonoros de cada función en la tonalidad actual.
 function playDemo(fn) {
   const key = state.result.key;
@@ -164,6 +200,7 @@ function playDemo(fn) {
 els.form.addEventListener('submit', (e) => {
   e.preventDefault();
   state.forcedKey = null;
+  state.original = null;
   run();
 });
 
@@ -176,6 +213,7 @@ els.examples.addEventListener('click', (e) => {
   if (!btn) return;
   els.input.value = btn.dataset.chords;
   state.forcedKey = null;
+  state.original = null;
   run();
 });
 
@@ -271,6 +309,15 @@ document.addEventListener('click', (e) => {
       playNotes(midis, { step: 0.035, hold: 2 });
       break;
     }
+    case 'transpose':
+      transposeTo(Number(btn.dataset.pc));
+      break;
+    case 'transpose-step':
+      transposeTo((r.key.pc + Number(btn.dataset.delta) + 12) % 12);
+      break;
+    case 'transpose-reset':
+      restoreOriginal();
+      break;
     case 'demo':
       stopPlayback();
       playDemo(btn.dataset.fn);

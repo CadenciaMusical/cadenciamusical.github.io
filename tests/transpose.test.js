@@ -1,0 +1,64 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { analyze } from '../js/core/analysis.js';
+import { defaultTonic } from '../js/core/key.js';
+import { transposeText, semitonesBetween } from '../js/core/transpose.js';
+
+const romans = (r) => r.items.map((i) => i.roman).join(' ');
+const key = (pc, mode) => ({ pc, mode, tonic: defaultTonic(pc, mode) });
+
+const PROGRESSIONS = [
+  'C G Am F',
+  'Am G F E',
+  'Dm7 G7 Cmaj7',
+  'C7 F7 C7 C7 F7 F7 C7 C7 G7 F7 C7 G7',
+  'D A Bm F#m G D G A',
+  'C D7 G7 C',
+  'C F Fm C',
+  'Dm7 Db7 Cmaj7',
+  'C C#dim Dm G7 C',
+  'Bm7b5 E7 Am',
+];
+
+test('transportar mantiene el análisis en las 12 tonalidades', () => {
+  for (const text of PROGRESSIONS) {
+    const original = analyze(text);
+    for (let pc = 0; pc < 12; pc++) {
+      const to = key(pc, original.key.mode);
+      const moved = transposeText(text, original.key, to);
+      const r = analyze(moved, { forcedKey: to });
+      assert.equal(r.errors.length, 0, `${text} → ${moved}`);
+      assert.equal(romans(r), romans(original), `${text} → ${moved}`);
+      assert.deepEqual(r.progressions.map((m) => m.id), original.progressions.map((m) => m.id), `${text} → ${moved}`);
+    }
+  }
+});
+
+test('ortografía según la tonalidad de destino', () => {
+  const C = key(0, 'major');
+  assert.equal(transposeText('C G Am F', C, key(2, 'major')), 'D A Bm G');
+  assert.equal(transposeText('C G Am F', C, key(3, 'major')), 'Eb Bb Cm Ab');
+  assert.equal(transposeText('C Bb F C', C, key(2, 'major')), 'D C G D');
+  assert.equal(transposeText('Am G F E', key(9, 'minor'), key(4, 'minor')), 'Em D C B');
+  // D♭7 → E7 y no F♭7: más sencillo para quien empieza.
+  assert.equal(transposeText('Dm7 Db7 Cmaj7', C, key(3, 'major')), 'Fm7 E7 Ebmaj7');
+});
+
+test('respeta cómo se escribió cada acorde', () => {
+  const C = key(0, 'major');
+  const D = key(2, 'major');
+  assert.equal(transposeText('Lam Fa Do Sol', C, D), 'Sim Sol Re La');
+  assert.equal(transposeText('Am Fa C Sol7', C, D), 'Bm Sol D La7');
+  assert.equal(transposeText('Do7M Rem7', C, key(10, 'major')), 'Sib7M Dom7');
+  assert.equal(transposeText('C/E Do/Mi', C, D), 'D/F# Re/Fa#');
+});
+
+test('lo que no se reconoce se deja como está', () => {
+  assert.equal(transposeText('C Xyz G', key(0, 'major'), key(2, 'major')), 'D Xyz A');
+});
+
+test('semitonos por el camino más corto', () => {
+  assert.equal(semitonesBetween(key(0, 'major'), key(2, 'major')), 2);
+  assert.equal(semitonesBetween(key(0, 'major'), key(10, 'major')), -2);
+  assert.equal(semitonesBetween(key(0, 'major'), key(6, 'major')), 6);
+});

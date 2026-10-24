@@ -216,6 +216,19 @@ export const GLOSSARY = [
     },
   },
   {
+    id: 'transportar',
+    term: 'Transportar',
+    match: ['transportar', 'transportada', 'transportado'],
+    text: 'Cambiar todos los acordes a otra tonalidad sin cambiar las distancias entre ellos. La música suena igual, solo que más aguda o más grave.',
+    example: (k, label) => {
+      const steps = k.mode === 'major' ? [[0, 'M'], [7, 'M'], [9, 'm'], [5, 'M']] : [[0, 'm'], [10, 'M'], [8, 'M'], [7, 'M']];
+      const up = { tonic: Note.transpose(k.tonic, '4P'), mode: k.mode, pc: (k.pc + 5) % 12 };
+      const here = steps.map(([st, q]) => chordOnDegree(k, st, q));
+      const there = steps.map(([st, q]) => chordOnDegree(up, st, q));
+      return { chords: [...here, ...there], caption: `Primero en ${keyName(k)} (${here.map(label).join(' ')}) y luego en ${keyName(up)} (${there.map(label).join(' ')}): misma música, más aguda.` };
+    },
+  },
+  {
     id: 'cifrado',
     term: 'Cifrado',
     match: ['cifrado'],

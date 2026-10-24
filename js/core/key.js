@@ -30,6 +30,11 @@ const TONIC_NAMES = {
   minor: ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'],
 };
 
+// La forma habitual de escribir cada tónica (Mi♭ mayor, Do♯ menor…).
+export function defaultTonic(pc, mode) {
+  return TONIC_NAMES[mode][pc];
+}
+
 // Escribe la tónica con sostenidos o bemoles según lo que use el usuario.
 function tonicName(pc, mode, chords) {
   const spelled = chords.flatMap((c) => [c.root, c.bass].filter(Boolean));

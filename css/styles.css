@@ -244,6 +244,15 @@ details summary {
   font-weight: 600;
 }
 
+/* --- Transportar --- */
+
+.card-title { font-size: 1.2rem; margin-bottom: 4px; }
+.stepper { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 12px 0; }
+.stepper-key { font-weight: 700; text-align: center; flex: 1; }
+.key-chips { gap: 6px; }
+.key-chip { min-width: 56px; justify-content: center; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
+
 /* --- Acordes --- */
 
 .section-title { font-size: 1.2rem; margin: 24px 0 0; }

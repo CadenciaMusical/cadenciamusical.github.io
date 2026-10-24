@@ -47,6 +47,9 @@ export const CONFIDENCE_TEXT = {
 export const CADENCE_TEXT =
   'Una cadencia es la forma en que se cierra una frase musical, como la puntuación al escribir: hay finales que suenan a punto final, otros a coma y otros a sorpresa.';
 
+export const TRANSPOSE_TEXT =
+  'Cambia todos los acordes a otra tonalidad sin cambiar las distancias entre ellos: suena igual, pero más agudo o más grave. Sirve para adaptarla a tu voz o buscar acordes más fáciles.';
+
 export const NO_PROGRESSION_TEXT =
   'No coincide con ninguna progresión famosa del catálogo. ¡Eso no la hace peor: puede que sea tuya!';
 

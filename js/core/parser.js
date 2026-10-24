@@ -48,8 +48,8 @@ function readRoot(text) {
   const latin = LATIN_RE.exec(text);
   const american = AMERICAN_RE.exec(text);
   const options = [];
-  if (latin) options.push({ letter: LATIN_ROOTS[latin[1].toLowerCase()], acc: latin[2], rest: latin[3] });
-  if (american) options.push({ letter: american[1].toUpperCase(), acc: american[2], rest: american[3] });
+  if (latin) options.push({ letter: LATIN_ROOTS[latin[1].toLowerCase()], acc: latin[2], rest: latin[3], notation: 'latin' });
+  if (american) options.push({ letter: american[1].toUpperCase(), acc: american[2], rest: american[3], notation: 'american' });
   return options;
 }
 
@@ -103,6 +103,9 @@ export function parseChord(input, { allCaps = false } = {}) {
         root,
         bass,
         suffix,
+        // Cómo lo escribió el usuario, para transportar sin cambiarle el estilo.
+        notation: o.notation,
+        rawSuffix: rest,
         pc: Note.chroma(root),
         notes: data.notes,
         ...describe(data.intervals),

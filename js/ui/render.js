@@ -1,8 +1,11 @@
 // Generación del HTML de los resultados. Sin estado: recibe datos, devuelve HTML.
 
-import { chordLabel, chordName, keyName, latinNote } from '../core/names.js';
+import { chordLabel, chordName, keyName, latinNote, prettyNote } from '../core/names.js';
+import { parseChord } from '../core/parser.js';
+import { defaultTonic } from '../core/key.js';
+import { transposeChord } from '../core/transpose.js';
 import {
-  FUNCTIONS, KEY_TEXT, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, CADENCE_TEXT, NO_PROGRESSION_TEXT, alternativeText, kindText,
+  FUNCTIONS, KEY_TEXT, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, CADENCE_TEXT, NO_PROGRESSION_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
 } from './texts.js';
 import { GLOSSARY, linkTerms } from './glossary.js';
 import { normalVersion } from '../core/build.js';
@@ -32,16 +35,22 @@ export function renderErrors(errors) {
 
 const CONFIDENCE_LEVEL = { alta: 3, media: 2, baja: 1 };
 
-export function renderKey(result) {
+// transposedFrom: el nombre de la tonalidad original si se ha transportado.
+export function renderKey(result, { transposedFrom = null } = {}) {
   const { key, confidence, alternative, alternativeIsRelative, forced } = result;
   const level = CONFIDENCE_LEVEL[confidence];
   const meter = [1, 2, 3].map((i) => `<span class="${i <= level ? 'on' : ''}"></span>`).join('');
-  const confidenceLine = forced
-    ? `<p class="muted">La has elegido tú. <button type="button" class="link" data-action="auto-key">Volver a la detectada</button></p>`
-    : `<p class="confidence"><span class="meter meter-${confidence}" aria-hidden="true">${meter}</span> Confianza ${confidence}. ${CONFIDENCE_TEXT[confidence]}</p>`;
+  let confidenceLine;
+  if (transposedFrom) {
+    confidenceLine = `<p class="muted">Transportada desde ${transposedFrom}.</p>`;
+  } else if (forced) {
+    confidenceLine = `<p class="muted">La has elegido tú. <button type="button" class="link" data-action="auto-key">Volver a la detectada</button></p>`;
+  } else {
+    confidenceLine = `<p class="confidence"><span class="meter meter-${confidence}" aria-hidden="true">${meter}</span> Confianza ${confidence}. ${CONFIDENCE_TEXT[confidence]}</p>`;
+  }
 
   let alt = '';
-  if (alternative) {
+  if (alternative && !transposedFrom) {
     alt = `
       <div class="alternative">
         <p><strong>¿O ${keyName(alternative)}?</strong> ${linkTerms(alternativeText(key, alternative, alternativeIsRelative))}</p>
@@ -245,4 +254,41 @@ export function renderTerm(entry, example) {
   return `
     <p>${linkTerms(entry.text, { exclude: entry.id })}</p>
     <p class="muted">${example.caption}</p>`;
+}
+
+// ¿Se tocan todos los acordes sin cejilla en la guitarra?
+function easyOnGuitar(chords) {
+  return chords.every((c) => c && guitarVoicings(c)[0].open);
+}
+
+// original: { keyName } si la progresión está transportada.
+export function renderTranspose(result, { latin = false, original = null } = {}) {
+  const { key, chords } = result;
+  const name = (pc) => {
+    const tonic = defaultTonic(pc, key.mode);
+    return latin ? latinNote(tonic) : prettyNote(tonic);
+  };
+  let anyEasy = false;
+  const chips = Array.from({ length: 12 }, (_, pc) => {
+    const to = { pc, mode: key.mode, tonic: defaultTonic(pc, key.mode) };
+    const moved = chords.map((c) => parseChord(transposeChord(c, key, to)));
+    const easy = easyOnGuitar(moved.map((c) => (c.ok ? c : null)));
+    anyEasy ||= easy;
+    const current = pc === key.pc;
+    return `<button type="button" class="chip key-chip${current ? ' on' : ''}" data-action="transpose" data-pc="${pc}" aria-pressed="${current}">${name(pc)}${easy ? ' <span aria-label="fácil en guitarra">★</span>' : ''}</button>`;
+  }).join('');
+  const back = original
+    ? `<p class="muted">La original estaba en ${original.keyName}. <button type="button" class="link" data-action="transpose-reset">Volver a la original</button></p>`
+    : '';
+  return `
+    <h2 class="card-title">Transportar</h2>
+    <p class="hint">${linkTerms(TRANSPOSE_TEXT)}</p>
+    <div class="stepper">
+      <button type="button" class="btn secondary" data-action="transpose-step" data-delta="-1" aria-label="Bajar medio tono">− ½ tono</button>
+      <span class="stepper-key">${keyName(key)}</span>
+      <button type="button" class="btn secondary" data-action="transpose-step" data-delta="1" aria-label="Subir medio tono">+ ½ tono</button>
+    </div>
+    <div class="chips key-chips">${chips}</div>
+    ${anyEasy ? '<p class="hint">★ Todos los acordes se tocan sin cejilla en la guitarra.</p>' : ''}
+    ${back}`;
 }
