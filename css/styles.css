@@ -204,10 +204,38 @@ main {
   border-left: 4px solid var(--accent);
 }
 
-/* --- Introducción --- */
+/* --- Pantalla inicial: solo la casilla, centrada --- */
 
-.intro { text-align: center; color: var(--muted); padding: 24px 8px; }
-.intro-glyph { color: var(--brand); }
+.examples-menu { margin-top: 12px; }
+.examples-menu .chips { padding: 4px 0 4px; }
+.examples-menu summary { gap: 6px; list-style: none; }
+.examples-menu summary::-webkit-details-marker { display: none; }
+.examples-menu summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.15s ease;
+}
+.examples-menu[open] summary::after { transform: translateY(2px) rotate(-135deg); }
+
+body.empty { padding-bottom: 0; }
+body.empty main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* Toda la pantalla menos la cabecera, para que la casilla quede en medio. */
+  min-height: calc(100dvh - 68px - env(safe-area-inset-top));
+  padding-bottom: 68px;
+}
+body.empty .input-card .label { text-align: center; font-size: 1.25rem; }
+body.empty .examples-menu summary,
+body.empty .examples-menu .chips { justify-content: center; }
+body.empty .input-card .hint,
+body.empty .glossary,
+body.empty .playbar { display: none; }
 
 /* --- Tonalidad --- */
 

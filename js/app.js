@@ -34,7 +34,7 @@ const els = {
   examples: $('#examples'),
   errors: $('#errors'),
   result: $('#result'),
-  intro: $('#intro'),
+  examplesMenu: $('#examples-menu'),
   keyCard: $('#key-card'),
   transposeCard: $('#transpose-card'),
   modesCard: $('#modes-card'),
@@ -119,7 +119,8 @@ function render() {
   els.errors.innerHTML = r ? renderErrors(r.errors) : '';
   const hasKey = Boolean(r && r.key);
   els.result.hidden = !hasKey;
-  els.intro.hidden = Boolean(r);
+  // Sin análisis, solo se ve la casilla, centrada (ver body.empty en el CSS).
+  document.body.classList.toggle('empty', !hasKey);
   els.play.disabled = !hasKey;
   if (!hasKey) return;
   els.keyCard.innerHTML = renderKey(r, { transposedFrom: state.original?.keyName });
@@ -240,6 +241,7 @@ els.examples.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-chords]');
   if (!btn) return;
   els.input.value = btn.dataset.chords;
+  els.examplesMenu.open = false;
   state.forcedKey = null;
   state.original = null;
   run();
