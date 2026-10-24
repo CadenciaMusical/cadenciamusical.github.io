@@ -1,0 +1,322 @@
+/* Cadencia — móvil primero, modo claro y oscuro. */
+
+:root {
+  --brand: #E2603A;
+  --accent: #C24E2A;          /* coral oscurecido: texto blanco legible encima */
+  --on-accent: #FFFFFF;
+  --accent-text: #B8461F;
+  --bg: #FBF7F4;
+  --surface: #FFFFFF;
+  --surface-2: #F5EEE9;
+  --text: #2A211C;
+  --muted: #6B5E57;
+  --border: #E9DFD8;
+  --shadow: 0 1px 2px rgb(60 30 15 / 6%), 0 4px 16px rgb(60 30 15 / 6%);
+
+  /* Funciones tonales */
+  --fn-T: #1D4ED8;  --fn-T-bg: #E8EFFD;
+  --fn-S: #166534;  --fn-S-bg: #E6F4EA;
+  --fn-D: #7C3AED;  --fn-D-bg: #F0EAFD;
+  --fn-X: #5B6170;  --fn-X-bg: #EEEFF2;
+
+  --radius: 16px;
+  --tap: 48px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --accent: #F07A55;
+    --on-accent: #1C1714;
+    --accent-text: #F08A68;
+    --bg: #1C1714;
+    --surface: #27201C;
+    --surface-2: #322924;
+    --text: #F3ECE7;
+    --muted: #B3A69E;
+    --border: #3A302A;
+    --shadow: none;
+    --fn-T: #8AB4FF;  --fn-T-bg: #1E2A44;
+    --fn-S: #6FD495;  --fn-S-bg: #18321F;
+    --fn-D: #C4A3FF;  --fn-D-bg: #2E2245;
+    --fn-X: #B4B8C2;  --fn-X-bg: #2F3036;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --accent: #F07A55;
+  --on-accent: #1C1714;
+  --accent-text: #F08A68;
+  --bg: #1C1714;
+  --surface: #27201C;
+  --surface-2: #322924;
+  --text: #F3ECE7;
+  --muted: #B3A69E;
+  --border: #3A302A;
+  --shadow: none;
+  --fn-T: #8AB4FF;  --fn-T-bg: #1E2A44;
+  --fn-S: #6FD495;  --fn-S-bg: #18321F;
+  --fn-D: #C4A3FF;  --fn-D-bg: #2E2245;
+  --fn-X: #B4B8C2;  --fn-X-bg: #2F3036;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 17px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+
+h1, h2, h3 { line-height: 1.2; margin: 0; }
+p { margin: 0.5em 0; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* --- Cabecera --- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand h1 { font-size: 1.35rem; letter-spacing: -0.01em; }
+.topbar-actions { display: flex; gap: 4px; }
+
+.icon-btn {
+  min-width: var(--tap);
+  height: var(--tap);
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.icon-btn.text { font-size: 0.9rem; font-weight: 600; padding: 0 10px; }
+.icon-btn:hover { background: var(--surface-2); color: var(--text); }
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* --- Tarjetas y botones --- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 12px 0;
+  box-shadow: var(--shadow);
+}
+
+.btn {
+  min-height: var(--tap);
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn.primary { background: var(--accent); color: var(--on-accent); }
+.btn.primary:disabled { opacity: 0.45; cursor: default; }
+.btn.secondary { background: var(--surface-2); border-color: var(--border); }
+.btn.secondary:hover { border-color: var(--accent); }
+.btn.small { min-height: 40px; font-size: 0.95rem; }
+.btn.wide { width: 100%; font-size: 1.1rem; min-height: 56px; }
+
+.button-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+
+.link {
+  background: none;
+  border: 0;
+  padding: 8px 0;
+  min-height: 40px;
+  color: var(--accent-text);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.label { display: block; font-weight: 600; margin-bottom: 8px; }
+.label.small { font-size: 0.95rem; margin: 16px 0 8px; color: var(--muted); font-weight: 500; }
+.hint, .muted { color: var(--muted); font-size: 0.95rem; }
+
+/* --- Entrada --- */
+
+.input-row { display: flex; gap: 8px; }
+
+#chords {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 14px;
+  font-size: 1.15rem;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+#chords:focus { border-color: var(--accent); outline: none; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.chip {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.chip:hover { border-color: var(--accent); }
+.chip.suggestion { background: var(--surface); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+
+.error {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border-left: 4px solid var(--accent);
+}
+
+/* --- Introducción --- */
+
+.intro { text-align: center; color: var(--muted); padding: 24px 8px; }
+.intro-glyph { color: var(--brand); }
+
+/* --- Tonalidad --- */
+
+.eyebrow { text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.08em; color: var(--muted); margin: 0; }
+.key-name { font-size: 2rem; margin: 2px 0 4px; }
+
+.tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.confidence { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.meter { display: inline-flex; gap: 3px; }
+.meter span { width: 18px; height: 8px; border-radius: 4px; background: var(--border); }
+.meter span.on { background: var(--accent); }
+
+.alternative {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+details.explain { margin-top: 8px; }
+details summary {
+  cursor: pointer;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+/* --- Acordes --- */
+
+.section-title { font-size: 1.2rem; margin: 24px 0 0; }
+
+.chord-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.chord {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 6px 10px;
+  border-radius: 14px;
+  border: 2px solid var(--border);
+  border-top: 6px solid var(--fn);
+  background: var(--surface);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.chord .roman { font-family: Georgia, "Times New Roman", serif; font-size: 1.05rem; color: var(--fn); font-weight: 700; }
+.chord .symbol { font-size: 1.5rem; font-weight: 700; }
+.chord .alt-symbol { font-size: 0.85rem; color: var(--muted); }
+.chord .badge { margin-top: 4px; }
+.chord.selected { border-color: var(--fn); border-top-width: 6px; }
+.chord.playing { transform: translateY(-3px); box-shadow: 0 0 0 3px var(--fn); }
+
+.fn-T { --fn: var(--fn-T); --fn-bg: var(--fn-T-bg); }
+.fn-S { --fn: var(--fn-S); --fn-bg: var(--fn-S-bg); }
+.fn-D { --fn: var(--fn-D); --fn-bg: var(--fn-D-bg); }
+.fn-X { --fn: var(--fn-X); --fn-bg: var(--fn-X-bg); }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--fn-bg);
+  color: var(--fn);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* --- Detalle de un acorde --- */
+
+.detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.detail-head h3 { font-size: 1.4rem; }
+.roman.big { font-family: Georgia, "Times New Roman", serif; font-size: 2rem; font-weight: 700; color: var(--fn); }
+
+.special {
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+/* --- Leyenda --- */
+
+.legend summary { font-size: 1.05rem; }
+.legend-item { padding: 12px 0; border-top: 1px solid var(--border); }
+
+/* --- Barra de reproducción --- */
+
+.playbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+}
+.playbar .btn { display: block; max-width: 688px; margin: 0 auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .chord { transition: none; }
+  .chord.playing { transform: none; }
+}

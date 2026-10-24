@@ -1,0 +1,17 @@
+{
+  "name": "Cadencia",
+  "short_name": "Cadencia",
+  "description": "Teoría musical para principiantes: escribe acordes, descubre su tonalidad y su función, y escúchalos.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "theme_color": "#E2603A",
+  "background_color": "#E2603A",
+  "display": "standalone",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

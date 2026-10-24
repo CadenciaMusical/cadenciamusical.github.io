@@ -1,0 +1,79 @@
+// Textos didácticos. Tono cercano, sin tecnicismos sin explicar.
+
+import { keyName, chordLabel } from '../core/names.js';
+import { chordOnDegree } from '../core/build.js';
+
+export const FUNCTIONS = {
+  T: {
+    name: 'Tónica',
+    short: 'Reposo',
+    text: 'Es «casa». Suena estable y en calma: las canciones suelen empezar y terminar aquí.',
+  },
+  S: {
+    name: 'Subdominante',
+    short: 'Movimiento',
+    text: 'Te aleja de casa. Da sensación de avanzar, de salir de paseo, sin llegar a ser tensa.',
+  },
+  D: {
+    name: 'Dominante',
+    short: 'Tensión',
+    text: 'Crea tensión y «pide» volver a casa. Cuando por fin llega la tónica, se nota un alivio.',
+  },
+  X: {
+    name: 'Fuera de la tonalidad',
+    short: 'Sorpresa',
+    text: 'No pertenece a la tonalidad, así que suena inesperado.',
+  },
+};
+
+export const KEY_TEXT =
+  'La tonalidad es como el «barrio» de la canción: una nota hace de casa (la tónica) y hay un grupo de acordes que suenan bien a su alrededor.';
+
+export const MODE_TEXT = {
+  major: 'Mayor: suele sonar luminosa, alegre.',
+  minor: 'Menor: suele sonar más oscura o melancólica.',
+};
+
+export const DEGREE_TEXT =
+  'El grado dice qué lugar ocupa el acorde contando desde la tónica, que es el I. En mayúsculas (IV) es un acorde mayor; en minúsculas (vi), menor.';
+
+export const CONFIDENCE_TEXT = {
+  alta: 'Los acordes apuntan claramente a esta tonalidad.',
+  media: 'Es la opción más probable, aunque hay otra cerca.',
+  baja: 'Hay una duda real: otra tonalidad es casi igual de probable.',
+};
+
+export function alternativeText(key, alt, relative) {
+  const a = keyName(key);
+  const b = keyName(alt);
+  if (relative) {
+    return `${a} y ${b} usan exactamente las mismas notas: son tonalidades «relativas». Lo que cambia es qué acorde suena a casa. Escucha la progresión terminando en cada una y decide cuál te suena a final.`;
+  }
+  return `${b} también encaja: comparte casi todos los acordes con ${a}. Escucha la progresión terminando en cada una y decide cuál te suena a final.`;
+}
+
+// Explicación extra según el tipo de acorde (ver core/classify.js).
+export function kindText(item, key) {
+  const name = keyName(key);
+  switch (item.kind) {
+    case 'secondary': {
+      const target = chordOnDegree(key, item.target.st, item.target.triad);
+      const label = chordLabel(target);
+      const after = item.target.resolves ? ` Y justo después llega ${label}, como esperaba el oído.` : '';
+      return `Es un acorde «invitado»: no es de ${name}, pero es la dominante de ${label} (el ${item.target.roman}). Por eso se escribe ${item.roman}, que se lee «quinto del ${item.target.roman}». Su tensión empuja hacia ${label}.${after}`;
+    }
+    case 'borrowed': {
+      const parallel = keyName({ tonic: key.tonic, mode: item.from });
+      const color = item.from === 'minor' ? 'más oscuro, melancólico' : 'más luminoso';
+      return `Es un préstamo: viene de ${parallel}, que tiene la misma tónica pero el otro modo. Aporta un color ${color}.`;
+    }
+    case 'color':
+      return `El acorde es de ${name}, pero la nota que le añade (su séptima) no. Es un toque de color.`;
+    case 'blues':
+      return 'En el blues, la tónica y la subdominante también llevan séptima (I7, IV7): es parte de su sonido característico.';
+    case 'chromatic':
+      return `No pertenece a ${name}. Aporta un color sorprendente.`;
+    default:
+      return '';
+  }
+}

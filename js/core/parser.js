@@ -1,0 +1,159 @@
+// Convierte el texto que escribe el usuario en acordes.
+// Acepta cifrado americano (Am F C G) y latino (Lam Fa Do Sol), mezclados,
+// en mayúsculas o minúsculas, con las séptimas y alteraciones habituales.
+
+import { Chord, Note } from '../../vendor/tonal.mjs';
+
+const LATIN_ROOTS = { do: 'C', re: 'D', mi: 'E', fa: 'F', sol: 'G', la: 'A', si: 'B' };
+
+const LATIN_RE = /^(sol|do|re|mi|fa|la|si)([#♯b♭]?)(.*)$/i;
+const AMERICAN_RE = /^([a-g])([#♯b♭]?)(.*)$/i;
+
+// Separa por espacios, comas, barras de compás y guiones entre acordes
+// («C-G-Am»), pero no el guion de «C-» (menor) ni el de «m7-5».
+export function tokenize(text) {
+  return text
+    .split(/[\s,;|–—]+|-(?=[a-z])/i)
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
+
+function normalizeAcc(acc) {
+  return acc.replace('♯', '#').replace(/♭|B/, 'b');
+}
+
+// Variantes habituales del sufijo → la forma que entiende Tonal.
+function normalizeSuffix(raw) {
+  let s = raw
+    .replace(/[()\s]/g, '')
+    .replace(/♯/g, '#')
+    .replace(/♭/g, 'b')
+    .replace(/[°º]/g, 'dim')
+    .replace(/ø/g, 'm7b5')
+    .replace(/Δ/g, 'maj7');
+  s = s
+    .replace(/^menor/i, 'm')
+    .replace(/^mayor/i, '')
+    .replace(/^(min|mi)(?![a-z])/, 'm')
+    .replace(/^aum/i, 'aug')
+    .replace(/^disminuido/i, 'dim')
+    .replace(/(\d)-(\d)/g, '$1b$2')
+    .replace(/^m7M$|^m(maj|ma|M)7$/, 'mMaj7')
+    .replace(/^7M/, 'maj7')
+    .replace(/^M$/, '');
+  return s;
+}
+
+function readRoot(text) {
+  const latin = LATIN_RE.exec(text);
+  const american = AMERICAN_RE.exec(text);
+  const options = [];
+  if (latin) options.push({ letter: LATIN_ROOTS[latin[1].toLowerCase()], acc: latin[2], rest: latin[3] });
+  if (american) options.push({ letter: american[1].toUpperCase(), acc: american[2], rest: american[3] });
+  return options;
+}
+
+// Una nota suelta (para el bajo de «C/E» o «Do/Mi»).
+function readNote(text) {
+  for (const o of readRoot(text)) {
+    if (o.rest === '') return o.letter + normalizeAcc(o.acc);
+  }
+  return null;
+}
+
+function describe(intervals) {
+  const has = (i) => intervals.includes(i);
+  let triad;
+  if (has('3M')) triad = has('5A') ? 'aug' : 'M';
+  else if (has('3m')) triad = has('5d') ? 'dim' : 'm';
+  else if (has('4P') || has('2M')) triad = 'sus';
+  else triad = '5';
+
+  let seventh = null;
+  if (has('7m')) seventh = { M: '7', sus: '7', 5: '7', aug: '7', m: 'm7', dim: 'm7b5' }[triad];
+  else if (has('7M')) seventh = triad === 'm' ? 'mMaj7' : 'maj7';
+  else if (has('7d')) seventh = 'dim7';
+
+  const tensions = [];
+  if (has('6M') || has('13M')) tensions.push(seventh ? 'trecena' : 'sexta');
+  if (intervals.some((i) => i.startsWith('9'))) tensions.push('novena');
+  if (has('11P') || has('11A')) tensions.push('oncena');
+  return { triad, seventh, tensions };
+}
+
+// Intenta leer un acorde. Devuelve { ok: true, ... } o { ok: false, input, suggestions }.
+export function parseChord(input, { allCaps = false } = {}) {
+  // «C/E» lleva bajo; «C6/9» no.
+  const [, main, bassText] = /^(.*?)(?:\/([a-z#♯♭]+))?$/i.exec(input);
+  if (main) {
+    for (const o of readRoot(main)) {
+      const rest = allCaps ? o.rest.toLowerCase() : o.rest;
+      const root = o.letter + normalizeAcc(o.acc);
+      const suffix = normalizeSuffix(rest);
+      const data = Chord.get(root + suffix);
+      if (data.empty) continue;
+      let bass = null;
+      if (bassText !== undefined) {
+        bass = readNote(bassText);
+        if (!bass) continue;
+      }
+      return {
+        ok: true,
+        input,
+        root,
+        bass,
+        suffix,
+        pc: Note.chroma(root),
+        notes: data.notes,
+        ...describe(data.intervals),
+      };
+    }
+  }
+  return { ok: false, input, suggestions: suggest(input) };
+}
+
+export function parseProgression(text) {
+  // Si todo está en mayúsculas (bloqueo de mayúsculas), «LAM» es La menor.
+  const allCaps = /[A-Z]/.test(text) && !/[a-z]/.test(text);
+  return tokenize(text).map((t) => parseChord(t, { allCaps }));
+}
+
+// --- Sugerencias para lo que no se reconoce ---
+
+const SUGGEST_ROOTS = [
+  'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B',
+  'Do', 'Do#', 'Reb', 'Re', 'Re#', 'Mib', 'Mi', 'Fa', 'Fa#', 'Solb', 'Sol', 'Sol#', 'Lab', 'La', 'La#', 'Sib', 'Si',
+];
+const SUGGEST_SUFFIXES = ['', 'm', '7', 'm7', 'maj7', 'dim', 'dim7', 'm7b5', 'aug', 'sus4', 'sus2', '6', 'm6', '9', 'add9'];
+const CANDIDATES = SUGGEST_ROOTS.flatMap((r) => SUGGEST_SUFFIXES.map((s) => r + s));
+
+// Distancia de edición con transposiciones («Cmja7» → «Cmaj7» cuesta 1).
+function distance(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+  }
+  return d[a.length][b.length];
+}
+
+export function suggest(input) {
+  // Notación alemana: H es Si.
+  if (/^h/i.test(input)) {
+    const fixed = 'B' + input.slice(1);
+    if (parseChord(fixed).ok) return [fixed];
+  }
+  const target = input.toLowerCase();
+  const maxDist = target.length <= 3 ? 1 : 2;
+  return CANDIDATES.map((c) => ({ c, d: distance(target, c.toLowerCase()) }))
+    .filter((x) => x.d <= maxDist)
+    .sort((x, y) => x.d - y.d || x.c.length - y.c.length)
+    .slice(0, 3)
+    .map((x) => x.c);
+}
