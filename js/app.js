@@ -27,6 +27,7 @@ const EXAMPLES = [
 const $ = (sel) => document.querySelector(sel);
 
 const els = {
+  home: $('#home'),
   form: $('#form'),
   input: $('#chords'),
   marks: $('#chords-marks'),
@@ -315,6 +316,20 @@ els.examples.addEventListener('click', (e) => {
   state.forcedKey = null;
   state.original = null;
   run();
+});
+
+// El logo y el nombre llevan a la pantalla de inicio: la casilla vacía.
+// Es un enlace a «./» para que funcione igual al abrirlo en otra pestaña.
+els.home.addEventListener('click', (e) => {
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+  e.preventDefault();
+  for (const dialog of [els.termDialog, els.detailSheet]) if (dialog.open) dialog.close();
+  els.input.value = '';
+  els.examplesMenu.open = false;
+  state.forcedKey = null;
+  state.original = null;
+  run();
+  scrollTo({ top: 0, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
 });
 
 // Aceptar una sugerencia: cambia ese trozo (o lo quita) y vuelve a analizar.
