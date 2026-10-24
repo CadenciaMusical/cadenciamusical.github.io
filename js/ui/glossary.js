@@ -32,6 +32,8 @@ const K = (tonic, mode) => keyName({ tonic, mode });
 const sym = (root, suffix = '') => noteName(root) + suffix;
 
 // text: una cadena, o una función si nombra notas (para seguir el cifrado).
+// fn: en tónica, subdominante y dominante, su papel (FUNCTIONS en texts.js),
+//   que se muestra junto a la definición; after, una nota que va detrás.
 // Cada ejemplo devuelve { chords } o { notes, together }, y un pie de texto.
 // label(c) escribe un acorde con el cifrado elegido.
 export const GLOSSARY = [
@@ -49,7 +51,8 @@ export const GLOSSARY = [
     id: 'tonica',
     term: 'Tónica',
     match: ['tónica'],
-    text: 'La nota que hace de casa en una tonalidad, y el acorde que se forma sobre ella (el I). Cuando suena, la música transmite reposo, sensación de final.',
+    fn: 'T',
+    text: 'La nota que hace de casa en una tonalidad, y el acorde que se forma sobre ella (el I).',
     example: (k, label) => {
       const d = degrees(k);
       return { chords: [d.V7, d.I], caption: `Tensión… y llegada a la tónica, ${label(d.I)}.` };
@@ -59,7 +62,9 @@ export const GLOSSARY = [
     id: 'dominante',
     term: 'Dominante',
     match: ['dominante'],
-    text: 'El acorde del quinto grado (V). Es el de la tensión: está deseando volver a la tónica. Con séptima (V7), la tensión es aún mayor.',
+    fn: 'D',
+    text: 'El acorde del quinto grado (V).',
+    after: 'Con séptima (V7), la tensión es aún mayor.',
     example: (k, label) => {
       const d = degrees(k);
       return { chords: [d.I, d.V7], caption: `${label(d.I)} y luego ${label(d.V7)}: se queda en el aire, ¿verdad? Pide volver.` };
@@ -69,7 +74,8 @@ export const GLOSSARY = [
     id: 'subdominante',
     term: 'Subdominante',
     match: ['subdominante'],
-    text: 'El acorde del cuarto grado (IV). Aleja de la tónica sin crear mucha tensión: es como salir de paseo.',
+    fn: 'S',
+    text: 'El acorde del cuarto grado (IV).',
     example: (k) => {
       const d = degrees(k);
       return { chords: [d.I, d.IV, d.I], caption: 'De casa a la subdominante y de vuelta.' };

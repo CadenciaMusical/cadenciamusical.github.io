@@ -250,27 +250,27 @@ export function renderDetail(item, key, { instrument = 'piano', position = 0 } =
     </div>`;
 }
 
-export function renderLegend() {
-  return ['T', 'S', 'D']
-    .map(
-      (f) => `
-      <div class="legend-item fn-${f}">
-        <span class="badge fn-${f}">${FUNCTIONS[f].name} · ${FUNCTIONS[f].short}</span>
-        <p>${linkTerms(FUNCTIONS[f].text)}</p>
-        <button type="button" class="btn secondary small" data-action="demo" data-fn="${f}">▶ Escuchar ejemplo</button>
-      </div>`,
-    )
-    .join('');
-}
-
 export function renderGlossaryList() {
   return GLOSSARY.map((e) => `<button type="button" class="chip" data-term="${e.id}">${e.term}</button>`).join('');
 }
 
 // Contenido de la ventana de un término. example: lo que devuelve entry.example().
+// Los tres papeles de un acorde: cada uno nombra a los otros dos.
+const ROLES = { T: 'tónica', S: 'subdominante', D: 'dominante' };
+
 export function renderTerm(entry, example) {
+  const exclude = { exclude: entry.id };
+  if (!entry.fn) {
+    return `
+      <p>${linkTerms(termText(entry), exclude)}</p>
+      <p class="muted">${example.caption}</p>`;
+  }
+  const fn = FUNCTIONS[entry.fn];
+  const [a, b] = Object.keys(ROLES).filter((f) => f !== entry.fn).map((f) => ROLES[f]);
   return `
-    <p>${linkTerms(termText(entry), { exclude: entry.id })}</p>
+    <p><span class="badge fn-${entry.fn}">${fn.name} · ${fn.short}</span></p>
+    <p>${linkTerms([termText(entry), fn.text, entry.after].filter(Boolean).join(' '), exclude)}</p>
+    <p class="muted">${linkTerms(`Es uno de los tres papeles que puede tener un acorde, como los personajes de una historia. Los otros dos son la ${a} y la ${b}.`, exclude)}</p>
     <p class="muted">${example.caption}</p>`;
 }
 

@@ -59,3 +59,23 @@ test('versión «normal» de los acordes especiales', () => {
   assert.equal(normal('C F Fm C', 2), 'F');
   assert.equal(normal('C Am F G', 0), null);
 });
+
+test('tónica, subdominante y dominante explican su papel en el glosario', async () => {
+  const { renderTerm } = await import('../js/ui/render.js');
+  const { FUNCTIONS } = await import('../js/ui/texts.js');
+  const html = (id) => {
+    const entry = GLOSSARY.find((e) => e.id === id);
+    return renderTerm(entry, entry.example({ tonic: 'C', mode: 'major', pc: 0 }, (c) => c.root));
+  };
+  for (const [id, f, others] of [['tonica', 'T', ['subdominante', 'dominante']], ['subdominante', 'S', ['tonica', 'dominante']], ['dominante', 'D', ['tonica', 'subdominante']]]) {
+    const h = html(id);
+    assert.match(h, new RegExp(`class="badge fn-${f}">${FUNCTIONS[f].name} · ${FUNCTIONS[f].short}<`), id);
+    assert.ok(h.replace(/<[^>]+>/g, '').includes(FUNCTIONS[f].text.replace(/<[^>]+>/g, '')), `${id}: falta su papel`);
+    assert.match(h, /tres papeles/, id);
+    for (const o of others) assert.match(h, new RegExp(`data-term="${o}"`), `${id} → ${o}`);
+    // No se enlaza a sí mismo.
+    assert.doesNotMatch(h, new RegExp(`data-term="${id}"`), id);
+  }
+  // Los demás términos no cambian.
+  assert.doesNotMatch(html('cadencia'), /badge|tres papeles/);
+});

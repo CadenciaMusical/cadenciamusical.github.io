@@ -2,14 +2,14 @@
 
 import { analyze } from './core/analysis.js';
 import { tokenSpans, writtenNotation } from './core/parser.js';
-import { chordOnDegree, tonicChord, normalVersion } from './core/build.js';
+import { tonicChord, normalVersion } from './core/build.js';
 import { chordLabel, isLatin, keyName, setLatin } from './core/names.js';
 import { guitarVoicings } from './core/fretboard.js';
 import { defaultTonic } from './core/key.js';
 import { convertNotation, transposeText } from './core/transpose.js';
 import { playChords, playChord, playNotes, stop } from './audio.js';
 import {
-  escapeHtml, renderErrors, renderKey, renderProgressionCard, progressionRanges, renderChords, renderDetail, renderLegend, renderGlossaryList, renderTerm, renderTranspose, renderModes,
+  escapeHtml, renderErrors, renderKey, renderProgressionCard, progressionRanges, renderChords, renderDetail, renderGlossaryList, renderTerm, renderTranspose, renderModes,
 } from './ui/render.js';
 import { modeScale, typicalProgression } from './core/modes.js';
 import { Interval } from '../vendor/tonal.mjs';
@@ -41,7 +41,6 @@ const els = {
   progressionCard: $('#progression-card'),
   grid: $('#chord-grid'),
   detail: $('#detail'),
-  legend: $('#legend-items'),
   play: $('#play'),
   notation: $('#notation'),
   themeToggle: $('#theme-toggle'),
@@ -283,16 +282,6 @@ function restoreOriginal() {
   run();
 }
 
-// Ejemplos sonoros de cada función en la tonalidad actual.
-function playDemo(fn) {
-  const key = state.result.key;
-  const I = tonicChord(key);
-  const IV = chordOnDegree(key, 5, key.mode === 'major' ? 'M' : 'm');
-  const V = chordOnDegree(key, 7, 'M');
-  const demos = { T: [IV, V, I], S: [I, IV], D: [I, V, I] };
-  playList(demos[fn]);
-}
-
 // --- Eventos ---
 
 els.form.addEventListener('submit', (e) => {
@@ -462,10 +451,6 @@ document.addEventListener('click', (e) => {
     case 'mode-typical':
       playList(typicalProgression(r.modes.main.id, r.modes.main.tonic));
       break;
-    case 'demo':
-      stopPlayback();
-      playDemo(btn.dataset.fn);
-      break;
   }
 });
 
@@ -631,7 +616,6 @@ function registerServiceWorker() {
 
 // Lo primero, para que el aviso de versión nueva funcione aunque algo falle después.
 registerServiceWorker();
-els.legend.innerHTML = renderLegend();
 const shared = loadFromUrl();
 // Un enlace compartido se abre en el cifrado de quien lo abre.
 if (shared) els.input.value = convertNotation(shared, notation());

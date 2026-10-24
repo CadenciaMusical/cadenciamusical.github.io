@@ -521,11 +521,6 @@ details.more[open] summary { margin-bottom: 4px; }
 
 .subhead { font-size: 1.05rem; margin: 20px 0 4px; color: var(--muted); }
 
-/* --- Leyenda --- */
-
-.legend summary { font-size: 1.05rem; }
-.legend-item { padding: 12px 0; border-top: 1px solid var(--border); }
-
 /* --- Glosario --- */
 
 .term {
