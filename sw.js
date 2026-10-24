@@ -7,7 +7,7 @@
 // Al publicar cambios, sube VERSION: la app avisará de que hay una versión nueva.
 // Las pruebas (tests/sw.test.js) comprueban que ASSETS no se deja nada.
 
-const VERSION = 'cadencia-v10';
+const VERSION = 'cadencia-v11';
 
 const ASSETS = [
   './',

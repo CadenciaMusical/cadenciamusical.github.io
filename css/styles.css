@@ -369,6 +369,79 @@ details summary {
 }
 .special p:first-child { margin-top: 0; }
 
+/* --- Diagramas: selector Piano / Guitarra --- */
+
+.diagram { margin: 16px 0 8px; }
+
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.seg {
+  min-height: 40px;
+  min-width: 96px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+.seg:hover { color: var(--text); }
+/* El borde hace falta en modo oscuro, donde no hay sombra. */
+.seg.on {
+  background: var(--surface);
+  color: var(--accent-text);
+  box-shadow: 0 0 0 1px var(--border), var(--shadow);
+}
+
+/* --- Piano: las notas del acorde, en el color de su función --- */
+
+.piano {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  touch-action: manipulation;
+}
+.piano .key { cursor: pointer; stroke-width: 1; }
+.piano .key.white { fill: var(--key-white); stroke: var(--key-line); }
+.piano .key.black { fill: var(--key-black); stroke: var(--key-black); }
+.piano .key.on { fill: var(--fn); stroke: var(--fn); }
+/* El bajo: el mismo color, pero solo el borde, para distinguirlo. */
+.piano .key.on.bass { fill: var(--fn-bg); stroke: var(--fn); stroke-width: 3; }
+.piano .key-label { fill: var(--on-accent); font-size: 10px; font-weight: 700; pointer-events: none; }
+.piano .key.bass + .key-label { fill: var(--fn); }
+@media (hover: hover) {
+  .piano .key.white:not(.on):hover { fill: var(--surface-2); }
+  .piano .key.black:not(.on):hover { fill: var(--muted); }
+}
+
+/* --- Guitarra: cuerdas en vertical, trastes en horizontal --- */
+
+.guitar {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+}
+.guitar .string { stroke: var(--muted); stroke-width: 1.5; }
+.guitar .fret { stroke: var(--key-line); stroke-width: 2; }
+.guitar .nut { stroke: var(--text); stroke-width: 6; stroke-linecap: round; }
+.guitar .dot,
+.guitar .barre { fill: var(--fn); }
+.guitar .barre { opacity: 0.85; }
+.guitar .open { fill: none; stroke: var(--fn); stroke-width: 2; }
+.guitar .mark { fill: var(--muted); font-size: 18px; font-weight: 700; }
+.guitar .fret-number { fill: var(--text); font-size: 14px; font-weight: 700; }
+.guitar .string-note { fill: var(--muted); font-size: 11px; font-weight: 600; }
+
 /* --- Desplegables de las tarjetas --- */
 
 details.more { margin-top: 4px; }

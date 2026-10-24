@@ -93,13 +93,14 @@ export function renderChords(items, { selected = null } = {}) {
 }
 
 // instrument: 'piano' | 'guitar'. position: qué posición de guitarra mostrar.
-function renderDiagram(chord, instrument, position) {
+// f: la función del acorde, que da color a sus notas.
+function renderDiagram(chord, f, instrument, position) {
   const tabs = ['piano', 'guitar']
     .map((id) => `<button type="button" class="seg${id === instrument ? ' on' : ''}" data-action="instrument" data-instrument="${id}" aria-pressed="${id === instrument}">${id === 'piano' ? 'Piano' : 'Guitarra'}</button>`)
     .join('');
   let body;
   if (instrument === 'piano') {
-    const bass = chord.bass ? ' En azul, el bajo: la nota más grave, que se toca con la mano izquierda.' : '';
+    const bass = chord.bass ? ' La tecla con borde de color es el bajo: la nota más grave, que se toca con la mano izquierda.' : '';
     body = `${renderPiano(chord)}<p class="hint">Toca una tecla para oírla.${bass}</p>`;
   } else {
     const voicings = guitarVoicings(chord);
@@ -117,7 +118,7 @@ function renderDiagram(chord, instrument, position) {
       </div>`;
   }
   return `
-    <div class="diagram">
+    <div class="diagram fn-${f}">
       <div class="segmented" role="group" aria-label="Instrumento">${tabs}</div>
       ${body}
     </div>`;
@@ -147,7 +148,7 @@ export function renderDetail(item, key, { instrument = 'piano', position = 0 } =
     <p><span class="badge fn-${f}">${fn.name} · ${fn.short}</span></p>
     <p>${linkTerms(fn.text)}</p>
     ${extra ? `<div class="special"><p><strong>✦ Algo especial.</strong> ${linkTerms(extra)}</p>${compare}</div>` : ''}
-    ${renderDiagram(item.chord, instrument, position)}
+    ${renderDiagram(item.chord, f, instrument, position)}
     <details class="explain">
       <summary>¿Qué significa «${item.roman}»?</summary>
       <p>${linkTerms(DEGREE_TEXT)}</p>
