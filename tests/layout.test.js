@@ -66,3 +66,10 @@ test('pie con la autoría, y el año se pone solo', () => {
   assert.match(html, /<footer class="site-footer">\s*<p>© <span id="year">\d{4}<\/span> Emilio Casanova Biscarri · <a href="mailto:ecasanovabisc@gmail\.com">ecasanovabisc@gmail\.com<\/a><\/p>/);
   assert.match(app, /\$\('#year'\)\.textContent = new Date\(\)\.getFullYear\(\)/);
 });
+
+test('la página nace vacía: sin parpadeo del glosario ni de «Escuchar progresión»', () => {
+  assert.match(html, /<body class="empty">/);
+  assert.match(css, /body\.empty \.glossary,\s*body\.empty \.playbar \{ display: none; \}/);
+  // El JavaScript la quita al haber un análisis.
+  assert.match(app, /document\.body\.classList\.toggle\('empty', !hasKey\)/);
+});
