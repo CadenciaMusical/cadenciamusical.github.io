@@ -4,6 +4,8 @@ import { chordLabel, chordName, keyName, latinNote } from '../core/names.js';
 import {
   FUNCTIONS, KEY_TEXT, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, CADENCE_TEXT, NO_PROGRESSION_TEXT, alternativeText, kindText,
 } from './texts.js';
+import { GLOSSARY, linkTerms } from './glossary.js';
+import { normalVersion } from '../core/build.js';
 
 export function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -39,7 +41,7 @@ export function renderKey(result) {
   if (alternative) {
     alt = `
       <div class="alternative">
-        <p><strong>¿O ${keyName(alternative)}?</strong> ${alternativeText(key, alternative, alternativeIsRelative)}</p>
+        <p><strong>¿O ${keyName(alternative)}?</strong> ${linkTerms(alternativeText(key, alternative, alternativeIsRelative))}</p>
         <div class="button-row">
           <button type="button" class="btn secondary" data-action="end-on" data-which="key">▶ Terminar en ${latinNote(key.tonic)}</button>
           <button type="button" class="btn secondary" data-action="end-on" data-which="alt">▶ Terminar en ${latinNote(alternative.tonic)}</button>
@@ -55,8 +57,8 @@ export function renderKey(result) {
     ${confidenceLine}
     <details class="explain">
       <summary>¿Qué es la tonalidad?</summary>
-      <p>${KEY_TEXT}</p>
-      <p>${MODE_TEXT[key.mode]}</p>
+      <p>${linkTerms(KEY_TEXT)}</p>
+      <p>${linkTerms(MODE_TEXT[key.mode])}</p>
       <button type="button" class="btn secondary small" data-action="play-tonic">▶ Escuchar la tónica</button>
     </details>
     ${alt}`;
@@ -78,11 +80,19 @@ export function renderChords(items, { selected = null, latin = false } = {}) {
     .join('');
 }
 
-export function renderDetail(item, key) {
+export function renderDetail(item, key, { latin = false } = {}) {
   const f = fnKey(item.fn);
   const fn = FUNCTIONS[f];
   const notes = item.chord.notes.map(latinNote).join(' · ');
-  const extra = kindText(item, key);
+  const extra = kindText(item, key, { latin });
+  const normal = normalVersion(item, key);
+  // Para los acordes especiales: oírlo en su contexto y con el acorde «normal».
+  const compare = extra
+    ? `<div class="button-row">
+        <button type="button" class="btn secondary small" data-action="context">▶ Así suena</button>
+        ${normal ? `<button type="button" class="btn secondary small" data-action="context-normal">▶ Con ${chordLabel(normal, latin)} en su lugar</button>` : ''}
+      </div>`
+    : '';
   return `
     <div class="detail-head fn-${f}">
       <div>
@@ -92,11 +102,11 @@ export function renderDetail(item, key) {
       <span class="roman big">${item.roman}</span>
     </div>
     <p><span class="badge fn-${f}">${fn.name} · ${fn.short}</span></p>
-    <p>${fn.text}</p>
-    ${extra ? `<p class="special"><strong>✦ Algo especial.</strong> ${extra}</p>` : ''}
+    <p>${linkTerms(fn.text)}</p>
+    ${extra ? `<div class="special"><p><strong>✦ Algo especial.</strong> ${linkTerms(extra)}</p>${compare}</div>` : ''}
     <details class="explain">
       <summary>¿Qué significa «${item.roman}»?</summary>
-      <p>${DEGREE_TEXT}</p>
+      <p>${linkTerms(DEGREE_TEXT)}</p>
     </details>
     <div class="button-row">
       <button type="button" class="btn secondary" data-action="play-selected">▶ Acorde</button>
@@ -110,7 +120,7 @@ export function renderLegend() {
       (f) => `
       <div class="legend-item fn-${f}">
         <span class="badge fn-${f}">${FUNCTIONS[f].name} · ${FUNCTIONS[f].short}</span>
-        <p>${FUNCTIONS[f].text}</p>
+        <p>${linkTerms(FUNCTIONS[f].text)}</p>
         <button type="button" class="btn secondary small" data-action="demo" data-fn="${f}">▶ Escuchar ejemplo</button>
       </div>`,
     )
@@ -144,7 +154,7 @@ function renderProgression(result, m, latin) {
         ${m.label !== m.name ? `<span class="steps">${m.label}</span>` : ''}
       </div>
       <p class="where">${whereText(result, m, latin)}</p>
-      <p>${m.text}</p>
+      <p>${linkTerms(m.text)}</p>
       ${songs}
       ${playButton(m, 'Escuchar')}
     </div>`;
@@ -165,7 +175,7 @@ function renderCadences(result, latin) {
       return `
         <div class="match">
           <div class="match-head"><h3>${first.name}</h3>${final}</div>
-          <p>${first.text}</p>
+          <p>${linkTerms(first.text)}</p>
           <div class="button-row">${buttons}</div>
         </div>`;
     })
@@ -175,13 +185,13 @@ function renderCadences(result, latin) {
 export function renderMatches(result, { latin = false } = {}) {
   const progressions = result.progressions.length
     ? result.progressions.map((m) => renderProgression(result, m, latin)).join('')
-    : `<p class="muted">${NO_PROGRESSION_TEXT}</p>`;
+    : `<p class="muted">${linkTerms(NO_PROGRESSION_TEXT)}</p>`;
   const cadences = result.cadences.length
     ? `
       <h3 class="subhead">Cadencias</h3>
       <details class="explain">
         <summary>¿Qué es una cadencia?</summary>
-        <p>${CADENCE_TEXT}</p>
+        <p>${linkTerms(CADENCE_TEXT, { exclude: 'cadencia' })}</p>
       </details>
       ${renderCadences(result, latin)}`
     : '';
@@ -189,4 +199,15 @@ export function renderMatches(result, { latin = false } = {}) {
     <h3 class="subhead first">Progresiones conocidas</h3>
     ${progressions}
     ${cadences}`;
+}
+
+export function renderGlossaryList() {
+  return GLOSSARY.map((e) => `<button type="button" class="chip" data-term="${e.id}">${e.term}</button>`).join('');
+}
+
+// Contenido de la ventana de un término. example: lo que devuelve entry.example().
+export function renderTerm(entry, example) {
+  return `
+    <p>${linkTerms(entry.text, { exclude: entry.id })}</p>
+    <p class="muted">${example.caption}</p>`;
 }

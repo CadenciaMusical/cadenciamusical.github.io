@@ -2,9 +2,13 @@
 
 import { analyze } from './core/analysis.js';
 import { tokenize } from './core/parser.js';
-import { chordOnDegree, tonicChord } from './core/build.js';
-import { playChords, playChord, stop } from './audio.js';
-import { renderErrors, renderKey, renderChords, renderDetail, renderLegend, renderMatches } from './ui/render.js';
+import { chordOnDegree, tonicChord, normalVersion } from './core/build.js';
+import { chordLabel } from './core/names.js';
+import { playChords, playChord, playNotes, stop } from './audio.js';
+import {
+  renderErrors, renderKey, renderChords, renderDetail, renderLegend, renderMatches, renderGlossaryList, renderTerm,
+} from './ui/render.js';
+import { glossaryEntry, DEFAULT_KEY } from './ui/glossary.js';
 
 const EXAMPLES = [
   { label: 'La del pop', chords: 'C G Am F' },
@@ -33,6 +37,11 @@ const els = {
   play: $('#play'),
   notation: $('#notation'),
   themeToggle: $('#theme-toggle'),
+  glossaryList: $('#glossary-list'),
+  termDialog: $('#term-dialog'),
+  termTitle: $('#term-title'),
+  termBody: $('#term-body'),
+  termPlay: $('#term-play'),
 };
 
 const state = {
@@ -98,7 +107,7 @@ function renderGrid() {
 function renderSelected() {
   const item = state.result.items[state.selected];
   els.detail.hidden = !item;
-  els.detail.innerHTML = item ? renderDetail(item, state.result.key) : '';
+  els.detail.innerHTML = item ? renderDetail(item, state.result.key, { latin: state.latin }) : '';
 }
 
 // --- Sonido ---
@@ -224,6 +233,16 @@ document.addEventListener('click', (e) => {
       stopPlayback();
       playChord(r.items[state.selected].chord, { arpeggio: true });
       break;
+    case 'context':
+    case 'context-normal': {
+      // El acorde elegido con sus vecinos; con context-normal, cambiado por el «normal».
+      const i = state.selected;
+      const start = Math.max(0, i - 1);
+      const chords = r.chords.slice(start, i + 2);
+      if (btn.dataset.action === 'context-normal') chords[i - start] = normalVersion(r.items[i], r.key);
+      playList(chords, { highlightGrid: true, offset: start });
+      break;
+    }
     case 'demo':
       stopPlayback();
       playDemo(btn.dataset.fn);
@@ -237,7 +256,10 @@ function setNotation(latin) {
   els.notation.textContent = latin ? 'Do → C' : 'C → Do';
   els.notation.setAttribute('aria-label', latin ? 'Mostrar cifrado americano' : 'Mostrar cifrado latino');
   save('cadencia-notation', latin ? 'latin' : 'american');
-  if (state.result?.key) renderGrid();
+  if (state.result?.key) {
+    renderGrid();
+    renderSelected();
+  }
 }
 
 els.notation.addEventListener('click', () => setNotation(!state.latin));
@@ -256,6 +278,48 @@ els.themeToggle.addEventListener('click', () => {
   setTheme(next);
   save('cadencia-theme', next);
 });
+
+// --- Glosario ---
+
+let openTerm = null;
+
+function showTerm(id) {
+  const entry = glossaryEntry(id);
+  if (!entry) return;
+  stopPlayback();
+  openTerm = entry;
+  els.termTitle.textContent = entry.term;
+  els.termBody.innerHTML = renderTerm(entry, termExample(entry));
+  if (!els.termDialog.open) els.termDialog.showModal();
+}
+
+// Los ejemplos suenan en la tonalidad que se está analizando, o en Do mayor.
+function termExample(entry) {
+  const key = state.result?.key ?? DEFAULT_KEY;
+  return entry.example(key, (c) => chordLabel(c, state.latin));
+}
+
+// Cualquier término subrayado, dentro o fuera de la ventana, la abre.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-term]');
+  if (btn) showTerm(btn.dataset.term);
+});
+
+els.termPlay.addEventListener('click', () => {
+  const example = termExample(openTerm);
+  stop();
+  if (example.notes) playNotes(example.notes, { together: example.together });
+  else playChords(example.chords);
+});
+
+els.termDialog.addEventListener('click', (e) => {
+  // Un toque fuera de la ventana (en el fondo) o en la X la cierra.
+  if (e.target === els.termDialog || e.target.closest('[data-close]')) els.termDialog.close();
+});
+
+els.termDialog.addEventListener('close', () => stop());
+
+els.glossaryList.innerHTML = renderGlossaryList();
 
 const savedTheme = load('cadencia-theme');
 if (savedTheme === 'dark' || savedTheme === 'light') setTheme(savedTheme);

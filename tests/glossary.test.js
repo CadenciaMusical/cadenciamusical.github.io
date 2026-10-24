@@ -1,0 +1,61 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { GLOSSARY, linkTerms } from '../js/ui/glossary.js';
+import { normalVersion } from '../js/core/build.js';
+import { analyze } from '../js/core/analysis.js';
+
+const TONICS = {
+  major: ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'],
+  minor: ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'],
+};
+
+test('cada término tiene un ejemplo que suena en las 24 tonalidades', () => {
+  for (const mode of ['major', 'minor']) {
+    TONICS[mode].forEach((tonic, pc) => {
+      for (const entry of GLOSSARY) {
+        const ex = entry.example({ tonic, mode, pc }, (c) => c.root + c.suffix);
+        assert.ok(ex.caption, `${entry.id}: falta el pie`);
+        if (ex.notes) {
+          assert.ok(ex.notes.every(Number.isInteger), `${entry.id} en ${tonic} ${mode}`);
+        } else {
+          assert.ok(ex.chords.length > 0 && ex.chords.every((c) => c.ok), `${entry.id} en ${tonic} ${mode}`);
+        }
+      }
+    });
+  }
+});
+
+test('cada palabra lleva a un solo término', () => {
+  const words = GLOSSARY.flatMap((e) => e.match);
+  assert.equal(new Set(words).size, words.length);
+});
+
+test('enlaza términos sin confundir palabras parecidas', () => {
+  const html = linkTerms('La subdominante y la dominante secundaria. La dominante.');
+  assert.match(html, /data-term="subdominante">subdominante</);
+  assert.match(html, /data-term="dominante-secundaria">dominante secundaria</);
+  assert.match(html, /data-term="dominante">dominante</);
+});
+
+test('cada término se enlaza solo la primera vez', () => {
+  const html = linkTerms('Tónica, tónica y tónica.');
+  assert.equal(html.match(/data-term/g).length, 1);
+  assert.match(html, /data-term="tonica">Tónica</);
+});
+
+test('no enlaza un término dentro de su propia definición', () => {
+  assert.doesNotMatch(linkTerms('Una cadencia es…', { exclude: 'cadencia' }), /data-term/);
+});
+
+test('versión «normal» de los acordes especiales', () => {
+  const normal = (text, i) => {
+    const r = analyze(text);
+    const c = normalVersion(r.items[i], r.key);
+    return c && c.root + c.suffix;
+  };
+  assert.equal(normal('C D7 G7 C', 1), 'Dm');
+  assert.equal(normal('Dm7 Db7 Cmaj7', 1), 'G7');
+  assert.equal(normal('C Ab7 G7 C', 1), 'D7');
+  assert.equal(normal('C F Fm C', 2), 'F');
+  assert.equal(normal('C Am F G', 0), null);
+});

@@ -91,3 +91,28 @@ test('los acordes no reconocidos no impiden el análisis', () => {
   assert.equal(r.errors.length, 1);
   assert.equal(r.items.length, 3);
 });
+
+test('sustituto tritonal: D♭7 en lugar de G7', () => {
+  const r = expectKey('Dm7 Db7 Cmaj7', 'C', 'major');
+  assert.equal(r.items[1].kind, 'tritone');
+  assert.equal(r.items[1].roman, 'subV7');
+  assert.equal(r.items[1].fn, 'D');
+});
+
+test('sustituto tritonal de una dominante secundaria: A♭7 → G7', () => {
+  const r = expectKey('C Ab7 G7 C', 'C', 'major');
+  assert.equal(r.items[1].kind, 'tritone');
+  assert.equal(r.items[1].roman, 'subV7/V');
+});
+
+test('un ♭VII7 que vuelve a la tónica es préstamo, no sustituto', () => {
+  const r = expectKey('C Bb7 C', 'C', 'major');
+  assert.equal(r.items[1].kind, 'borrowed');
+});
+
+test('disminuido de paso: C♯° → Dm', () => {
+  const r = expectKey('C C#dim Dm G7 C', 'C', 'major');
+  assert.equal(r.items[1].kind, 'leading');
+  assert.equal(r.items[1].roman, 'vii°/ii');
+  assert.equal(analyze('C C#dim7 Dm7 G7 C').items[1].roman, 'vii°7/ii');
+});

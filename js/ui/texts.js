@@ -1,7 +1,8 @@
 // Textos didácticos. Tono cercano, sin tecnicismos sin explicar.
 
-import { keyName, chordLabel } from '../core/names.js';
-import { chordOnDegree } from '../core/build.js';
+import { Note } from '../../vendor/tonal.mjs';
+import { keyName, chordLabel, latinNote } from '../core/names.js';
+import { chordOnDegree, normalVersion } from '../core/build.js';
 
 export const FUNCTIONS = {
   T: {
@@ -58,20 +59,29 @@ export function alternativeText(key, alt, relative) {
   return `${b} también encaja: comparte casi todos los acordes con ${a}. Escucha la progresión terminando en cada una y decide cuál te suena a final.`;
 }
 
-// Explicación extra según el tipo de acorde (ver core/classify.js).
-export function kindText(item, key) {
+// Explicación extra según el tipo de acorde (ver core/classify.js). Texto sin HTML.
+export function kindText(item, key, { latin = false } = {}) {
   const name = keyName(key);
+  const label = (c) => chordLabel(c, latin);
+  const target = item.target ? chordOnDegree(key, item.target.st, item.target.triad) : null;
   switch (item.kind) {
     case 'secondary': {
-      const target = chordOnDegree(key, item.target.st, item.target.triad);
-      const label = chordLabel(target);
-      const after = item.target.resolves ? ` Y justo después llega ${label}, como esperaba el oído.` : '';
-      return `Es un acorde «invitado»: no es de ${name}, pero es la dominante de ${label} (el ${item.target.roman}). Por eso se escribe ${item.roman}, que se lee «quinto del ${item.target.roman}». Su tensión empuja hacia ${label}.${after}`;
+      const after = item.target.resolves ? ` Y justo después llega ${label(target)}, como esperaba el oído.` : '';
+      return `Es una dominante secundaria, un acorde «invitado»: no es de ${name}, pero es la dominante de ${label(target)} (el ${item.target.roman}). Por eso se escribe ${item.roman}, que se lee «quinto del ${item.target.roman}». Su tensión empuja hacia ${label(target)}.${after}`;
     }
+    case 'tritone': {
+      const normal = normalVersion(item, key);
+      // Con los nombres de la dominante normal (Si, no Do♭).
+      const shared = normal.notes.filter((n) => item.chord.notes.some((m) => Note.chroma(m) === Note.chroma(n)));
+      const towards = item.target.st === 0 ? `la tónica, ${label(target)}` : label(target);
+      return `Es un sustituto tritonal: ocupa el lugar de ${label(normal)}, la dominante de ${towards}. Sus raíces están a un tritono de distancia y comparten las dos notas que crean la tensión (${shared.map(latinNote).join(' y ')}), así que empuja igual hacia ${label(target)}, pero con el bajo bajando medio tono. Es muy típico del jazz.`;
+    }
+    case 'leading':
+      return `Es un acorde disminuido «de paso»: está medio tono por debajo de ${label(target)} y lo prepara, igual que la sensible prepara la tónica. Por eso se escribe ${item.roman}.`;
     case 'borrowed': {
       const parallel = keyName({ tonic: key.tonic, mode: item.from });
       const color = item.from === 'minor' ? 'más oscuro, melancólico' : 'más luminoso';
-      return `Es un préstamo: viene de ${parallel}, que tiene la misma tónica pero el otro modo. Aporta un color ${color}.`;
+      return `Es un préstamo modal: viene de ${parallel}, que tiene la misma tónica pero el otro modo. Aporta un color ${color}.`;
     }
     case 'color':
       return `El acorde es de ${name}, pero la nota que le añade (su séptima) no. Es un toque de color.`;

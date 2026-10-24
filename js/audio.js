@@ -152,3 +152,19 @@ export function playChord(chord, { arpeggio = false } = {}) {
     scheduleChord(dest, v, t, 1.4);
   }
 }
+
+// Notas sueltas (en MIDI), una tras otra; con together, al final suenan juntas.
+export function playNotes(midis, { together = false, onEnd } = {}) {
+  ensureContext();
+  stop();
+  const dest = newBus();
+  const step = 0.6;
+  const t = ctx.currentTime + 0.05;
+  midis.forEach((m, i) => playNote(dest, m, t + i * step, step * 0.9, 0.3));
+  let total = midis.length * step;
+  if (together) {
+    midis.forEach((m) => playNote(dest, m, t + total, 1.4, 0.22));
+    total += 1.4;
+  }
+  if (onEnd) timers.push(setTimeout(onEnd, (total + 0.5) * 1000));
+}
