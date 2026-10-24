@@ -24,7 +24,8 @@ No hay dependencias que instalar: las pruebas usan el ejecutor integrado de Node
 
 ## Estructura
 
-- `js/core/`: lógica de análisis, sin DOM (parser, tonalidad, grados y funciones).
+- `js/core/`: lógica de análisis, sin DOM (parser, tonalidad, grados y funciones, búsqueda de progresiones).
+- `js/core/catalog.js`: catálogo de progresiones y cadencias. Para añadir una, basta con una entrada nueva en grados romanos; las pruebas comprueban que se reconoce en las 12 tonalidades.
 - `js/ui/`: textos didácticos y generación del HTML.
 - `js/audio.js`: sintetizador con la Web Audio API.
 - `vendor/tonal.mjs`: [Tonal](https://github.com/tonaljs/tonal) 6.4.2 empaquetado como un solo módulo, para que funcione sin conexión.

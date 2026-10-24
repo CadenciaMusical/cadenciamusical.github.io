@@ -4,7 +4,7 @@ import { analyze } from './core/analysis.js';
 import { tokenize } from './core/parser.js';
 import { chordOnDegree, tonicChord } from './core/build.js';
 import { playChords, playChord, stop } from './audio.js';
-import { renderErrors, renderKey, renderChords, renderDetail, renderLegend } from './ui/render.js';
+import { renderErrors, renderKey, renderChords, renderDetail, renderLegend, renderMatches } from './ui/render.js';
 
 const EXAMPLES = [
   { label: 'La del pop', chords: 'C G Am F' },
@@ -28,6 +28,7 @@ const els = {
   keyCard: $('#key-card'),
   grid: $('#chord-grid'),
   detail: $('#detail'),
+  matches: $('#matches'),
   legend: $('#legend-items'),
   play: $('#play'),
   notation: $('#notation'),
@@ -88,8 +89,10 @@ function render() {
   renderSelected();
 }
 
+// Lo que depende del cifrado elegido (americano o latino).
 function renderGrid() {
   els.grid.innerHTML = renderChords(state.result.items, { selected: state.selected, latin: state.latin });
+  els.matches.innerHTML = renderMatches(state.result, { latin: state.latin });
 }
 
 function renderSelected() {
@@ -118,10 +121,11 @@ function stopPlayback() {
   setPlaying(false);
 }
 
-function playList(chords, { highlightGrid = false } = {}) {
+// offset: posición en la cuadrícula del primer acorde que suena.
+function playList(chords, { highlightGrid = false, offset = 0 } = {}) {
   setPlaying(true);
   playChords(chords, {
-    onChord: (i) => highlightGrid && highlight(i),
+    onChord: (i) => highlightGrid && highlight(offset + i),
     onEnd: () => setPlaying(false),
   });
 }
@@ -196,6 +200,12 @@ document.addEventListener('click', (e) => {
     case 'end-on': {
       const key = btn.dataset.which === 'alt' ? r.alternative : r.key;
       playList([...r.chords, tonicChord(key)], { highlightGrid: true });
+      break;
+    }
+    case 'play-range': {
+      const start = Number(btn.dataset.start);
+      const end = Number(btn.dataset.end);
+      playList(r.chords.slice(start, end + 1), { highlightGrid: true, offset: start });
       break;
     }
     case 'use-alt':

@@ -299,6 +299,17 @@ details summary {
   background: var(--surface-2);
 }
 
+/* --- Progresiones y cadencias --- */
+
+.subhead { font-size: 1.05rem; margin: 20px 0 4px; color: var(--muted); }
+.subhead.first { margin-top: 0; }
+.match { padding: 12px 0; border-top: 1px solid var(--border); }
+.subhead + .match, .subhead + details + .match { border-top: 0; }
+.match h3 { font-size: 1.15rem; }
+.match-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.steps { font-family: Georgia, "Times New Roman", serif; font-weight: 700; color: var(--accent-text); }
+.where { font-weight: 500; }
+
 /* --- Leyenda --- */
 
 .legend summary { font-size: 1.05rem; }

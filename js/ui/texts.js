@@ -43,6 +43,12 @@ export const CONFIDENCE_TEXT = {
   baja: 'Hay una duda real: otra tonalidad es casi igual de probable.',
 };
 
+export const CADENCE_TEXT =
+  'Una cadencia es la forma en que se cierra una frase musical, como la puntuación al escribir: hay finales que suenan a punto final, otros a coma y otros a sorpresa.';
+
+export const NO_PROGRESSION_TEXT =
+  'No coincide con ninguna progresión famosa del catálogo. ¡Eso no la hace peor: puede que sea tuya!';
+
 export function alternativeText(key, alt, relative) {
   const a = keyName(key);
   const b = keyName(alt);

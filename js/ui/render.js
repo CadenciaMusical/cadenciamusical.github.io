@@ -1,7 +1,9 @@
 // Generación del HTML de los resultados. Sin estado: recibe datos, devuelve HTML.
 
 import { chordLabel, chordName, keyName, latinNote } from '../core/names.js';
-import { FUNCTIONS, KEY_TEXT, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, alternativeText, kindText } from './texts.js';
+import {
+  FUNCTIONS, KEY_TEXT, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, CADENCE_TEXT, NO_PROGRESSION_TEXT, alternativeText, kindText,
+} from './texts.js';
 
 export function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -113,4 +115,78 @@ export function renderLegend() {
       </div>`,
     )
     .join('');
+}
+
+// unique: junta los repetidos seguidos («F7 → C7 → C7» → «F7 → C7»).
+function chordsIn(result, m, latin, sep, { unique = false } = {}) {
+  const labels = result.chords.slice(m.start, m.end + 1).map((c) => chordLabel(c, latin));
+  return (unique ? labels.filter((l, i) => l !== labels[i - 1]) : labels).join(sep);
+}
+
+function playButton(m, label) {
+  return `<button type="button" class="btn secondary small" data-action="play-range" data-start="${m.start}" data-end="${m.end}">▶ ${label}</button>`;
+}
+
+function whereText(result, m, latin) {
+  const parts = [];
+  if (m.whole) parts.push('Es tu progresión entera.');
+  else parts.push(`Aparece en los acordes ${m.start + 1} a ${m.end + 1}: ${chordsIn(result, m, latin, ' ')}.`);
+  if (m.key.mode !== result.key.mode) parts.push(`Se ve desde ${keyName(m.key)}, su tonalidad relativa.`);
+  return parts.join(' ');
+}
+
+function renderProgression(result, m, latin) {
+  const songs = m.songs.length ? `<p class="muted">La oirás en: ${m.songs.join(' · ')}</p>` : '';
+  return `
+    <div class="match">
+      <div class="match-head">
+        <h3>${m.name}</h3>
+        ${m.label !== m.name ? `<span class="steps">${m.label}</span>` : ''}
+      </div>
+      <p class="where">${whereText(result, m, latin)}</p>
+      <p>${m.text}</p>
+      ${songs}
+      ${playButton(m, 'Escuchar')}
+    </div>`;
+}
+
+// Las cadencias se agrupan por tipo: «Cadencia plagal», con cada aparición.
+function renderCadences(result, latin) {
+  const groups = new Map();
+  for (const c of result.cadences) {
+    if (!groups.has(c.id)) groups.set(c.id, []);
+    groups.get(c.id).push(c);
+  }
+  return [...groups.values()]
+    .map((list) => {
+      const [first] = list;
+      const final = list.some((c) => c.atEnd) ? '<span class="tag">Al final</span>' : '';
+      const buttons = list.map((c) => playButton(c, chordsIn(result, c, latin, ' → ', { unique: true }))).join('');
+      return `
+        <div class="match">
+          <div class="match-head"><h3>${first.name}</h3>${final}</div>
+          <p>${first.text}</p>
+          <div class="button-row">${buttons}</div>
+        </div>`;
+    })
+    .join('');
+}
+
+export function renderMatches(result, { latin = false } = {}) {
+  const progressions = result.progressions.length
+    ? result.progressions.map((m) => renderProgression(result, m, latin)).join('')
+    : `<p class="muted">${NO_PROGRESSION_TEXT}</p>`;
+  const cadences = result.cadences.length
+    ? `
+      <h3 class="subhead">Cadencias</h3>
+      <details class="explain">
+        <summary>¿Qué es una cadencia?</summary>
+        <p>${CADENCE_TEXT}</p>
+      </details>
+      ${renderCadences(result, latin)}`
+    : '';
+  return `
+    <h3 class="subhead first">Progresiones conocidas</h3>
+    ${progressions}
+    ${cadences}`;
 }
