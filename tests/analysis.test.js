@@ -132,3 +132,27 @@ test('duda entre una tonalidad y su relativa: el primer y el último acorde dan 
   assert.equal(doubt('Am F C G Am'), null);
   assert.equal(doubt('C G Am Em F C F G'), null);
 });
+
+test('bucles: el primer acorde manda y no hay cadencia final', async () => {
+  const { renderProgressionCard } = await import('../js/ui/render.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(false);
+  const loop = (text, tonic, mode, roman) => {
+    const r = expectKey(text, tonic, mode);
+    assert.equal(romans(r), roman, text);
+    assert.ok(r.loop, text);
+    assert.equal(r.alternative, null, text);
+    assert.ok(!r.cadences.some((c) => c.atEnd), text);
+    const html = renderProgressionCard(r);
+    assert.doesNotMatch(html, /Cadencia/, text);
+    assert.match(html, /Da vueltas[\s\S]*vuelve siempre a/, text);
+    return html;
+  };
+  assert.match(loop('Am Em Am Em', 'A', 'minor', 'i v i v'), /Am y Em se van alternando[\s\S]*vuelve siempre a Am/);
+  loop('C F C F', 'C', 'major', 'I IV I IV');
+  assert.match(loop('C G Am F C G Am F', 'C', 'major', 'I V vi IV I V vi IV'), /los mismos 4 acordes se repiten dos veces/);
+  // Si no se repite entero, no es un bucle: «C F C» acaba con una plagal.
+  const r = analyze('C F C');
+  assert.equal(r.loop, null);
+  assert.equal(r.cadences.find((c) => c.atEnd)?.id, 'plagal');
+});

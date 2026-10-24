@@ -181,6 +181,15 @@ function cluesText(key, alt, chords) {
   return `${startText}${joiner}${endText}.`;
 }
 
+// Una progresión en bucle (result.loop): no tiene final, vuelve al principio.
+export function loopText(result) {
+  const { chords, loop } = result;
+  const first = chordLabel(chords[0]);
+  const times = loop.times === 2 ? 'dos veces' : `${loop.times} veces`;
+  const pattern = loop.period === 2 ? `${first} y ${chordLabel(chords[1])} se van alternando` : `los mismos ${loop.period} acordes se repiten ${times}`;
+  return `Es un bucle: ${pattern}. No tiene un final propio, sino que da vueltas y vuelve siempre a ${first}, que por eso suena a casa. En una canción, así suelen ser las estrofas o los estribillos que se repiten; el final llega cuando la canción cambia de parte.`;
+}
+
 // Explicación extra según el tipo de acorde (ver core/classify.js). Texto sin HTML.
 export function kindText(item, key) {
   const name = keyName(key);

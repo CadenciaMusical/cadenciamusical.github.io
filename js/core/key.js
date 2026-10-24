@@ -7,7 +7,9 @@
 //   - suma que aparezca el acorde de dominante y cada cadencia V → I;
 //   - una menor sin sensible (sin V mayor ni vii°) resta un poco: sin ella,
 //     Am F C G suena más a Do mayor que a La menor;
-//   - un blues (I7, IV7, V7) suma mucho a su tonalidad mayor.
+//   - un blues (I7, IV7, V7) suma mucho a su tonalidad mayor;
+//   - en un bucle (un patrón que se repite entero, como Am Em Am Em) el
+//     último acorde no es un final: todo el peso va al primero.
 // La confianza depende de la distancia entre la primera y la segunda. Si hay
 // una duda razonable, la segunda se ofrece como alternativa (ver detectKey).
 
@@ -23,6 +25,7 @@ const BONUS = {
   cadence: 0.6,
   noLeadingTone: -0.3,
   blues: 3.0,
+  loopFirst: 2.8,
 };
 
 const TONIC_NAMES = {
@@ -47,6 +50,18 @@ function tonicName(pc, mode, chords) {
   return TONIC_NAMES[mode][pc];
 }
 
+const sameChord = (a, b) => a.pc === b.pc && a.triad === b.triad && a.seventh === b.seventh && a.bass === b.bass;
+
+// Cuántos acordes tiene el patrón si la progresión es un bucle: un trozo que
+// se repite entero dos veces o más (Am Em Am Em → 2). Si no, null.
+export function loopPeriod(chords) {
+  const n = chords.length;
+  for (let p = 2; p <= n / 2; p++) {
+    if (n % p === 0 && chords.every((c, i) => sameChord(c, chords[i % p]))) return p;
+  }
+  return null;
+}
+
 export const isTonicChord = (chord, key) => mod12(chord.pc - key.pc) === 0 && chord.triad === (key.mode === 'major' ? 'M' : 'm');
 const isDominantChord = (chord, key) => mod12(chord.pc - key.pc) === 7 && chord.triad === 'M';
 const isLeadingToneChord = (chord, key) => mod12(chord.pc - key.pc) === 11 && chord.triad === 'dim';
@@ -64,8 +79,12 @@ export function scoreKey(chords, key) {
   chords.forEach((c, i) => {
     score += classify(c, key, chords[i + 1] ?? null).fit;
   });
-  if (isTonicChord(chords[chords.length - 1], key)) score += BONUS.last;
-  if (isTonicChord(chords[0], key)) score += BONUS.first;
+  if (loopPeriod(chords)) {
+    if (isTonicChord(chords[0], key)) score += BONUS.loopFirst;
+  } else {
+    if (isTonicChord(chords[chords.length - 1], key)) score += BONUS.last;
+    if (isTonicChord(chords[0], key)) score += BONUS.first;
+  }
   if (chords.some((c) => isTonicChord(c, key))) score += BONUS.present;
   if (chords.some((c) => isDominantChord(c, key))) score += BONUS.dominant;
   else if (key.mode === 'minor' && !chords.some((c) => isLeadingToneChord(c, key))) score += BONUS.noLeadingTone;
@@ -102,7 +121,8 @@ export function detectKey(chords) {
   const close = ranking.slice(1).filter((k) => k.score >= best.score - Math.max(0.6, best.score * 0.12));
   // La relativa usa las mismas notas, así que se le da más margen; salvo que
   // la progresión empiece y acabe en la tónica de la primera: eso despeja la duda.
-  const clear = isTonicChord(chords[0], best) && isTonicChord(chords[chords.length - 1], best);
+  // En un bucle basta con empezar en ella.
+  const clear = isTonicChord(chords[0], best) && (loopPeriod(chords) || isTonicChord(chords[chords.length - 1], best));
   const relative = ranking.find((k) => isRelative(best, k));
   const relativeClose = !clear && relative.score >= best.score - Math.max(1.0, best.score * 0.12);
   // Si la relativa está entre las cercanas, es la duda más interesante de explicar.

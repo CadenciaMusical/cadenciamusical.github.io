@@ -5,7 +5,7 @@ import { parseChord } from '../core/parser.js';
 import { defaultTonic } from '../core/key.js';
 import { convertNotation, transposeChord } from '../core/transpose.js';
 import {
-  FUNCTIONS, KEY_TEXT, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
+  FUNCTIONS, KEY_TEXT, loopText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
   MODE_INFO, VARIANT_INFO, MODES_TEXT, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText,
 } from './texts.js';
 import { GLOSSARY, linkTerms, termText } from './glossary.js';
@@ -160,7 +160,8 @@ function whereText(result, m) {
 export function renderProgressionCard(result) {
   const progressions = shownProgressions(result);
   const cadence = finalCadence(result);
-  if (!progressions.length && !cadence) return '';
+  const { loop } = result;
+  if (!progressions.length && !cadence && !loop) return '';
 
   const blocks = progressions.map(
     (m, i) => `
@@ -174,6 +175,16 @@ export function renderProgressionCard(result) {
         ${playRange(m, 'Escuchar')}
       </div>`,
   );
+  if (loop) {
+    const cycle = { start: 0, end: loop.period - 1 };
+    blocks.push(`
+      <div class="match">
+        <p class="eyebrow">Cómo acaba</p>
+        <h2 class="match-name">Da vueltas</h2>
+        <p>${linkTerms(loopText(result))}</p>
+        ${playRange(cycle, `Escuchar una vuelta (${chordsIn(result, cycle, ' → ')})`)}
+      </div>`);
+  }
   if (cadence) {
     blocks.push(`
       <div class="match">

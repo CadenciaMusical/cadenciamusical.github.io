@@ -1,7 +1,7 @@
 // Punto de entrada del análisis: texto → acordes → tonalidad → grados y funciones.
 
 import { parseProgression } from './parser.js';
-import { detectKey, scoreKey, isRelative } from './key.js';
+import { detectKey, scoreKey, isRelative, loopPeriod } from './key.js';
 import { classify } from './classify.js';
 import { findMatches, relativeOf } from './matcher.js';
 import { detectModes, isClearlyModal, modeDegrees } from './modes.js';
@@ -12,7 +12,7 @@ export function analyze(text, { forcedKey = null } = {}) {
   const chords = parsed.filter((c) => c.ok);
   const errors = parsed.filter((c) => !c.ok);
   const detection = detectKey(chords);
-  if (!detection) return { parsed, chords, errors, key: null, items: [], progressions: [], cadences: [], modes: null, modal: false };
+  if (!detection) return { parsed, chords, errors, key: null, items: [], progressions: [], cadences: [], modes: null, modal: false, loop: null };
 
   let { key, alternative, confidence } = detection;
   if (forcedKey) {
@@ -36,7 +36,11 @@ export function analyze(text, { forcedKey = null } = {}) {
   }
 
   const items = chords.map((chord, i) => ({ chord, ...classify(chord, key, chords[i + 1] ?? null) }));
-  const { progressions, cadences } = findMatches(chords, key, relativeOf(key));
+  const { progressions, cadences: found } = findMatches(chords, key, relativeOf(key));
+  // Un bucle no acaba: vuelve al primer acorde. Su «final» no es una cadencia.
+  const period = loopPeriod(chords);
+  const loop = period && { period, times: chords.length / period };
+  const cadences = loop ? found.filter((c) => !c.atEnd) : found;
 
   return {
     parsed,
@@ -52,6 +56,7 @@ export function analyze(text, { forcedKey = null } = {}) {
     cadences,
     modes,
     modal,
+    loop,
   };
 }
 
