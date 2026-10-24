@@ -110,3 +110,11 @@ test('la casilla crece hasta 4 líneas y después se desplaza, con el subrayado 
   assert.match(fit, /overflowY = els\.input\.scrollHeight > els\.input\.clientHeight \? 'auto' : 'hidden'/);
   assert.match(app, /addEventListener\('scroll', \(\) => \{\s*els\.marks\.scrollTop = els\.input\.scrollTop;/);
 });
+
+test('el logo va dentro de la página, igual que icons/icon.svg, para que no parpadee', () => {
+  const header = /<header class="topbar">([\s\S]*?)<\/header>/.exec(html)[1];
+  assert.doesNotMatch(header, /<img/);
+  const inline = /<svg class="logo"[^>]*>([\s\S]*?)<\/svg>/.exec(header)[1];
+  const file = /<svg[^>]*>([\s\S]*?)<\/svg>/.exec(readFileSync(join(root, 'icons/icon.svg'), 'utf8'))[1];
+  assert.equal(inline, file);
+});

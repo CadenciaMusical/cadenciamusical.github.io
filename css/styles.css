@@ -118,6 +118,7 @@ button { font: inherit; color: inherit; }
 @media (hover: hover) {
   .brand:hover { background: var(--surface-2); }
 }
+.brand .logo { display: block; flex-shrink: 0; }
 .brand h1 { font-size: 1.35rem; letter-spacing: -0.01em; }
 .topbar-actions { display: flex; align-items: center; gap: 4px; }
 
