@@ -154,13 +154,14 @@ export function playChord(chord, { arpeggio = false } = {}) {
 }
 
 // Notas sueltas (en MIDI), una tras otra; con together, al final suenan juntas.
-export function playNotes(midis, { together = false, onEnd } = {}) {
+// Con un step corto y hold largo suena como un rasgueo de guitarra.
+export function playNotes(midis, { together = false, step = 0.6, hold = step * 0.9, onEnd } = {}) {
   ensureContext();
   stop();
   const dest = newBus();
-  const step = 0.6;
   const t = ctx.currentTime + 0.05;
-  midis.forEach((m, i) => playNote(dest, m, t + i * step, step * 0.9, 0.3));
+  const level = 0.3 / Math.sqrt(Math.max(1, midis.length * (hold / step) / 4));
+  midis.forEach((m, i) => playNote(dest, m, t + i * step, hold, level));
   let total = midis.length * step;
   if (together) {
     midis.forEach((m) => playNote(dest, m, t + total, 1.4, 0.22));

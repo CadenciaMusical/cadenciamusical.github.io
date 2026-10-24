@@ -4,6 +4,7 @@ import { analyze } from './core/analysis.js';
 import { tokenize } from './core/parser.js';
 import { chordOnDegree, tonicChord, normalVersion } from './core/build.js';
 import { chordLabel } from './core/names.js';
+import { guitarVoicings } from './core/fretboard.js';
 import { playChords, playChord, playNotes, stop } from './audio.js';
 import {
   renderErrors, renderKey, renderChords, renderDetail, renderLegend, renderMatches, renderGlossaryList, renderTerm,
@@ -50,6 +51,8 @@ const state = {
   selected: null,
   playing: false,
   latin: false,
+  instrument: 'piano',
+  position: 0, // posición de guitarra del acorde elegido
 };
 
 // --- Preferencias (solo comodidad: si el almacenamiento falla, no pasa nada) ---
@@ -107,7 +110,9 @@ function renderGrid() {
 function renderSelected() {
   const item = state.result.items[state.selected];
   els.detail.hidden = !item;
-  els.detail.innerHTML = item ? renderDetail(item, state.result.key, { latin: state.latin }) : '';
+  els.detail.innerHTML = item
+    ? renderDetail(item, state.result.key, { latin: state.latin, instrument: state.instrument, position: state.position })
+    : '';
 }
 
 // --- Sonido ---
@@ -189,12 +194,19 @@ els.grid.addEventListener('click', (e) => {
   if (!btn) return;
   stopPlayback();
   state.selected = Number(btn.dataset.index);
+  state.position = 0;
   playChord(state.result.items[state.selected].chord);
   renderGrid();
   renderSelected();
 });
 
 els.play.addEventListener('click', playProgression);
+
+// Teclas del piano: cada una suena al tocarla.
+els.detail.addEventListener('click', (e) => {
+  const key = e.target.closest('.key');
+  if (key) playNotes([Number(key.dataset.midi)], { hold: 1.2 });
+});
 
 // Botones dentro de las tarjetas de resultados.
 document.addEventListener('click', (e) => {
@@ -241,6 +253,22 @@ document.addEventListener('click', (e) => {
       const chords = r.chords.slice(start, i + 2);
       if (btn.dataset.action === 'context-normal') chords[i - start] = normalVersion(r.items[i], r.key);
       playList(chords, { highlightGrid: true, offset: start });
+      break;
+    }
+    case 'instrument':
+      state.instrument = btn.dataset.instrument;
+      save('cadencia-instrument', state.instrument);
+      renderSelected();
+      break;
+    case 'next-position':
+      state.position += 1;
+      renderSelected();
+      break;
+    case 'strum': {
+      const chord = r.items[state.selected].chord;
+      const voicings = guitarVoicings(chord);
+      const midis = voicings[state.position % voicings.length].midis.filter((m) => m !== null);
+      playNotes(midis, { step: 0.035, hold: 2 });
       break;
     }
     case 'demo':
@@ -324,5 +352,6 @@ els.glossaryList.innerHTML = renderGlossaryList();
 const savedTheme = load('cadencia-theme');
 if (savedTheme === 'dark' || savedTheme === 'light') setTheme(savedTheme);
 setNotation(load('cadencia-notation') === 'latin');
+if (load('cadencia-instrument') === 'guitar') state.instrument = 'guitar';
 els.legend.innerHTML = renderLegend();
 render();

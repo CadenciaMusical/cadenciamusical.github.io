@@ -6,6 +6,9 @@ import {
 } from './texts.js';
 import { GLOSSARY, linkTerms } from './glossary.js';
 import { normalVersion } from '../core/build.js';
+import { guitarVoicings } from '../core/fretboard.js';
+import { renderPiano } from './piano.js';
+import { renderGuitar } from './guitar.js';
 
 export function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -80,7 +83,38 @@ export function renderChords(items, { selected = null, latin = false } = {}) {
     .join('');
 }
 
-export function renderDetail(item, key, { latin = false } = {}) {
+// instrument: 'piano' | 'guitar'. position: qué posición de guitarra mostrar.
+function renderDiagram(chord, instrument, position) {
+  const tabs = ['piano', 'guitar']
+    .map((id) => `<button type="button" class="seg${id === instrument ? ' on' : ''}" data-action="instrument" data-instrument="${id}" aria-pressed="${id === instrument}">${id === 'piano' ? 'Piano' : 'Guitarra'}</button>`)
+    .join('');
+  let body;
+  if (instrument === 'piano') {
+    const bass = chord.bass ? ' En azul, el bajo: la nota más grave, que se toca con la mano izquierda.' : '';
+    body = `${renderPiano(chord)}<p class="hint">Toca una tecla para oírla.${bass}</p>`;
+  } else {
+    const voicings = guitarVoicings(chord);
+    const v = voicings[position % voicings.length];
+    const notes = [];
+    if (chord.bass) notes.push('Sin el bajo: es la forma básica del acorde.');
+    else if (v.simplified) notes.push('Simplificado: sin alguna de las notas añadidas.');
+    if (v.barre) notes.push(`Con cejilla en el traste ${v.barre}: un dedo pisa varias cuerdas a la vez.`);
+    body = `
+      ${renderGuitar(chord, v)}
+      ${notes.length ? `<p class="hint">${notes.join(' ')}</p>` : ''}
+      <div class="button-row">
+        <button type="button" class="btn secondary small" data-action="strum">▶ Rasgueo</button>
+        ${voicings.length > 1 ? `<button type="button" class="btn secondary small" data-action="next-position">Otra posición (${(position % voicings.length) + 1}/${voicings.length})</button>` : ''}
+      </div>`;
+  }
+  return `
+    <div class="diagram">
+      <div class="segmented" role="group" aria-label="Instrumento">${tabs}</div>
+      ${body}
+    </div>`;
+}
+
+export function renderDetail(item, key, { latin = false, instrument = 'piano', position = 0 } = {}) {
   const f = fnKey(item.fn);
   const fn = FUNCTIONS[f];
   const notes = item.chord.notes.map(latinNote).join(' · ');
@@ -104,6 +138,7 @@ export function renderDetail(item, key, { latin = false } = {}) {
     <p><span class="badge fn-${f}">${fn.name} · ${fn.short}</span></p>
     <p>${linkTerms(fn.text)}</p>
     ${extra ? `<div class="special"><p><strong>✦ Algo especial.</strong> ${linkTerms(extra)}</p>${compare}</div>` : ''}
+    ${renderDiagram(item.chord, instrument, position)}
     <details class="explain">
       <summary>¿Qué significa «${item.roman}»?</summary>
       <p>${linkTerms(DEGREE_TEXT)}</p>
