@@ -65,3 +65,22 @@ test('sugerencias para lo que no se reconoce', () => {
   assert.ok(parseChord('Sl').suggestions.includes('Sol'));
   assert.deepEqual(parseChord('H7').suggestions, ['B7']);
 });
+
+test('el triángulo es maj7', () => {
+  for (const text of ['CΔ7', 'CΔ', 'DoΔ7', 'DoΔ']) {
+    const c = parseChord(text);
+    assert.ok(c.ok, text);
+    assert.equal(`${c.root} ${c.seventh}`, 'C maj7', text);
+  }
+  assert.equal(parseChord('AmΔ7').seventh, 'mMaj7');
+});
+
+test('sugerencias: a igual distancia, primero la que solo añade letras', () => {
+  assert.equal(parseChord('Cmj7').suggestions[0], 'Cmaj7');
+  assert.equal(parseChord('Cm7b').suggestions[0], 'Cm7b5');
+  assert.equal(parseChord('Dmm').suggestions[0], 'Dm');
+});
+
+test('el triángulo, sin ninguna minúscula en el texto', () => {
+  assert.ok(parseProgression('CΔ7 FΔ7').every((c) => c.ok && c.seventh === 'maj7'));
+});

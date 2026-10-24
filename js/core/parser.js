@@ -42,7 +42,8 @@ function normalizeSuffix(raw) {
     .replace(/♭/g, 'b')
     .replace(/[°º]/g, 'dim')
     .replace(/ø/g, 'm7b5')
-    .replace(/Δ/g, 'maj7');
+    // El triángulo es maj7, con el 7 o sin él: CΔ, CΔ7.
+    .replace(/Δ7?/g, 'maj7');
   s = s
     .replace(/^menor/i, 'm')
     .replace(/^mayor/i, '')
@@ -99,7 +100,8 @@ export function parseChord(input, { allCaps = false } = {}) {
   const [, main, bassText] = /^(.*?)(?:\/([a-z#♯♭]+))?$/i.exec(input);
   if (main) {
     for (const o of readRoot(main)) {
-      const rest = allCaps ? o.rest.toLowerCase() : o.rest;
+      // Solo las letras latinas: «Δ» en minúscula sería «δ».
+      const rest = allCaps ? o.rest.replace(/[A-Z]/g, (c) => c.toLowerCase()) : o.rest;
       const root = o.letter + normalizeAcc(o.acc);
       const suffix = normalizeSuffix(rest);
       const data = Chord.get(root + suffix);
@@ -165,6 +167,13 @@ function distance(a, b) {
   return d[a.length][b.length];
 }
 
+// ¿Se puede formar b añadiendo letras a a? («Cmj7» dentro de «Cmaj7»).
+function isSubsequence(a, b) {
+  let i = 0;
+  for (const ch of b) if (ch === a[i]) i++;
+  return i === a.length;
+}
+
 export function suggest(input) {
   // Notación alemana: H es Si.
   if (/^h/i.test(input)) {
@@ -173,9 +182,11 @@ export function suggest(input) {
   }
   const target = input.toLowerCase();
   const maxDist = target.length <= 3 ? 1 : 2;
-  return CANDIDATES.map((c) => ({ c, d: distance(target, c.toLowerCase()) }))
+  // A igual distancia, primero los que solo añaden letras a lo escrito: es más
+  // fácil comerse una letra que escribir una de más («Cmj7» → «Cmaj7», no «Cm7»).
+  return CANDIDATES.map((c) => ({ c, d: distance(target, c.toLowerCase()), within: isSubsequence(target, c.toLowerCase()) }))
     .filter((x) => x.d <= maxDist)
-    .sort((x, y) => x.d - y.d || x.c.length - y.c.length)
+    .sort((x, y) => x.d - y.d || y.within - x.within || x.c.length - y.c.length)
     .slice(0, 3)
     .map((x) => x.c);
 }

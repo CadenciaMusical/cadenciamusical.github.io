@@ -100,3 +100,7 @@ test('ida y vuelta entre cifrados sin cambiar ningún acorde', async () => {
 test('transportar también respeta los separadores', () => {
   assert.equal(transposeText('C | G, Am - F', key(0, 'major'), key(2, 'major')), 'D | A, Bm - G');
 });
+
+test('transportar respeta el triángulo', () => {
+  assert.equal(transposeText('CΔ7 FΔ7', key(0, 'major'), key(2, 'major')), 'DΔ7 GΔ7');
+});
