@@ -480,7 +480,11 @@ details summary {
 }
 .seg:hover { color: var(--text); }
 /* El borde hace falta en modo oscuro, donde no hay sombra. */
-.seg.on {
+/* El cifrado elegido se marca desde el principio con el data-notation que el
+   <head> pone en <html>, sin esperar a app.js. */
+.seg.on,
+html[data-notation="latin"] .seg[data-notation="latin"],
+html[data-notation="american"] .seg[data-notation="american"] {
   background: var(--surface);
   color: var(--accent-text);
   box-shadow: 0 0 0 1px var(--border), var(--shadow);

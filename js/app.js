@@ -476,6 +476,8 @@ document.addEventListener('click', (e) => {
 // el cambio viene de lo que ha escrito el usuario).
 function setNotation(latin, { convertInput = true } = {}) {
   setLatin(latin);
+  // También para el CSS: el selector se marca con él (ver el <head>).
+  document.documentElement.dataset.notation = notation();
   if (convertInput) {
     // Lo que no es un acorde se deja igual.
     els.input.value = convertNotation(els.input.value, notation());

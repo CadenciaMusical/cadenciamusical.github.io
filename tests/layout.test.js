@@ -73,3 +73,18 @@ test('la página nace vacía: sin parpadeo del glosario ni de «Escuchar progres
   // El JavaScript la quita al haber un análisis.
   assert.match(app, /document\.body\.classList\.toggle\('empty', !hasKey\)/);
 });
+
+test('el cifrado, el ejemplo de la casilla y el tema guardados se aplican antes de pintar', () => {
+  const head = /<head>([\s\S]*?)<\/head>/.exec(html)[1];
+  // Un script normal (no un módulo, que espera a que acabe de leerse la página).
+  const early = /<script>([\s\S]*?)<\/script>/.exec(head)[1];
+  assert.match(early, /localStorage\.getItem\('cadencia-notation'\)/);
+  assert.match(early, /html\.dataset\.notation =/);
+  assert.match(early, /localStorage\.getItem\('cadencia-theme'\)/);
+  // El ejemplo de la casilla no lleva texto fijo: lo pone un script justo después.
+  assert.match(html, /<textarea id="chords"[^>]*placeholder=""[^>]*><\/textarea>\s*<script>[\s\S]*?'Am F C G' : 'Lam Fa Do Sol'/);
+  // El selector se marca con el data-notation, y app.js lo mantiene al día.
+  assert.match(css, /html\[data-notation="latin"\] \.seg\[data-notation="latin"\]/);
+  assert.match(css, /html\[data-notation="american"\] \.seg\[data-notation="american"\]/);
+  assert.match(app, /document\.documentElement\.dataset\.notation = notation\(\)/);
+});

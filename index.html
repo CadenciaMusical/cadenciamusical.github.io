@@ -11,6 +11,19 @@
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#E2603A">
   <link rel="stylesheet" href="css/styles.css">
+  <script>
+    // Antes de pintar nada, el cifrado y el tema guardados: así el selector
+    // «Do Re Mi / C D E», el ejemplo de la casilla y los colores no parpadean
+    // mientras carga app.js (que después hace lo mismo con setNotation y setTheme).
+    try {
+      const html = document.documentElement;
+      html.dataset.notation = localStorage.getItem('cadencia-notation') === 'american' ? 'american' : 'latin';
+      const theme = localStorage.getItem('cadencia-theme');
+      if (theme === 'dark' || theme === 'light') html.dataset.theme = theme;
+    } catch {
+      document.documentElement.dataset.notation = 'latin';
+    }
+  </script>
   <script type="module" src="js/app.js"></script>
 </head>
 <body class="empty">
@@ -40,7 +53,11 @@
         <div class="input-row">
           <div class="input-field">
             <div id="chords-marks" class="input-marks" aria-hidden="true"></div>
-            <textarea id="chords" rows="1" placeholder="Lam Fa Do Sol" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-describedby="errors"></textarea>
+            <textarea id="chords" rows="1" placeholder="" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-describedby="errors"></textarea>
+            <script>
+              // El ejemplo, en el cifrado guardado, antes de que se vea la casilla.
+              document.getElementById('chords').placeholder = document.documentElement.dataset.notation === 'american' ? 'Am F C G' : 'Lam Fa Do Sol';
+            </script>
           </div>
           <button type="submit" class="btn primary">Analizar</button>
         </div>
