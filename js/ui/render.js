@@ -203,17 +203,21 @@ export function renderTranspose(result, { original = null } = {}) {
   const back = original
     ? `<p class="muted">La original estaba en ${original.keyName}. <button type="button" class="link" data-action="transpose-reset">Volver a la original</button></p>`
     : '';
+  // El aviso de que está transportada queda a la vista; las opciones, plegadas.
   return `
     <h2 class="card-title">Transportar</h2>
-    <p class="hint">${linkTerms(TRANSPOSE_TEXT)}</p>
-    <div class="stepper">
-      <button type="button" class="btn secondary" data-action="transpose-step" data-delta="-1" aria-label="Bajar medio tono">− ½ tono</button>
-      <span class="stepper-key">${keyName(key)}</span>
-      <button type="button" class="btn secondary" data-action="transpose-step" data-delta="1" aria-label="Subir medio tono">+ ½ tono</button>
-    </div>
-    <div class="chips key-chips">${chips}</div>
-    ${anyEasy ? '<p class="hint">★ Todos los acordes se tocan sin cejilla en la guitarra.</p>' : ''}
-    ${back}`;
+    ${back}
+    <details class="more" data-keep="transpose">
+      <summary>Cambiar de tonalidad</summary>
+      <p class="hint">${linkTerms(TRANSPOSE_TEXT)}</p>
+      <div class="stepper">
+        <button type="button" class="btn secondary" data-action="transpose-step" data-delta="-1" aria-label="Bajar medio tono">− ½ tono</button>
+        <span class="stepper-key">${keyName(key)}</span>
+        <button type="button" class="btn secondary" data-action="transpose-step" data-delta="1" aria-label="Subir medio tono">+ ½ tono</button>
+      </div>
+      <div class="chips key-chips">${chips}</div>
+      ${anyEasy ? '<p class="hint">★ Todos los acordes se tocan sin cejilla en la guitarra.</p>' : ''}
+    </details>`;
 }
 
 export function renderModes(result) {

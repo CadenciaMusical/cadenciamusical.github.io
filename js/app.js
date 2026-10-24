@@ -139,7 +139,7 @@ const originalKeyName = () => (state.original ? keyName(state.original.key) : nu
 
 function renderGrid() {
   els.grid.innerHTML = renderChords(state.result.items, { selected: state.selected });
-  els.transposeCard.innerHTML = renderTranspose(state.result, { original: state.original && { keyName: originalKeyName() } });
+  keepOpen(els.transposeCard, renderTranspose(state.result, { original: state.original && { keyName: originalKeyName() } }));
   keepOpen(els.modesCard, renderModes(state.result));
 }
 
