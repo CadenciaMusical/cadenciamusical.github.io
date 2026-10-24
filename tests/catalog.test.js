@@ -103,7 +103,7 @@ test('cadencias', () => {
   assert.equal(end('Dm7 G7 C'), 'perfect');
   assert.equal(end('Bm7b5 E7 Am'), 'perfect');
   assert.equal(end('C F C'), 'plagal');
-  assert.equal(end('C F Fm C'), 'plagal');
+  assert.equal(end('C F Fm C'), 'minor-plagal');
   assert.equal(end('C F G Am'), 'deceptive');
   assert.equal(end('Am Dm E F'), 'deceptive');
   assert.equal(end('C F C G'), 'half');
@@ -119,4 +119,16 @@ test('cadencias en mitad de la progresión', () => {
   const deceptive = r.cadences.find((c) => c.id === 'deceptive');
   assert.equal(deceptive.start, 1);
   assert.equal(deceptive.atEnd, false);
+});
+
+test('casos de la tarjeta «Progresión conocida»', () => {
+  const first = (text) => analyze(text).progressions[0]?.id;
+  const end = (text) => analyze(text).cadences.find((c) => c.atEnd)?.id;
+  assert.equal(first('C G Am F'), 'pop');
+  assert.equal(first('Am G F E'), 'andalusian');
+  assert.equal(first('Dm7 G7 Cmaj7'), 'ii-v-i');
+  assert.equal(first('Do Sol Lam Fa'), 'pop');
+  assert.equal(end('C F G C'), 'perfect');
+  assert.equal(end('C A7 Dm G7 Fm C'), 'minor-plagal');
+  assert.equal(end('Do La7 Rem Sol7 Fam Do'), 'minor-plagal');
 });

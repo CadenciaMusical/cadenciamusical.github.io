@@ -77,19 +77,86 @@ export function renderKey(result, { transposedFrom = null } = {}) {
     </details>`;
 }
 
-export function renderChords(items, { selected = null } = {}) {
+// marked: posiciones que forman una progresión conocida (ver progressionRanges).
+export function renderChords(items, { selected = null, marked = new Set() } = {}) {
   return items
     .map((item, i) => {
       const f = fnKey(item.fn);
       const special = item.kind !== 'diatonic' && item.kind !== 'blues';
+      const cls = `${i === selected ? ' selected' : ''}${marked.has(i) ? ' marked' : ''}`;
       return `
-        <button type="button" class="chord fn-${f} ${i === selected ? 'selected' : ''}" data-index="${i}" aria-pressed="${i === selected}">
+        <button type="button" class="chord fn-${f}${cls}" data-index="${i}" aria-pressed="${i === selected}">
           <span class="roman">${item.roman}</span>
           <span class="symbol">${chordLabel(item.chord)}</span>
           <span class="badge">${FUNCTIONS[f].name}${special ? ' ✦' : ''}</span>
         </button>`;
     })
     .join('');
+}
+
+// --- Progresión conocida y cadencia final ---
+
+// Como mucho dos progresiones: las más largas (findMatches ya las ordena).
+const shownProgressions = (result) => result.progressions.slice(0, 2);
+const finalCadence = (result) => result.cadences.find((c) => c.atEnd) ?? null;
+
+// Las posiciones que se marcan en las tarjetas de los acordes: solo si la
+// progresión conocida es un trozo de otra más larga.
+export function progressionRanges(result) {
+  const marked = new Set();
+  for (const m of shownProgressions(result)) {
+    if (m.whole) continue;
+    for (let i = m.start; i <= m.end; i++) marked.add(i);
+  }
+  return marked;
+}
+
+// unique: junta los repetidos seguidos («F7 → C7 → C7» → «F7 → C7»).
+function chordsIn(result, m, sep, { unique = false } = {}) {
+  const labels = result.chords.slice(m.start, m.end + 1).map((c) => chordLabel(c));
+  return (unique ? labels.filter((l, i) => l !== labels[i - 1]) : labels).join(sep);
+}
+
+function playRange(m, label) {
+  return `<button type="button" class="btn secondary small" data-action="play-range" data-start="${m.start}" data-end="${m.end}">▶ ${label}</button>`;
+}
+
+function whereText(result, m) {
+  const parts = [];
+  if (m.whole) parts.push('Es tu progresión entera.');
+  else parts.push(`Son los acordes ${m.start + 1} a ${m.end + 1} (${chordsIn(result, m, ' ')}), marcados abajo.`);
+  if (m.key.mode !== result.key.mode) parts.push(`Los grados se cuentan desde ${keyName(m.key)}, su tonalidad relativa.`);
+  return parts.join(' ');
+}
+
+// Tarjeta bajo la tonalidad. Si no hay nada conocido, cadena vacía: no se muestra.
+export function renderProgressionCard(result) {
+  const progressions = shownProgressions(result);
+  const cadence = finalCadence(result);
+  if (!progressions.length && !cadence) return '';
+
+  const blocks = progressions.map(
+    (m, i) => `
+      <div class="match">
+        ${i === 0 ? '<p class="eyebrow">Progresión conocida</p>' : ''}
+        <h2 class="match-name">${m.name}</h2>
+        ${m.label !== m.name ? `<p class="steps">${m.label}</p>` : ''}
+        <p>${linkTerms(m.text)}</p>
+        <p class="muted">${whereText(result, m)}</p>
+        ${m.songs.length ? `<p class="muted">La oirás en: ${m.songs.join(' · ')}</p>` : ''}
+        ${playRange(m, 'Escuchar')}
+      </div>`,
+  );
+  if (cadence) {
+    blocks.push(`
+      <div class="match">
+        <p class="eyebrow">Cómo acaba</p>
+        <h2 class="match-name">${cadence.name}</h2>
+        <p>${linkTerms(cadence.text)}</p>
+        ${playRange(cadence, `Escuchar el final (${chordsIn(result, cadence, ' → ', { unique: true })})`)}
+      </div>`);
+  }
+  return blocks.join('');
 }
 
 // instrument: 'piano' | 'guitar'. position: qué posición de guitarra mostrar.

@@ -103,48 +103,56 @@ export const PROGRESSIONS = [
   },
 ];
 
+// Solo se muestran las que cierran la progresión (atEnd en matcher.js).
 export const CADENCES = [
   {
     id: 'perfect',
     name: 'Cadencia perfecta',
     steps: ['V', 'I'],
     mode: 'major',
-    text: 'De la dominante a la tónica (V → I). Es el final más rotundo: la tensión se resuelve del todo, como un punto final.',
+    text: 'La que suena a final rotundo: de la dominante a la tónica (V → I). La tensión se resuelve del todo, como un punto final.',
   },
   {
     id: 'perfect',
     name: 'Cadencia perfecta',
     steps: ['V', 'i'],
     mode: 'minor',
-    text: 'De la dominante a la tónica (V → i). Es el final más rotundo: la tensión se resuelve del todo, como un punto final.',
+    text: 'La que suena a final rotundo: de la dominante a la tónica (V → i). La tensión se resuelve del todo, como un punto final.',
   },
   {
     id: 'plagal',
     name: 'Cadencia plagal',
-    steps: ['IV|iv', 'I'],
+    steps: ['IV', 'I'],
     mode: 'major',
-    text: 'De la subdominante a la tónica (IV → I). Un final más suave que la perfecta: es el «amén» de los himnos.',
+    text: 'La del «amén» que se canta al acabar los himnos: de la subdominante a la tónica (IV → I). Es un final suave y sereno, sin la tensión de la perfecta.',
+  },
+  {
+    id: 'minor-plagal',
+    name: 'Cadencia plagal menor',
+    steps: ['iv', 'I'],
+    mode: 'major',
+    text: 'Como la del «amén», pero el IV se vuelve menor (iv → I) justo antes de llegar a casa. Es un final tierno y algo nostálgico, muy de baladas y bandas sonoras.',
   },
   {
     id: 'plagal',
     name: 'Cadencia plagal',
     steps: ['iv', 'i'],
     mode: 'minor',
-    text: 'De la subdominante a la tónica (iv → i). Un final más suave que la perfecta: es el «amén» de los himnos.',
+    text: 'La del «amén» que se canta al acabar los himnos: de la subdominante a la tónica (iv → i). Es un final suave y sereno, sin la tensión de la perfecta.',
   },
   {
     id: 'deceptive',
     name: 'Cadencia rota',
     steps: ['V', 'vi'],
     mode: 'major',
-    text: 'La dominante promete volver a casa (I), pero llega el vi. Es un final engañoso: sorprende y deja la historia abierta.',
+    text: 'La del final con sorpresa: la dominante promete volver a casa (I), pero llega el vi. Engaña al oído y deja la historia abierta.',
   },
   {
     id: 'deceptive',
     name: 'Cadencia rota',
     steps: ['V', 'VI'],
     mode: 'minor',
-    text: 'La dominante promete volver a casa (i), pero llega el VI. Es un final engañoso: sorprende y deja la historia abierta.',
+    text: 'La del final con sorpresa: la dominante promete volver a casa (i), pero llega el VI. Engaña al oído y deja la historia abierta.',
   },
   {
     id: 'half',
@@ -152,7 +160,7 @@ export const CADENCES = [
     steps: ['V'],
     mode: 'major',
     endOnly: true,
-    text: 'Acabar en la dominante (V) suena a pregunta, a coma: la frase pide continuar.',
+    text: 'La que suena a pregunta: acabar en la dominante (V) es como poner una coma. La frase se queda en el aire y pide continuar.',
   },
   {
     id: 'half',
@@ -160,6 +168,6 @@ export const CADENCES = [
     steps: ['V'],
     mode: 'minor',
     endOnly: true,
-    text: 'Acabar en la dominante (V) suena a pregunta, a coma: la frase pide continuar.',
+    text: 'La que suena a pregunta: acabar en la dominante (V) es como poner una coma. La frase se queda en el aire y pide continuar.',
   },
 ];

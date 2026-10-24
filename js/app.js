@@ -9,7 +9,7 @@ import { defaultTonic } from './core/key.js';
 import { convertNotation, transposeText } from './core/transpose.js';
 import { playChords, playChord, playNotes, stop } from './audio.js';
 import {
-  renderErrors, renderKey, renderChords, renderDetail, renderLegend, renderGlossaryList, renderTerm, renderTranspose, renderModes,
+  renderErrors, renderKey, renderProgressionCard, progressionRanges, renderChords, renderDetail, renderLegend, renderGlossaryList, renderTerm, renderTranspose, renderModes,
 } from './ui/render.js';
 import { modeScale, typicalProgression } from './core/modes.js';
 import { Interval } from '../vendor/tonal.mjs';
@@ -38,6 +38,7 @@ const els = {
   keyCard: $('#key-card'),
   transposeCard: $('#transpose-card'),
   modesCard: $('#modes-card'),
+  progressionCard: $('#progression-card'),
   grid: $('#chord-grid'),
   detail: $('#detail'),
   legend: $('#legend-items'),
@@ -138,7 +139,11 @@ function keepOpen(container, html) {
 const originalKeyName = () => (state.original ? keyName(state.original.key) : null);
 
 function renderGrid() {
-  els.grid.innerHTML = renderChords(state.result.items, { selected: state.selected });
+  const r = state.result;
+  els.grid.innerHTML = renderChords(r.items, { selected: state.selected, marked: progressionRanges(r) });
+  const progression = renderProgressionCard(r);
+  els.progressionCard.hidden = !progression;
+  els.progressionCard.innerHTML = progression;
   keepOpen(els.transposeCard, renderTranspose(state.result, { original: state.original && { keyName: originalKeyName() } }));
   keepOpen(els.modesCard, renderModes(state.result));
 }
@@ -298,6 +303,12 @@ document.addEventListener('click', (e) => {
     case 'end-on': {
       const key = btn.dataset.which === 'alt' ? r.alternative : r.key;
       playList([...r.chords, tonicChord(key)], { highlightGrid: true });
+      break;
+    }
+    case 'play-range': {
+      const start = Number(btn.dataset.start);
+      const end = Number(btn.dataset.end);
+      playList(r.chords.slice(start, end + 1), { highlightGrid: true, offset: start });
       break;
     }
     case 'use-alt':
