@@ -165,7 +165,12 @@ export function alternativeText(key, alt, relative, chords) {
   const intro = relative
     ? 'Usan las mismas notas (son tonalidades relativas), así que los acordes no bastan para decidir.'
     : 'Comparten casi todos los acordes, así que cuesta decidir.';
-  return `${intro} ${cluesText(key, alt, chords)} Escucha cómo suena terminando en cada una: la que te suene a final es la buena.`;
+  const last = chords[chords.length - 1];
+  const ending = isTonicChord(last, key) ? key : isTonicChord(last, alt) ? alt : null;
+  const listen = ending
+    ? `Escucha cómo suena terminando en ${noteName((ending === key ? alt : key).tonic)} y compáralo con cómo acaba ahora: la que te suene a final es la buena.`
+    : 'Escucha cómo suena terminando en cada una: la que te suene a final es la buena.';
+  return `${intro} ${cluesText(key, alt, chords)} ${listen}`;
 }
 
 function cluesText(key, alt, chords) {

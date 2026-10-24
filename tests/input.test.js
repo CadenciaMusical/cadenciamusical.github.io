@@ -54,3 +54,12 @@ test('la sugerencia sale en el cifrado de la página', () => {
   assert.match(html, /data-to="Sol">Sol</);
   assert.equal(renderErrors(analyze('C G Am F').parsed), '');
 });
+
+test('si ya acaba en la casa de una opción, no se ofrece «Terminar en» esa', () => {
+  setLatin(true);
+  const html = renderKey(analyze('Sol#add13 La# Do'));
+  setLatin(false);
+  assert.match(html, /Terminar en Fa/);
+  assert.doesNotMatch(html, /Terminar en Do/);
+  assert.match(html, /terminando en Fa y compáralo con cómo acaba ahora/);
+});

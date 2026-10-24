@@ -2,7 +2,7 @@
 
 import { chordLabel, chordName, isLatin, keyName, noteName } from '../core/names.js';
 import { parseChord } from '../core/parser.js';
-import { defaultTonic } from '../core/key.js';
+import { defaultTonic, isTonicChord } from '../core/key.js';
 import { convertNotation, transposeChord } from '../core/transpose.js';
 import {
   FUNCTIONS, KEY_TEXT, loopText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
@@ -59,11 +59,16 @@ export function renderKey(result, { transposedFrom = null } = {}) {
   }
 
   const altText = alternative && linkTerms(alternativeText(key, alternative, alternativeIsRelative, result.chords));
+  // Si ya acaba en la casa de una de las dos, terminar en ella sería repetir el último acorde.
+  const last = result.chords[result.chords.length - 1];
+  const endOn = (which, k) => isTonicChord(last, k)
+    ? ''
+    : `<button type="button" class="btn secondary small" data-action="end-on" data-which="${which}">▶ Terminar en ${noteName(k.tonic)}</button>`;
   const altButtons = alternative
     ? `
       <div class="button-row">
-        <button type="button" class="btn secondary small" data-action="end-on" data-which="key">▶ Terminar en ${noteName(key.tonic)}</button>
-        <button type="button" class="btn secondary small" data-action="end-on" data-which="alt">▶ Terminar en ${noteName(alternative.tonic)}</button>
+        ${endOn('key', key)}
+        ${endOn('alt', alternative)}
       </div>
       <button type="button" class="link" data-action="use-alt">Analizar en ${keyName(alternative)}</button>`
     : '';
