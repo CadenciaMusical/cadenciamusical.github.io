@@ -113,3 +113,49 @@ test('la tarjeta del modo: explicación sencilla y botón para oír la diferenci
   assert.match(renderModes(analyze('Re Do Sol Re')), /Oír la diferencia con Re mayor/);
   setLatin(false);
 });
+
+test('progresión claramente modal: el centro del modo es la tonalidad', async () => {
+  const { renderKey } = await import('../js/ui/render.js');
+  const { keyName } = await import('../js/core/names.js');
+  setLatin(true);
+  const romans = (r) => r.items.map((i) => i.roman).join(' ');
+  for (const [t, tonic, roman] of [['Am D Am D', 'La dórico', 'i IV i IV'], ['Lam Re Lam Re', 'La dórico', 'i IV i IV'], ['Dm G Dm G', 'Re dórico', 'i IV i IV']]) {
+    const r = analyze(t);
+    assert.equal(keyName(r.key), tonic, t);
+    assert.equal(romans(r), roman, t);
+    assert.equal(r.alternative, null, t);
+    const html = renderKey(r);
+    assert.doesNotMatch(html, /dos opciones|casa de ninguna/, t);
+    assert.match(html, new RegExp(`<h2 class="key-name">${tonic}</h2>`), t);
+  }
+  assert.match(renderKey(analyze('Am D Am D')), /La casa es La, como en La menor, pero con Fa♯ en lugar de Fa/);
+  // El IV mayor es del dórico: se explica como tal, y se compara con el iv de siempre.
+  const d = analyze('Am D Am D').items[1];
+  assert.equal(d.kind, 'modal');
+  assert.equal(d.fn, 'S');
+});
+
+test('las progresiones modales que ya iban bien siguen igual', () => {
+  const romans = (r) => r.items.map((i) => i.roman).join(' ');
+  for (const t of ['D C G D', 'C Bb F C']) {
+    const r = analyze(t);
+    assert.equal(r.key.mode, 'major', t);
+    assert.equal(r.key.pc, r.chords[0].pc, t);
+    assert.equal(romans(r), 'I ♭VII IV I', t);
+    assert.ok(r.progressions.some((p) => p.id === 'mixolydian'), t);
+    assert.equal(r.cadences.find((c) => c.atEnd)?.id, 'plagal', t);
+  }
+});
+
+test('transportar una progresión modal parte de su centro', async () => {
+  const { transposeText } = await import('../js/core/transpose.js');
+  const { keyName } = await import('../js/core/names.js');
+  setLatin(true);
+  const r = analyze('Am D Am D');
+  const to = { pc: 11, mode: r.key.mode, tonic: 'B' };
+  const moved = transposeText('Am D Am D', r.key, to);
+  assert.equal(moved, 'Bm E Bm E');
+  const r2 = analyze(moved, { forcedKey: to });
+  assert.equal(keyName(r2.key), 'Si dórico');
+  assert.equal(r2.items.map((i) => i.roman).join(' '), 'i IV i IV');
+});

@@ -90,12 +90,7 @@ export const MODES_TEXT =
   'Además de mayor y menor, hay siete modos. Todos usan las mismas notas, pero cada uno toma una distinta como casa, y eso cambia el carácter.';
 
 // Nombre completo de un modo encontrado: «Re mixolidio», «Mi frigio dominante».
-export function modeName(m) {
-  const tonic = noteName(m.tonic);
-  if (m.variant === 'phrygian-dominant') return `${tonic} frigio dominante`;
-  if (m.variant === 'harmonic-minor') return `${tonic} menor armónica`;
-  return `${tonic} ${m.name}`;
-}
+export const modeName = (m) => keyName({ tonic: m.tonic, modal: m });
 
 // La escala mayor o menor de siempre con la que se compara el modo.
 export const parallelKeyName = (m) => keyName({ tonic: m.tonic, mode: m.id === 'lydian' || m.id === 'mixolydian' ? 'major' : 'minor' });
@@ -106,16 +101,31 @@ export function modeIntroText(m) {
   return `Esta progresión no suena del todo a ${parallelKeyName(m)}: usa una escala con alguna nota distinta, y eso le da otro color. A estas escalas se las llama modos. ${info}`;
 }
 
+// Las notas que cambian frente a la escala mayor o menor de siempre:
+// ['Fa♯ en lugar de Fa']. En el frigio dominante, también la tercera.
+function changedNotes(m) {
+  if (!m.charNote) return [];
+  const out = [`${noteName(m.charNote)} en lugar de ${noteName(m.insteadNote)}`];
+  if (m.variant === 'phrygian-dominant') out.push(`${noteName(m.scale[2])} en lugar de ${noteName(Note.transpose(m.tonic, '3m'))}`);
+  return out;
+}
+
 // La nota que distingue el modo de la escala mayor o menor de siempre.
 export function modeCharText(m) {
-  if (!m.charNote) return '';
+  const changed = changedNotes(m);
+  if (changed.length === 0) return '';
   const parallel = parallelKeyName(m);
-  const first = `${noteName(m.charNote)} en lugar de ${noteName(m.insteadNote)}`;
-  if (m.variant === 'phrygian-dominant') {
-    const third = m.scale[2];
-    return `Frente a ${parallel}, cambian dos notas: ${first}, y ${noteName(third)} en lugar de ${noteName(Note.transpose(m.tonic, '3m'))}.`;
-  }
-  return `Frente a ${parallel}, cambia una nota: ${first}.`;
+  if (changed.length === 2) return `Frente a ${parallel}, cambian dos notas: ${changed[0]}, y ${changed[1]}.`;
+  return `Frente a ${parallel}, cambia una nota: ${changed[0]}.`;
+}
+
+// Bajo el nombre de la tonalidad, cuando es un modo: cómo se relaciona con
+// el mayor o el menor de siempre. m: el modo principal (detectModes).
+export function modalKeyText(m) {
+  const parallel = parallelKeyName(m);
+  const changed = changedNotes(m);
+  const notes = changed.length === 2 ? `${changed[0]}, y ${changed[1]}` : changed[0];
+  return `La casa es ${noteName(m.tonic)}, como en ${parallel}, pero con ${notes}. Ese cambio le da otro color: es el modo ${m.variant === 'phrygian-dominant' ? 'frigio dominante' : m.name}.`;
 }
 
 // Las notas que no caben en el modo.
@@ -135,6 +145,7 @@ export function modeForeignText(m) {
 // Cómo se relaciona el modo con la tonalidad detectada.
 export function modeVsKeyText(m, key) {
   const k = keyName(key);
+  if (key.modal) return `Los grados de los acordes se cuentan desde ${noteName(m.tonic)}, la casa del modo.`;
   const same = m.pc === key.pc && ((m.id === 'ionian' && key.mode === 'major') || (m.id === 'aeolian' && key.mode === 'minor'));
   if (same) return `Coincide con la tonalidad: ${k}.`;
   if (m.pc === key.pc) {
@@ -188,6 +199,13 @@ export function kindText(item, key) {
     }
     case 'leading':
       return `Es un acorde disminuido «de paso»: está medio tono por debajo de ${label(target)} y lo prepara, igual que la sensible prepara la tónica. Por eso se escribe ${item.roman}.`;
+    case 'modal': {
+      const parallel = keyName({ tonic: key.tonic, mode: key.mode });
+      const char = key.modal.charNote;
+      const has = char && item.chord.notes.some((n) => Note.chroma(n) === Note.chroma(char));
+      if (has) return `No es de ${parallel}, pero sí de ${name}: lleva ${noteName(char)}, la nota que distingue el modo. Es el acorde que le da su color.`;
+      return `No es de ${parallel}, pero sí de ${name}, así que aquí suena en casa.`;
+    }
     case 'borrowed': {
       const parallel = keyName({ tonic: key.tonic, mode: item.from });
       const color = item.from === 'minor' ? 'más oscuro, melancólico' : 'más luminoso';

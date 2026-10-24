@@ -6,7 +6,7 @@ import { defaultTonic } from '../core/key.js';
 import { convertNotation, transposeChord } from '../core/transpose.js';
 import {
   FUNCTIONS, KEY_TEXT, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
-  MODE_INFO, MODES_TEXT, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText,
+  MODE_INFO, VARIANT_INFO, MODES_TEXT, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText,
 } from './texts.js';
 import { GLOSSARY, linkTerms, termText } from './glossary.js';
 import { normalVersion } from '../core/build.js';
@@ -71,7 +71,7 @@ export function renderKey(result, { transposedFrom = null } = {}) {
       ${key.blues ? '<p class="tag">Blues</p>' : ''}
       ${confidenceLine}
       <p>${linkTerms(KEY_TEXT)}</p>
-      <p>${linkTerms(MODE_TEXT[key.mode])}</p>
+      <p>${linkTerms(key.modal ? (VARIANT_INFO[key.modal.variant] ?? MODE_INFO[key.modal.id].text) : MODE_TEXT[key.mode])}</p>
       <button type="button" class="btn secondary small" data-action="play-tonic">▶ Escuchar la tónica</button>
       ${forced && alternative ? `<div class="alternative"><p><strong>¿O ${keyName(alternative)}?</strong> ${altText}</p>${altButtons}</div>` : ''}
     </details>`;
@@ -95,9 +95,12 @@ export function renderKey(result, { transposedFrom = null } = {}) {
       ${more}`;
   }
 
+  // Un modo: se explica a la vista cómo se relaciona con el mayor o el menor.
+  const modal = key.modal && result.modes ? `<p>${linkTerms(modalKeyText(result.modes.main))}</p>` : '';
   return `
     <p class="eyebrow">Tonalidad</p>
     <h2 class="key-name">${keyName(key)}</h2>
+    ${modal}
     ${more}`;
 }
 

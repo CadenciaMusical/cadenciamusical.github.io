@@ -18,6 +18,10 @@ function findDegree(st, chord, mode) {
 // Un grado de la tonalidad al que se puede «llegar» (no disminuido).
 const targetDegree = (st, mode) => DEGREES[mode].find((d) => d.st === st && d.triad !== 'dim');
 
+// Función de los acordes de un modo que no tienen grado en mayor ni en menor:
+// el ♭II del frigio empuja hacia la tónica, como una dominante.
+const MODAL_FN = { 1: 'D' };
+
 const isDominantShape = (c) => (c.triad === 'M' && (!c.seventh || c.seventh === '7')) || (c.triad === 'sus' && c.seventh === '7');
 
 // key: { pc, mode, blues? }. next: el acorde siguiente (o null).
@@ -28,6 +32,7 @@ const isDominantShape = (c) => (c.triad === 'M' && (!c.seventh || c.seventh === 
 //         'secondary' — dominante secundaria (V/x)
 //         'leading'   — disminuido que lleva al acorde de un semitono por encima (vii°/x)
 //         'tritone'   — sustituto tritonal de una dominante (subV/x)
+//         'modal'     — es del modo de la progresión, no del mayor o el menor
 //         'borrowed'  — préstamo de la tonalidad paralela (mayor ↔ menor)
 //         'chromatic' — ajeno a la tonalidad
 //   fit: cuánto apoya este acorde a la tonalidad (lo usa la detección).
@@ -36,6 +41,18 @@ export function classify(chord, key, next = null) {
   const st = mod12(chord.pc - key.pc);
   const roman = romanFor(st, chord.triad, chord.seventh, key.mode);
   const base = { st, roman };
+
+  // En un modo (key.modal), sus acordes son de casa aunque no lo sean del
+  // mayor o el menor de siempre: el IV mayor del dórico, el ♭II del frigio.
+  const own = key.modal?.degrees.find((d) => d.st === st && triadMatches(chord.triad, d.triad));
+  if (own && (!chord.seventh || chord.seventh === own.seventh)) {
+    const plain = findDegree(st, chord, key.mode);
+    if (plain) return { ...base, fn: plain.fn, kind: 'diatonic', fit: 1 };
+    // La tónica es la casa, aunque sea mayor en un modo menor (frigio dominante).
+    if (st === 0) return { ...base, fn: 'T', kind: 'diatonic', fit: 1 };
+    const fn = findDegree(st, chord, PARALLEL[key.mode])?.fn ?? MODAL_FN[st] ?? 'S';
+    return { ...base, fn, kind: 'modal', fit: 1 };
+  }
 
   const degree = findDegree(st, chord, key.mode);
   if (degree) {

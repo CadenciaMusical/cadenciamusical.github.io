@@ -16,7 +16,7 @@ export function chordOnDegree(key, st, triad, seventh = '') {
 }
 
 export function tonicChord(key) {
-  return chordOnDegree(key, 0, key.mode === 'major' ? 'M' : 'm');
+  return chordOnDegree(key, 0, key.modal?.triad ?? (key.mode === 'major' ? 'M' : 'm'));
 }
 
 // El acorde «de toda la vida» que ocupa el lugar de uno especial, para
@@ -29,6 +29,7 @@ export function normalVersion(item, key) {
       return chordOnDegree(key, (item.target.st + 7) % 12, 'M', '7');
     case 'secondary':
     case 'borrowed':
+    case 'modal':
     case 'leading': {
       const d = diatonicAt(item.st);
       return d ? chordOnDegree(key, item.st, d.triad) : null;

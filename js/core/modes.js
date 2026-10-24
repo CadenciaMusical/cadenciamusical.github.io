@@ -65,6 +65,22 @@ export function modeScale(modeId, tonic, variant = null) {
   });
 }
 
+const TRIADS = { '3,7': 'm', '4,7': 'M', '3,6': 'dim', '4,8': 'aug' };
+const SEVENTHS = { 'M,11': 'maj7', 'M,10': '7', 'm,10': 'm7', 'm,11': 'mMaj7', 'dim,10': 'm7b5', 'dim,9': 'dim7' };
+
+// Los acordes que se forman sobre cada grado del modo (con su variante):
+// [{ st, triad, seventh }]. En el frigio dominante, el I es mayor.
+export function modeDegrees(modeId, variant = null) {
+  const alt = VARIANTS[variant];
+  const s = modeById(modeId).intervals.map((i) => Interval.semitones(alt && i === alt.from ? alt.to : i));
+  return s.map((st, d) => {
+    const third = mod12(s[(d + 2) % 7] - st);
+    const fifth = mod12(s[(d + 4) % 7] - st);
+    const triad = TRIADS[`${third},${fifth}`] ?? 'M';
+    return { st, triad, seventh: SEVENTHS[`${triad},${mod12(s[(d + 6) % 7] - st)}`] ?? null };
+  });
+}
+
 // Una progresión típica del modo, como acordes.
 export function typicalProgression(modeId, tonic) {
   const mode = modeById(modeId);
