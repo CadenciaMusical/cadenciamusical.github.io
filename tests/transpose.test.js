@@ -72,6 +72,9 @@ test('cambiar de cifrado lo escrito en la casilla', async () => {
   assert.equal(convertNotation('LAM FA DO', 'american'), 'Am F C');
   // Re disminuido escrito «Reo»: «Do» se leería como Do mayor.
   assert.equal(convertNotation('Reo', 'american'), 'Ddim');
+  // En latino, aumentado y disminuido con símbolos: «Fa+» y «Do°», no «Faaug» ni «Doo».
+  assert.equal(convertNotation('Faug Co Cdim7 Bdim', 'latin'), 'Fa+ Do° Do°7 Si°');
+  assert.equal(transposeText('Lab+ Si°', key(0, 'major'), key(2, 'major')), 'Sib+ Do#°');
 });
 
 test('ida y vuelta entre cifrados sin cambiar ningún acorde', async () => {
