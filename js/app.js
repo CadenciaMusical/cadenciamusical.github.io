@@ -9,7 +9,7 @@ import { defaultTonic } from './core/key.js';
 import { transposeText } from './core/transpose.js';
 import { playChords, playChord, playNotes, stop } from './audio.js';
 import {
-  renderErrors, renderKey, renderChords, renderDetail, renderLegend, renderMatches, renderGlossaryList, renderTerm, renderTranspose, renderModes,
+  renderErrors, renderKey, renderChords, renderDetail, renderLegend, renderGlossaryList, renderTerm, renderTranspose, renderModes,
 } from './ui/render.js';
 import { modeScale, typicalProgression } from './core/modes.js';
 import { Interval } from '../vendor/tonal.mjs';
@@ -39,7 +39,6 @@ const els = {
   modesCard: $('#modes-card'),
   grid: $('#chord-grid'),
   detail: $('#detail'),
-  matches: $('#matches'),
   legend: $('#legend-items'),
   play: $('#play'),
   notation: $('#notation'),
@@ -121,9 +120,17 @@ function render() {
   document.body.classList.toggle('empty', !hasKey);
   els.play.disabled = !hasKey;
   if (!hasKey) return;
-  els.keyCard.innerHTML = renderKey(r, { transposedFrom: originalKeyName() });
+  keepOpen(els.keyCard, renderKey(r, { transposedFrom: originalKeyName() }));
   renderGrid();
   renderSelected();
+}
+
+// Repinta una tarjeta sin cerrar los desplegables que el usuario tenía abiertos
+// (al transportar o cambiar de cifrado).
+function keepOpen(container, html) {
+  const open = [...container.querySelectorAll('details[open][data-keep]')].map((d) => d.dataset.keep);
+  container.innerHTML = html;
+  for (const id of open) container.querySelector(`details[data-keep="${id}"]`)?.setAttribute('open', '');
 }
 
 // Se calcula al pintar, para que siga el cifrado elegido.
@@ -131,9 +138,8 @@ const originalKeyName = () => (state.original ? keyName(state.original.key) : nu
 
 function renderGrid() {
   els.grid.innerHTML = renderChords(state.result.items, { selected: state.selected });
-  els.matches.innerHTML = renderMatches(state.result);
   els.transposeCard.innerHTML = renderTranspose(state.result, { original: state.original && { keyName: originalKeyName() } });
-  els.modesCard.innerHTML = renderModes(state.result);
+  keepOpen(els.modesCard, renderModes(state.result));
 }
 
 function renderSelected() {
@@ -289,12 +295,6 @@ document.addEventListener('click', (e) => {
     case 'end-on': {
       const key = btn.dataset.which === 'alt' ? r.alternative : r.key;
       playList([...r.chords, tonicChord(key)], { highlightGrid: true });
-      break;
-    }
-    case 'play-range': {
-      const start = Number(btn.dataset.start);
-      const end = Number(btn.dataset.end);
-      playList(r.chords.slice(start, end + 1), { highlightGrid: true, offset: start });
       break;
     }
     case 'use-alt':

@@ -5,7 +5,7 @@ import { parseChord } from '../core/parser.js';
 import { defaultTonic } from '../core/key.js';
 import { transposeChord } from '../core/transpose.js';
 import {
-  FUNCTIONS, KEY_TEXT, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, CADENCE_TEXT, NO_PROGRESSION_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
+  FUNCTIONS, KEY_TEXT, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
   MODE_INFO, VARIANT_INFO, MODES_TEXT, modeName, modeCharText, modeForeignText, modeVsKeyText,
 } from './texts.js';
 import { GLOSSARY, linkTerms, termText } from './glossary.js';
@@ -66,15 +66,15 @@ export function renderKey(result, { transposedFrom = null } = {}) {
   return `
     <p class="eyebrow">Tonalidad</p>
     <h2 class="key-name">${keyName(key)}</h2>
-    ${key.blues ? '<p class="tag">Blues</p>' : ''}
-    ${confidenceLine}
-    <details class="explain">
-      <summary>¿Qué es la tonalidad?</summary>
+    <details class="more" data-keep="key">
+      <summary>Más sobre la tonalidad</summary>
+      ${key.blues ? '<p class="tag">Blues</p>' : ''}
+      ${confidenceLine}
       <p>${linkTerms(KEY_TEXT)}</p>
       <p>${linkTerms(MODE_TEXT[key.mode])}</p>
       <button type="button" class="btn secondary small" data-action="play-tonic">▶ Escuchar la tónica</button>
-    </details>
-    ${alt}`;
+      ${alt}
+    </details>`;
 }
 
 export function renderChords(items, { selected = null } = {}) {
@@ -171,80 +171,6 @@ export function renderLegend() {
     .join('');
 }
 
-// unique: junta los repetidos seguidos («F7 → C7 → C7» → «F7 → C7»).
-function chordsIn(result, m, sep, { unique = false } = {}) {
-  const labels = result.chords.slice(m.start, m.end + 1).map((c) => chordLabel(c));
-  return (unique ? labels.filter((l, i) => l !== labels[i - 1]) : labels).join(sep);
-}
-
-function playButton(m, label) {
-  return `<button type="button" class="btn secondary small" data-action="play-range" data-start="${m.start}" data-end="${m.end}">▶ ${label}</button>`;
-}
-
-function whereText(result, m) {
-  const parts = [];
-  if (m.whole) parts.push('Es tu progresión entera.');
-  else parts.push(`Aparece en los acordes ${m.start + 1} a ${m.end + 1}: ${chordsIn(result, m, ' ')}.`);
-  if (m.key.mode !== result.key.mode) parts.push(`Se ve desde ${keyName(m.key)}, su tonalidad relativa.`);
-  return parts.join(' ');
-}
-
-function renderProgression(result, m) {
-  const songs = m.songs.length ? `<p class="muted">La oirás en: ${m.songs.join(' · ')}</p>` : '';
-  return `
-    <div class="match">
-      <div class="match-head">
-        <h3>${m.name}</h3>
-        ${m.label !== m.name ? `<span class="steps">${m.label}</span>` : ''}
-      </div>
-      <p class="where">${whereText(result, m)}</p>
-      <p>${linkTerms(m.text)}</p>
-      ${songs}
-      ${playButton(m, 'Escuchar')}
-    </div>`;
-}
-
-// Las cadencias se agrupan por tipo: «Cadencia plagal», con cada aparición.
-function renderCadences(result) {
-  const groups = new Map();
-  for (const c of result.cadences) {
-    if (!groups.has(c.id)) groups.set(c.id, []);
-    groups.get(c.id).push(c);
-  }
-  return [...groups.values()]
-    .map((list) => {
-      const [first] = list;
-      const final = list.some((c) => c.atEnd) ? '<span class="tag">Al final</span>' : '';
-      const buttons = list.map((c) => playButton(c, chordsIn(result, c, ' → ', { unique: true }))).join('');
-      return `
-        <div class="match">
-          <div class="match-head"><h3>${first.name}</h3>${final}</div>
-          <p>${linkTerms(first.text)}</p>
-          <div class="button-row">${buttons}</div>
-        </div>`;
-    })
-    .join('');
-}
-
-export function renderMatches(result) {
-  const progressions = result.progressions.length
-    ? result.progressions.map((m) => renderProgression(result, m)).join('')
-    : `<p class="muted">${linkTerms(NO_PROGRESSION_TEXT)}</p>`;
-  const cadences = result.cadences.length
-    ? `
-      <h3 class="subhead">Cadencias</h3>
-      <details class="explain">
-        <summary>¿Qué es una cadencia?</summary>
-        <p>${linkTerms(CADENCE_TEXT, { exclude: 'cadencia' })}</p>
-      </details>
-      ${renderCadences(result)}`
-    : '';
-  return `
-    <h3 class="subhead first">Progresiones conocidas</h3>
-    ${progressions}
-    ${cadences}`;
-}
-
 export function renderGlossaryList() {
   return GLOSSARY.map((e) => `<button type="button" class="chip" data-term="${e.id}">${e.term}</button>`).join('');
 }
@@ -319,22 +245,22 @@ export function renderModes(result) {
     : '';
 
   return `
-    <h2 class="card-title">Modo</h2>
-    <details class="explain">
-      <summary>¿Qué es un modo?</summary>
+    <p class="eyebrow">Modo</p>
+    <h2 class="key-name">${modeName(m)}</h2>
+    <details class="more" data-keep="mode">
+      <summary>Más sobre el modo</summary>
       <p>${linkTerms(MODES_TEXT)}</p>
-    </details>
-    <p class="mode-name">${linkTerms(modeName(m))}</p>
-    <p class="scale-notes">${m.scale.map((n) => `<span class="${n === m.charNote ? 'char' : ''}">${noteName(n)}</span>`).join('')}</p>
-    <p>${linkTerms(VARIANT_INFO[m.variant] ?? info.text)}</p>
-    ${char ? `<p><strong>${char}</strong>${heard}</p>` : ''}
-    ${foreign ? `<p class="special">${linkTerms(foreign)}</p>` : ''}
-    <p class="muted">${linkTerms(modeVsKeyText(m, key))}</p>
-    ${songs}
-    <div class="button-row">
-      <button type="button" class="btn secondary small" data-action="mode-scale" data-which="main">▶ Escala</button>
-      ${compareLabel ? `<button type="button" class="btn secondary small" data-action="mode-compare">▶ Comparar con ${compareLabel}</button>` : ''}
-      <button type="button" class="btn secondary small" data-action="mode-typical">▶ Ejemplo típico</button>
-    </div>
-    ${others}`;
+      <p class="scale-notes">${m.scale.map((n) => `<span class="${n === m.charNote ? 'char' : ''}">${noteName(n)}</span>`).join('')}</p>
+      <p>${linkTerms(VARIANT_INFO[m.variant] ?? info.text)}</p>
+      ${char ? `<p><strong>${char}</strong>${heard}</p>` : ''}
+      ${foreign ? `<p class="special">${linkTerms(foreign)}</p>` : ''}
+      <p class="muted">${linkTerms(modeVsKeyText(m, key))}</p>
+      ${songs}
+      <div class="button-row">
+        <button type="button" class="btn secondary small" data-action="mode-scale" data-which="main">▶ Escala</button>
+        ${compareLabel ? `<button type="button" class="btn secondary small" data-action="mode-compare">▶ Comparar con ${compareLabel}</button>` : ''}
+        <button type="button" class="btn secondary small" data-action="mode-typical">▶ Ejemplo típico</button>
+      </div>
+      ${others}
+    </details>`;
 }

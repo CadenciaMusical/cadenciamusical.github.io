@@ -274,7 +274,6 @@ details summary {
 
 /* --- Modos --- */
 
-.mode-name { font-size: 1.6rem; font-weight: 700; margin: 8px 0 4px; }
 .scale-notes { display: flex; flex-wrap: wrap; gap: 6px; }
 .scale-notes span {
   min-width: 40px;
@@ -370,58 +369,12 @@ details summary {
 }
 .special p:first-child { margin-top: 0; }
 
-/* --- Progresiones y cadencias --- */
+/* --- Desplegables de las tarjetas --- */
+
+details.more { margin-top: 4px; }
+details.more[open] summary { margin-bottom: 4px; }
 
 .subhead { font-size: 1.05rem; margin: 20px 0 4px; color: var(--muted); }
-.subhead.first { margin-top: 0; }
-.match { padding: 12px 0; border-top: 1px solid var(--border); }
-.subhead + .match, .subhead + details + .match { border-top: 0; }
-.match h3 { font-size: 1.15rem; }
-.match-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
-.steps { font-family: Georgia, "Times New Roman", serif; font-weight: 700; color: var(--accent-text); }
-.where { font-weight: 500; }
-
-/* --- Diagramas --- */
-
-.diagram { margin: 16px 0 8px; }
-
-.segmented {
-  display: inline-flex;
-  padding: 3px;
-  border-radius: 12px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  margin-bottom: 12px;
-}
-.seg {
-  min-height: 40px;
-  min-width: 96px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  font-weight: 600;
-  color: var(--muted);
-  cursor: pointer;
-}
-.seg.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
-
-.piano { display: block; width: 100%; max-width: 480px; height: auto; touch-action: manipulation; }
-.key { stroke: var(--key-line); stroke-width: 1; cursor: pointer; }
-.key.white { fill: var(--key-white); }
-.key.black { fill: var(--key-black); stroke: var(--key-black); }
-.key.on { fill: var(--accent); stroke: var(--accent); }
-.key.on.bass { fill: var(--fn-T); stroke: var(--fn-T); }
-.key-label { fill: var(--on-accent); font-size: 10px; font-weight: 700; pointer-events: none; }
-
-.guitar { display: block; width: 100%; max-width: 240px; height: auto; margin: 0 auto 0 0; }
-.guitar .string { stroke: var(--muted); stroke-width: 1.5; }
-.guitar .fret { stroke: var(--key-line); stroke-width: 1.5; }
-.guitar .nut { stroke: var(--text); stroke-width: 6; stroke-linecap: round; }
-.guitar .dot, .guitar .barre { fill: var(--accent); }
-.guitar .open { fill: none; stroke: var(--text); stroke-width: 2; }
-.guitar .mark { fill: var(--muted); font-size: 18px; font-weight: 700; }
-.guitar .fret-number { fill: var(--muted); font-size: 14px; font-weight: 700; }
-.guitar .string-note { fill: var(--muted); font-size: 11px; font-weight: 600; }
 
 /* --- Leyenda --- */
 
