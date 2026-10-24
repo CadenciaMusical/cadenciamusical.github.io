@@ -1,9 +1,11 @@
 // Glosario: cada término con una explicación breve y un ejemplo para escuchar.
 // Los ejemplos se construyen en la tonalidad que se está analizando (o en Do mayor).
 
-import { Note } from '../../vendor/tonal.mjs';
+import { Interval, Note } from '../../vendor/tonal.mjs';
 import { chordOnDegree, tonicChord } from '../core/build.js';
 import { DEGREES } from '../core/theory.js';
+import { MODES, modeScale } from '../core/modes.js';
+import { MODE_INFO } from './texts.js';
 import { chordLabel, keyName, latinNote } from '../core/names.js';
 
 export const DEFAULT_KEY = { tonic: 'C', mode: 'major', pc: 0 };
@@ -85,7 +87,7 @@ export const GLOSSARY = [
     id: 'modo',
     term: 'Modo mayor y menor',
     match: ['modo'],
-    text: 'Una tonalidad puede ser mayor (suena luminosa, alegre) o menor (más oscura, melancólica). Lo que cambia es una sola nota del acorde: la tercera.',
+    text: 'Una tonalidad puede ser mayor (suena luminosa, alegre) o menor (más oscura, melancólica): lo que cambia es la tercera nota del acorde de tónica. Son los dos modos más usados, pero hay siete: jónico, dórico, frigio, lidio, mixolidio, eólico y locrio.',
     example: (k, label) => {
       const major = chordOnDegree(k, 0, 'M');
       const minor = chordOnDegree(k, 0, 'm');
@@ -239,6 +241,27 @@ export const GLOSSARY = [
     },
   },
 ];
+
+// Variantes con nombre propio, explicadas dentro de su modo.
+const MODE_VARIANTS = {
+  phrygian: { match: 'frigio dominante', text: 'Si además el acorde de la tónica es mayor, se llama frigio dominante: el sonido del flamenco.' },
+  aeolian: { match: 'menor armónica', text: 'Si la séptima nota sube medio tono para tirar hacia la tónica (la sensible), se llama menor armónica.' },
+};
+
+// Un término por cada modo, con su escala para escuchar.
+const MODE_TERMS = MODES.map((mode) => ({
+  id: `modo-${mode.id}`,
+  term: `Modo ${mode.name}`,
+  match: MODE_VARIANTS[mode.id] ? [MODE_VARIANTS[mode.id].match, mode.name] : [mode.name],
+  text: MODE_VARIANTS[mode.id] ? `${MODE_INFO[mode.id].text} ${MODE_VARIANTS[mode.id].text}` : MODE_INFO[mode.id].text,
+  example: (k) => {
+    const scale = modeScale(mode.id, k.tonic);
+    const start = 60 + k.pc;
+    const notes = [...scale.map((n) => start + Interval.semitones(Interval.distance(scale[0], n))), start + 12];
+    return { notes, caption: `La escala de ${latinNote(k.tonic)} ${mode.name}: ${scale.map(latinNote).join(' ')}.` };
+  },
+}));
+GLOSSARY.push(...MODE_TERMS);
 
 const BY_ID = new Map(GLOSSARY.map((e) => [e.id, e]));
 const BY_WORD = new Map(GLOSSARY.flatMap((e) => e.match.map((w) => [w, e])));

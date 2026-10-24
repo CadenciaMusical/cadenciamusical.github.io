@@ -6,6 +6,7 @@ import { defaultTonic } from '../core/key.js';
 import { transposeChord } from '../core/transpose.js';
 import {
   FUNCTIONS, KEY_TEXT, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, CADENCE_TEXT, NO_PROGRESSION_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
+  MODE_INFO, VARIANT_INFO, MODES_TEXT, modeName, modeCharText, modeForeignText, modeVsKeyText,
 } from './texts.js';
 import { GLOSSARY, linkTerms } from './glossary.js';
 import { normalVersion } from '../core/build.js';
@@ -291,4 +292,53 @@ export function renderTranspose(result, { latin = false, original = null } = {})
     <div class="chips key-chips">${chips}</div>
     ${anyEasy ? '<p class="hint">★ Todos los acordes se tocan sin cejilla en la guitarra.</p>' : ''}
     ${back}`;
+}
+
+export function renderModes(result, { latin = false } = {}) {
+  const { modes, key } = result;
+  if (!modes) return '';
+  const m = modes.main;
+  const info = MODE_INFO[m.id];
+  const char = modeCharText(m);
+  const heard = m.charChords.length ? ` La oyes en ${m.charChords.map((c) => chordLabel(c, latin)).join(', ')}.` : '';
+  const foreign = modeForeignText(m);
+  const songs = info.songs.length ? `<p class="muted">Lo oirás en: ${info.songs.join(' · ')}</p>` : '';
+  const compareLabel = m.charNote ? keyName({ tonic: m.tonic, mode: m.id === 'lydian' || m.id === 'mixolydian' ? 'major' : 'minor' }) : null;
+
+  const others = modes.others.length
+    ? `
+      <h3 class="subhead">También encajan</h3>
+      ${modes.others
+        .map((o) => {
+          const why = o.sameNotes
+            ? `Con las mismas notas, si la casa fuera ${latinNote(o.tonic)}.`
+            : `Faltan notas para descartarlo.`;
+          return `
+            <div class="mode-other">
+              <div><strong>${linkTerms(modeName(o))}</strong> <span class="muted">${why}</span></div>
+              <button type="button" class="btn secondary small" data-action="mode-scale" data-which="${modes.others.indexOf(o)}">▶ Escala</button>
+            </div>`;
+        })
+        .join('')}`
+    : '';
+
+  return `
+    <h2 class="card-title">Modo</h2>
+    <details class="explain">
+      <summary>¿Qué es un modo?</summary>
+      <p>${linkTerms(MODES_TEXT)}</p>
+    </details>
+    <p class="mode-name">${linkTerms(modeName(m))}</p>
+    <p class="scale-notes">${m.scale.map((n) => `<span class="${n === m.charNote ? 'char' : ''}">${latinNote(n)}</span>`).join('')}</p>
+    <p>${linkTerms(VARIANT_INFO[m.variant] ?? info.text)}</p>
+    ${char ? `<p><strong>${char}</strong>${heard}</p>` : ''}
+    ${foreign ? `<p class="special">${linkTerms(foreign)}</p>` : ''}
+    <p class="muted">${linkTerms(modeVsKeyText(m, key))}</p>
+    ${songs}
+    <div class="button-row">
+      <button type="button" class="btn secondary small" data-action="mode-scale" data-which="main">▶ Escala</button>
+      ${compareLabel ? `<button type="button" class="btn secondary small" data-action="mode-compare">▶ Comparar con ${compareLabel}</button>` : ''}
+      <button type="button" class="btn secondary small" data-action="mode-typical">▶ Ejemplo típico</button>
+    </div>
+    ${others}`;
 }

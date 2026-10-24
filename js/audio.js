@@ -167,10 +167,11 @@ export function playNotes(midis, { together = false, step = 0.6, hold = step * 0
   const dest = newBus();
   const t = ctx.currentTime + 0.05;
   const level = 0.3 / Math.sqrt(Math.max(1, midis.length * (hold / step) / 4));
-  midis.forEach((m, i) => playNote(dest, m, t + i * step, hold, level));
+  // null es un silencio.
+  midis.forEach((m, i) => m !== null && playNote(dest, m, t + i * step, hold, level));
   let total = midis.length * step;
   if (together) {
-    midis.forEach((m) => playNote(dest, m, t + total, 1.4, 0.22));
+    midis.filter((m) => m !== null).forEach((m) => playNote(dest, m, t + total, 1.4, 0.22));
     total += 1.4;
   }
   if (onEnd) timers.push(setTimeout(onEnd, (total + 0.5) * 1000));

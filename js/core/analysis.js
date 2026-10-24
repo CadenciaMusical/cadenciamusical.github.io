@@ -4,6 +4,7 @@ import { parseProgression } from './parser.js';
 import { detectKey, scoreKey, isRelative } from './key.js';
 import { classify } from './classify.js';
 import { findMatches, relativeOf } from './matcher.js';
+import { detectModes } from './modes.js';
 
 // forcedKey: { pc, mode, tonic } si el usuario ha elegido la tonalidad a mano.
 export function analyze(text, { forcedKey = null } = {}) {
@@ -11,7 +12,7 @@ export function analyze(text, { forcedKey = null } = {}) {
   const chords = parsed.filter((c) => c.ok);
   const errors = parsed.filter((c) => !c.ok);
   const detection = detectKey(chords);
-  if (!detection) return { parsed, chords, errors, key: null, items: [], progressions: [], cadences: [] };
+  if (!detection) return { parsed, chords, errors, key: null, items: [], progressions: [], cadences: [], modes: null };
 
   let { key, alternative, confidence } = detection;
   if (forcedKey) {
@@ -24,6 +25,7 @@ export function analyze(text, { forcedKey = null } = {}) {
 
   const items = chords.map((chord, i) => ({ chord, ...classify(chord, key, chords[i + 1] ?? null) }));
   const { progressions, cadences } = findMatches(chords, key, relativeOf(key));
+  const modes = detectModes(chords, key);
 
   return {
     parsed,
@@ -37,5 +39,6 @@ export function analyze(text, { forcedKey = null } = {}) {
     items,
     progressions,
     cadences,
+    modes,
   };
 }

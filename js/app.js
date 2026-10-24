@@ -10,8 +10,10 @@ import { keyName } from './core/names.js';
 import { transposeText } from './core/transpose.js';
 import { playChords, playChord, playNotes, stop } from './audio.js';
 import {
-  renderErrors, renderKey, renderChords, renderDetail, renderLegend, renderMatches, renderGlossaryList, renderTerm, renderTranspose,
+  renderErrors, renderKey, renderChords, renderDetail, renderLegend, renderMatches, renderGlossaryList, renderTerm, renderTranspose, renderModes,
 } from './ui/render.js';
+import { modeScale, typicalProgression } from './core/modes.js';
+import { Interval } from '../vendor/tonal.mjs';
 import { glossaryEntry, DEFAULT_KEY } from './ui/glossary.js';
 
 const EXAMPLES = [
@@ -35,6 +37,7 @@ const els = {
   intro: $('#intro'),
   keyCard: $('#key-card'),
   transposeCard: $('#transpose-card'),
+  modesCard: $('#modes-card'),
   grid: $('#chord-grid'),
   detail: $('#detail'),
   matches: $('#matches'),
@@ -129,6 +132,7 @@ function renderGrid() {
   els.grid.innerHTML = renderChords(state.result.items, { selected: state.selected, latin: state.latin });
   els.matches.innerHTML = renderMatches(state.result, { latin: state.latin });
   els.transposeCard.innerHTML = renderTranspose(state.result, { latin: state.latin, original: state.original });
+  els.modesCard.innerHTML = renderModes(state.result, { latin: state.latin });
 }
 
 function renderSelected() {
@@ -171,6 +175,12 @@ function playList(chords, { highlightGrid = false, offset = 0 } = {}) {
 function playProgression() {
   if (state.playing) return stopPlayback();
   playList(state.result.chords, { highlightGrid: true });
+}
+
+// Escala hacia arriba desde la tónica (entre Do4 y Si4), con la octava.
+function scaleMidis(scale, pc) {
+  const start = 60 + pc;
+  return [...scale.map((n) => start + Interval.semitones(Interval.distance(scale[0], n))), start + 12];
 }
 
 // --- Transportar ---
@@ -335,6 +345,21 @@ document.addEventListener('click', (e) => {
       break;
     case 'transpose-reset':
       restoreOriginal();
+      break;
+    case 'mode-scale': {
+      const m = btn.dataset.which === 'main' ? r.modes.main : r.modes.others[Number(btn.dataset.which)];
+      playNotes(scaleMidis(m.scale, m.pc), { step: 0.35 });
+      break;
+    }
+    case 'mode-compare': {
+      // La escala mayor o menor de siempre, un silencio y la del modo.
+      const m = r.modes.main;
+      const plain = modeScale(m.id === 'lydian' || m.id === 'mixolydian' ? 'ionian' : 'aeolian', m.tonic);
+      playNotes([...scaleMidis(plain, m.pc), null, null, ...scaleMidis(m.scale, m.pc)], { step: 0.32 });
+      break;
+    }
+    case 'mode-typical':
+      playList(typicalProgression(r.modes.main.id, r.modes.main.tonic));
       break;
     case 'demo':
       stopPlayback();

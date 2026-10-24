@@ -244,6 +244,30 @@ details summary {
   font-weight: 600;
 }
 
+/* --- Modos --- */
+
+.mode-name { font-size: 1.6rem; font-weight: 700; margin: 8px 0 4px; }
+.scale-notes { display: flex; flex-wrap: wrap; gap: 6px; }
+.scale-notes span {
+  min-width: 40px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  text-align: center;
+  font-weight: 600;
+}
+.scale-notes span.char { background: var(--accent); color: var(--on-accent); }
+.mode-other {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.subhead + .mode-other { border-top: 0; }
+.mode-other .btn { flex-shrink: 0; white-space: nowrap; }
+
 /* --- Transportar --- */
 
 .card-title { font-size: 1.2rem; margin-bottom: 4px; }

@@ -30,7 +30,7 @@ No hay dependencias que instalar: las pruebas usan el ejecutor integrado de Node
 
 ## Estructura
 
-- `js/core/`: lógica de análisis, sin DOM (parser, tonalidad, grados y funciones, búsqueda de progresiones).
+- `js/core/`: lógica de análisis, sin DOM (parser, tonalidad, grados y funciones, búsqueda de progresiones, modos).
 - `js/core/catalog.js`: catálogo de progresiones y cadencias. Para añadir una, basta con una entrada nueva en grados romanos; las pruebas comprueban que se reconoce en las 12 tonalidades.
 - `js/ui/`: textos didácticos y generación del HTML.
 - `js/audio.js`: sintetizador con la Web Audio API.

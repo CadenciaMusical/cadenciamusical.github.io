@@ -7,7 +7,7 @@
 // Al publicar cambios, sube VERSION: la app avisará de que hay una versión nueva.
 // Las pruebas (tests/sw.test.js) comprueban que ASSETS no se deja nada.
 
-const VERSION = 'cadencia-v1';
+const VERSION = 'cadencia-v2';
 
 const ASSETS = [
   './',
@@ -23,6 +23,7 @@ const ASSETS = [
   'js/core/fretboard.js',
   'js/core/key.js',
   'js/core/matcher.js',
+  'js/core/modes.js',
   'js/core/names.js',
   'js/core/parser.js',
   'js/core/theory.js',

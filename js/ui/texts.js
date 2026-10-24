@@ -50,6 +50,92 @@ export const CADENCE_TEXT =
 export const TRANSPOSE_TEXT =
   'Cambia todos los acordes a otra tonalidad sin cambiar las distancias entre ellos: suena igual, pero más agudo o más grave. Sirve para adaptarla a tu voz o buscar acordes más fáciles.';
 
+// Carácter de cada modo y canciones donde se oye.
+export const MODE_INFO = {
+  ionian: {
+    text: 'Es la escala mayor de siempre: luminosa y estable.',
+    songs: ['Casi todo el pop: Let It Be (The Beatles)'],
+  },
+  dorian: {
+    text: 'Es menor, pero con la sexta mayor: suena menos triste, con un punto de jazz, funk o folk.',
+    songs: ['Oye Como Va (Santana)', 'Scarborough Fair (canción tradicional)'],
+  },
+  phrygian: {
+    text: 'Es menor, con la segunda a solo medio tono de la tónica: suena oscuro, con aire español y flamenco.',
+    songs: ['El «modo de Mi» del flamenco'],
+  },
+  lydian: {
+    text: 'Es mayor, con la cuarta aumentada: suena luminoso, flotante, de ensueño. Es muy de bandas sonoras.',
+    songs: ['La sintonía de Los Simpson', 'Flying in a Blue Dream (Joe Satriani)'],
+  },
+  mixolydian: {
+    text: 'Es mayor, con la séptima menor: suena a rock, a blues y a folk.',
+    songs: ['Sweet Home Alabama (Lynyrd Skynyrd)', 'Norwegian Wood (The Beatles)'],
+  },
+  aeolian: {
+    text: 'Es la escala menor natural de siempre: melancólica.',
+    songs: ['All Along the Watchtower (Bob Dylan)'],
+  },
+  locrian: {
+    text: 'Su acorde de tónica es disminuido, así que nunca acaba de sonar a casa: tenso y extraño. Es el modo menos usado.',
+    songs: [],
+  },
+};
+
+// Cuando sobra una nota con nombre propio, el carácter cambia.
+export const VARIANT_INFO = {
+  'harmonic-minor': 'Es la escala menor con la séptima nota subida medio tono: más tensa que la menor natural, con un aire clásico y algo oriental.',
+  'phrygian-dominant': 'Es el frigio con el acorde de la tónica en mayor: oscuro y luminoso a la vez, el sonido típico del flamenco.',
+};
+
+export const MODES_TEXT =
+  'Además de mayor y menor, hay siete modos. Todos usan las mismas notas, pero cada uno toma una distinta como casa, y eso cambia el carácter.';
+
+// Nombre completo de un modo encontrado: «Re mixolidio», «Mi frigio dominante».
+export function modeName(m) {
+  const tonic = latinNote(m.tonic);
+  if (m.variant === 'phrygian-dominant') return `${tonic} frigio dominante`;
+  if (m.variant === 'harmonic-minor') return `${tonic} menor armónica`;
+  return `${tonic} ${m.name}`;
+}
+
+// La nota que distingue el modo de la escala mayor o menor de siempre.
+export function modeCharText(m) {
+  if (!m.charNote) return '';
+  const parallel = keyName({ tonic: m.tonic, mode: m.id === 'lydian' || m.id === 'mixolydian' ? 'major' : 'minor' });
+  const first = `${latinNote(m.charNote)} en lugar de ${latinNote(m.insteadNote)}`;
+  if (m.variant === 'phrygian-dominant') {
+    const third = m.scale[2];
+    return `Frente a ${parallel}, cambian dos notas: ${first}, y ${latinNote(third)} en lugar de ${latinNote(Note.transpose(m.tonic, '3m'))}.`;
+  }
+  return `Frente a ${parallel}, cambia una nota: ${first}.`;
+}
+
+// Las notas que no caben en el modo.
+export function modeForeignText(m) {
+  if (m.foreign.length === 0) return '';
+  const notes = m.foreign.map(latinNote);
+  if (m.variant === 'harmonic-minor') {
+    return `El ${notes[0]} no es de la escala: sube medio tono para tirar hacia la tónica (es la sensible). Con ese cambio, la escala se llama menor armónica.`;
+  }
+  if (m.variant === 'phrygian-dominant') {
+    return `El ${notes[0]} no es del frigio: convierte en mayor el acorde de la tónica. Es el frigio dominante, el sonido típico del flamenco.`;
+  }
+  const list = notes.length === 1 ? `el ${notes[0]}` : `${notes.slice(0, -1).join(', ')} y ${notes[notes.length - 1]}`;
+  return `Hay notas que no caben en este modo (${list}). Es normal: las canciones mezclan.`;
+}
+
+// Cómo se relaciona el modo con la tonalidad detectada.
+export function modeVsKeyText(m, key) {
+  const k = keyName(key);
+  const same = m.pc === key.pc && ((m.id === 'ionian' && key.mode === 'major') || (m.id === 'aeolian' && key.mode === 'minor'));
+  if (same) return `Coincide con la tonalidad: ${k}.`;
+  if (m.pc === key.pc) {
+    return `La tonalidad lo explica como ${k} con algún acorde de fuera; el modo, como una escala propia. Son dos formas de ver lo mismo.`;
+  }
+  return `La tonalidad apunta a ${k}; el modo toma ${latinNote(m.tonic)} como casa. Son dos formas de oír lo mismo: escucha cuál te suena a final.`;
+}
+
 export const NO_PROGRESSION_TEXT =
   'No coincide con ninguna progresión famosa del catálogo. ¡Eso no la hace peor: puede que sea tuya!';
 
