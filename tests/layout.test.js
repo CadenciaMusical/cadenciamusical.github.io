@@ -36,3 +36,14 @@ test('hoja del acorde: la ✕ separada del borde y con 44 px de área táctil', 
   assert.match(css, /\.detail-sheet \.roman\.big \{ font-size: 1\.4rem; \}/);
   assert.match(css, /\.detail-sheet \.detail-title \{[^}]*padding-right: 56px/);
 });
+
+test('al cambiar el # con la app abierta, se vuelve a analizar', () => {
+  assert.match(app, /addEventListener\('hashchange', openFromUrl\)/);
+  // saveToUrl no debe lanzar hashchange (sería un bucle): usa replaceState.
+  assert.match(/function saveToUrl[\s\S]*?\n\}/.exec(app)[0], /history\.replaceState/);
+  // Lo que cambia la dirección no deja la tonalidad elegida ni el transporte anteriores.
+  const open = /function openFromUrl[\s\S]*?\n\}/.exec(app)[0];
+  assert.match(open, /state\.forcedKey = null/);
+  assert.match(open, /state\.original = null/);
+  assert.match(open, /run\(\)/);
+});

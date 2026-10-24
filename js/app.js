@@ -628,9 +628,20 @@ function registerServiceWorker() {
     });
 }
 
+// Abre la progresión de la dirección (#Am%20F%20C%20G), en el cifrado de quien
+// la abre. Sin nada, la pantalla de inicio.
+function openFromUrl() {
+  for (const dialog of [els.termDialog, els.detailSheet]) if (dialog.open) dialog.close();
+  const shared = loadFromUrl();
+  els.input.value = shared ? convertNotation(shared, notation()) : '';
+  state.forcedKey = null;
+  state.original = null;
+  run();
+}
+
 // Lo primero, para que el aviso de versión nueva funcione aunque algo falle después.
 registerServiceWorker();
-const shared = loadFromUrl();
-// Un enlace compartido se abre en el cifrado de quien lo abre.
-if (shared) els.input.value = convertNotation(shared, notation());
-run();
+openFromUrl();
+// Pegar un enlace compartido con la app abierta solo cambia el #: se vuelve a
+// analizar. (saveToUrl usa replaceState, que no lanza este evento.)
+addEventListener('hashchange', openFromUrl);
