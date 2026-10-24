@@ -73,6 +73,7 @@
 
   <dialog id="term-dialog" class="sheet" aria-labelledby="term-title">
     <div class="sheet-inner">
+    <div class="sheet-grip" aria-hidden="true"></div>
     <div class="sheet-head">
       <h2 id="term-title"></h2>
       <button type="button" class="icon-btn" data-close aria-label="Cerrar">
@@ -81,6 +82,17 @@
     </div>
     <div id="term-body"></div>
     <button type="button" id="term-play" class="btn primary wide">▶ Escúchalo</button>
+    </div>
+  </dialog>
+
+  <!-- En móvil, el detalle del acorde elegido sale aquí, desde abajo. -->
+  <dialog id="detail-sheet" class="sheet detail-sheet" aria-label="El acorde elegido">
+    <div class="sheet-inner">
+    <div class="sheet-grip" aria-hidden="true"></div>
+    <button type="button" class="icon-btn sheet-close" data-close aria-label="Cerrar">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <div id="detail-body"></div>
     </div>
   </dialog>
 

@@ -49,6 +49,8 @@ const els = {
   updateBtn: $('#update-btn'),
   glossaryList: $('#glossary-list'),
   termDialog: $('#term-dialog'),
+  detailSheet: $('#detail-sheet'),
+  detailBody: $('#detail-body'),
   termTitle: $('#term-title'),
   termBody: $('#term-body'),
   termPlay: $('#term-play'),
@@ -148,12 +150,35 @@ function renderGrid() {
   keepOpen(els.modesCard, renderModes(state.result));
 }
 
+// En móvil, el detalle sale en una hoja inferior; en pantallas grandes va
+// debajo de los acordes y la vista baja hasta él.
+const narrow = matchMedia('(max-width: 599px)');
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+// Repinta el detalle donde se esté viendo (al cambiar de instrumento, etc.).
 function renderSelected() {
   const item = state.result.items[state.selected];
+  const html = item ? renderDetail(item, state.result.key, { instrument: state.instrument, position: state.position }) : '';
+  if (els.detailSheet.open) {
+    if (item) els.detailBody.innerHTML = html;
+    else els.detailSheet.close();
+    return;
+  }
   els.detail.hidden = !item;
-  els.detail.innerHTML = item
-    ? renderDetail(item, state.result.key, { instrument: state.instrument, position: state.position })
-    : '';
+  els.detail.innerHTML = html;
+}
+
+// Al tocar un acorde: que se note que se ha abierto su explicación.
+function showSelected() {
+  if (narrow.matches) {
+    els.detail.hidden = true;
+    if (!els.detailSheet.open) els.detailSheet.showModal();
+    renderSelected();
+    els.detailSheet.scrollTop = 0;
+    return;
+  }
+  renderSelected();
+  els.detail.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'nearest' });
 }
 
 // --- Sonido ---
@@ -279,16 +304,18 @@ els.grid.addEventListener('click', (e) => {
   state.position = 0;
   playChord(state.result.items[state.selected].chord);
   renderGrid();
-  renderSelected();
+  showSelected();
 });
 
 els.play.addEventListener('click', playProgression);
 
 // Teclas del piano: cada una suena al tocarla.
-els.detail.addEventListener('click', (e) => {
-  const key = e.target.closest('.key');
-  if (key) playNotes([Number(key.dataset.midi)], { hold: 1.2 });
-});
+for (const box of [els.detail, els.detailBody]) {
+  box.addEventListener('click', (e) => {
+    const key = e.target.closest('.key');
+    if (key) playNotes([Number(key.dataset.midi)], { hold: 1.2 });
+  });
+}
 
 // Botones dentro de las tarjetas de resultados.
 document.addEventListener('click', (e) => {
@@ -451,12 +478,49 @@ els.termPlay.addEventListener('click', () => {
   else playChords(example.chords);
 });
 
-els.termDialog.addEventListener('click', (e) => {
-  // Un toque fuera de la ventana (en el fondo) o en la X la cierra.
-  if (e.target === els.termDialog || e.target.closest('[data-close]')) els.termDialog.close();
+els.termDialog.addEventListener('close', () => stop());
+
+// Cerrar la hoja del detalle deja de elegir el acorde.
+els.detailSheet.addEventListener('close', () => {
+  stopPlayback();
+  state.selected = null;
+  if (state.result) renderGrid();
 });
 
-els.termDialog.addEventListener('close', () => stop());
+for (const dialog of [els.termDialog, els.detailSheet]) {
+  dialog.addEventListener('click', (e) => {
+    // Un toque fuera de la ventana (en el fondo) o en la X la cierra.
+    if (e.target === dialog || e.target.closest('[data-close]')) dialog.close();
+  });
+  swipeToClose(dialog);
+}
+
+// Las hojas inferiores se cierran deslizándolas hacia abajo, si su contenido
+// está arriba del todo (si no, el gesto solo desplaza el contenido).
+function swipeToClose(dialog) {
+  let startY = null;
+  let dy = 0;
+  dialog.addEventListener('touchstart', (e) => {
+    if (!narrow.matches || dialog.scrollTop > 0) return;
+    startY = e.touches[0].clientY;
+    dy = 0;
+  }, { passive: true });
+  dialog.addEventListener('touchmove', (e) => {
+    if (startY === null) return;
+    dy = Math.max(0, e.touches[0].clientY - startY);
+    dialog.classList.add('dragging');
+    dialog.style.transform = `translateY(${dy}px)`;
+  }, { passive: true });
+  const end = () => {
+    if (startY === null) return;
+    startY = null;
+    dialog.classList.remove('dragging');
+    dialog.style.transform = '';
+    if (dy > 80) dialog.close();
+  };
+  dialog.addEventListener('touchend', end);
+  dialog.addEventListener('touchcancel', end);
+}
 
 els.glossaryList.innerHTML = renderGlossaryList();
 

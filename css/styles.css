@@ -375,6 +375,9 @@ details summary {
 
 /* --- Detalle de un acorde --- */
 
+/* Al bajar hasta el detalle, que no quede bajo la barra de «Escuchar». */
+.detail { scroll-margin: 16px 0 calc(96px + env(safe-area-inset-bottom)); }
+
 .detail-head {
   display: flex;
   justify-content: space-between;
@@ -507,12 +510,28 @@ details.more[open] summary { margin-bottom: 4px; }
   color: var(--text);
 }
 .sheet::backdrop { background: rgb(20 10 5 / 45%); }
-.sheet-inner { padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); }
+.sheet-inner { position: relative; padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); }
 .sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .sheet-head h2 { font-size: 1.3rem; }
 
+/* Asa para deslizar la hoja hacia abajo y cerrarla. */
+.sheet-grip { width: 40px; height: 5px; margin: 0 auto 8px; border-radius: 3px; background: var(--border); }
+.sheet { overscroll-behavior: contain; transition: transform 0.2s ease; }
+.sheet.dragging { transition: none; }
+.sheet[open] { animation: sheet-in 0.22s ease-out; }
+@keyframes sheet-in { from { transform: translateY(100%); } }
+/* Con una hoja abierta, la página de detrás no se mueve. */
+html:has(.sheet[open]) { overflow: hidden; }
+
+/* El detalle del acorde, en la hoja: la X arriba a la derecha. */
+.sheet-close { position: absolute; top: 4px; right: 8px; }
+.detail-sheet .detail-head { padding-right: 40px; }
+.detail-sheet #detail-body { padding-top: 8px; }
+
 @media (min-width: 600px) {
   .sheet { margin: auto; border-radius: var(--radius); }
+  .sheet-grip { display: none; }
+  .sheet[open] { animation: none; }
 }
 
 /* --- Aviso de versión nueva --- */
@@ -552,6 +571,8 @@ details.more[open] summary { margin-bottom: 4px; }
 .playbar .btn { display: block; max-width: 688px; margin: 0 auto; }
 
 @media (prefers-reduced-motion: reduce) {
+  .sheet { transition: none; }
+  .sheet[open] { animation: none; }
   .chord { transition: none; }
   .chord.playing { transform: none; }
 }
