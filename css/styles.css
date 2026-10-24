@@ -488,10 +488,13 @@ details summary {
 
 /* --- Piano: las notas del acorde, en el color de su función --- */
 
+/* Crece con el ancho hasta un máximo cómodo; con height: auto y el viewBox,
+   las teclas no se deforman. */
 .piano {
   display: block;
   width: 100%;
-  max-width: 480px;
+  max-width: 600px;
+  margin: 0 auto;
   height: auto;
   touch-action: manipulation;
 }
@@ -513,8 +516,17 @@ details summary {
 .guitar {
   display: block;
   width: 100%;
-  max-width: 240px;
+  max-width: 260px;
+  margin: 0 auto;
   height: auto;
+}
+
+/* En pantallas anchas, el diagrama (con su selector, sus notas y sus botones)
+   y los botones para oír el acorde van centrados en la tarjeta. */
+@media (min-width: 600px) {
+  .diagram { text-align: center; }
+  .diagram .button-row,
+  .button-row.listen { justify-content: center; }
 }
 .guitar .string { stroke: var(--muted); stroke-width: 1.5; }
 .guitar .fret { stroke: var(--key-line); stroke-width: 2; }

@@ -255,7 +255,7 @@ export function renderDetail(item, key, { instrument = 'piano', position = 0 } =
       <p class="muted">${chordName(item.chord)} · notas ${notes}</p>
     </div>
     ${renderDiagram(item.chord, f, instrument, position)}
-    <div class="button-row">
+    <div class="button-row listen">
       <button type="button" class="btn secondary" data-action="play-selected">▶ Acorde</button>
       <button type="button" class="btn secondary" data-action="arpeggio-selected">▶ Nota a nota</button>
     </div>

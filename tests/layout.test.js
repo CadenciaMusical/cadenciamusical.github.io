@@ -47,3 +47,17 @@ test('al cambiar el # con la app abierta, se vuelve a analizar', () => {
   assert.match(open, /state\.original = null/);
   assert.match(open, /run\(\)/);
 });
+
+test('en pantallas anchas, el piano y la guitarra van centrados y el piano crece', () => {
+  const rule = (sel) => new RegExp(`\\n${sel.replace('.', '\\.')} \\{([^}]*)\\}`).exec(css)[1];
+  const piano = rule('.piano');
+  assert.match(piano, /width: 100%/);
+  assert.match(piano, /max-width: 600px/);
+  assert.match(piano, /margin: 0 auto/);
+  // Con height: auto, el viewBox mantiene las proporciones de las teclas.
+  assert.match(piano, /height: auto/);
+  assert.match(rule('.guitar'), /margin: 0 auto/);
+  const wide = [...css.matchAll(/@media \(min-width: 600px\) \{([\s\S]*?)\n\}/g)].map((m) => m[1]).join('\n');
+  assert.match(wide, /\.diagram \{ text-align: center; \}/);
+  assert.match(wide, /\.diagram \.button-row,\s*\.button-row\.listen \{ justify-content: center; \}/);
+});
