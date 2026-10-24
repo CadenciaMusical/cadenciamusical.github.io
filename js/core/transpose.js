@@ -4,6 +4,7 @@
 
 import { Chord, Interval, Note } from '../../vendor/tonal.mjs';
 import { parseChord, parseProgression, tokenize } from './parser.js';
+import { latinSuffix } from './names.js';
 
 const LATIN = { C: 'Do', D: 'Re', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si' };
 
@@ -21,8 +22,6 @@ const write = (note, notation) => (notation === 'latin' ? LATIN[note[0]] + note.
 
 const same = (a, b) => a.ok && a.pc === b.pc && a.triad === b.triad && a.seventh === b.seventh && a.bass === b.bass;
 
-const latinSuffix = (suffix) => suffix.replace(/^(aug|aum)/i, '+').replace(/^(dim|o)(?![a-z])/i, '°');
-
 // Escribe un acorde con otra raíz o en otro cifrado, conservando el sufijo tal
 // como lo escribió el usuario («Lam7» → «Am7»). Si con ese sufijo se leería
 // otra cosa («Reo», Re disminuido, daría «Do», Do mayor), prueba con los
@@ -31,8 +30,8 @@ export function writeChord(chord, notation, root = chord.root, bass = chord.bass
   const tail = bass ? '/' + write(bass, notation) : '';
   const expected = { ...chord, pc: Note.chroma(root), bass };
   const suffixes = [chord.rawSuffix, chord.suffix, ...Chord.get(chord.root + chord.suffix).aliases];
-  // En latino, «aug» y «dim» pegados a la sílaba se leen mal («Faaug», «Doo»):
-  // se usan los símbolos («Fa+», «Do°»).
+  // En latino, «aug», «dim» y «add9» pegados a la sílaba se leen mal
+  // («Faaug», «Doo», «Faadd9»): se escriben «Fa+», «Do°» y «Fa(add9)».
   if (notation === 'latin') suffixes.unshift(latinSuffix(chord.rawSuffix));
   for (const suffix of suffixes) {
     const text = write(root, notation) + suffix + tail;

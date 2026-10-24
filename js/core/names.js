@@ -33,10 +33,20 @@ export function noteName(note, latin = latinByDefault) {
   return latin ? latinNote(note) : prettyNote(note);
 }
 
+// En latino, «aug», «dim» y «add9» pegados a la sílaba se leen mal («Faaug»,
+// «Dodim», «Faadd9»): se escriben «Fa+», «Do°» y «Fa(add9)». Sin espacios,
+// porque en la casilla los espacios separan acordes.
+export const latinSuffix = (suffix) =>
+  suffix
+    .replace(/^(aug|aum)/i, '+')
+    .replace(/^(dim|o)(?![a-z])/i, '°')
+    .replace(/(?<!\()add(\d+)(?!\))/i, '(add$1)');
+
 // Cifrado legible: 'Bbm7' → 'B♭m7'; en latino: 'Si♭m7'.
 export function chordLabel(chord, latin = latinByDefault) {
   const bass = chord.bass ? '/' + noteName(chord.bass, latin) : '';
-  return noteName(chord.root, latin) + chord.suffix.replace(/#/g, '♯') + bass;
+  const suffix = latin ? latinSuffix(chord.suffix) : chord.suffix;
+  return noteName(chord.root, latin) + suffix.replace(/#/g, '♯') + bass;
 }
 
 const TRIAD_NAMES = {

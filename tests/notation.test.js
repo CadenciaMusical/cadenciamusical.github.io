@@ -23,6 +23,14 @@ test('el cifrado elegido se aplica a notas, acordes y tonalidades', () => {
   assert.equal(keyName({ tonic: 'F#', mode: 'minor' }), 'Fa♯ menor');
 });
 
+test('en latino, aumentado, disminuido y add9 con símbolos también en la página', () => {
+  setLatin(true);
+  const labels = ['Faug', 'Cdim', 'Cdim7', 'Fadd9', 'Bm7b5'].map((s) => chordLabel(parseChord(s)));
+  assert.deepEqual(labels, ['Fa+', 'Do°', 'Do°7', 'Fa(add9)', 'Sim7b5']);
+  setLatin(false);
+  assert.equal(chordLabel(parseChord('Faug')), 'Faug');
+});
+
 test('se puede pedir un cifrado concreto aunque el elegido sea otro', () => {
   setLatin(true);
   assert.equal(chordLabel(parseChord('C/E'), false), 'C/E');
