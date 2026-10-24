@@ -1,13 +1,13 @@
 // Service worker de Cadencia: guarda la app para que funcione sin conexión.
 //
 // - Al instalarse, descarga todos los archivos de ASSETS.
-// - La página se pide primero a la red (para ver cambios) y, sin conexión,
-//   se sirve la guardada.
-// - El resto se sirve desde la caché y se actualiza por detrás.
+// - Con conexión, todo se pide a la red y se guarda la copia; sin conexión,
+//   se sirve la copia guardada. Así la página y su código siempre son de la
+//   misma versión.
 // Al publicar cambios, sube VERSION: la app avisará de que hay una versión nueva.
 // Las pruebas (tests/sw.test.js) comprueban que ASSETS no se deja nada.
 
-const VERSION = 'cadencia-v8';
+const VERSION = 'cadencia-v9';
 
 const ASSETS = [
   './',
@@ -64,32 +64,20 @@ self.addEventListener('message', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
-
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(VERSION).then((cache) => cache.put('index.html', copy));
-          return response;
-        })
-        .catch(() => caches.match('index.html', { ignoreSearch: true })),
-    );
-    return;
-  }
+  // Todas las páginas de la app son index.html.
+  const key = request.mode === 'navigate' ? 'index.html' : request;
 
   event.respondWith(
-    caches.match(request, { ignoreSearch: true }).then((cached) => {
-      const fresh = fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(VERSION).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        })
-        .catch(() => cached);
-      return cached ?? fresh;
-    }),
+    // «no-cache» pregunta al servidor si el archivo ha cambiado (sin bajarlo
+    // entero si no), así nunca se mezclan archivos de versiones distintas.
+    fetch(request, { cache: 'no-cache' })
+      .then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(VERSION).then((cache) => cache.put(key, copy));
+        }
+        return response;
+      })
+      .catch(() => caches.match(key, { ignoreSearch: true })),
   );
 });

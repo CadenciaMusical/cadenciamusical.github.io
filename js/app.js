@@ -485,9 +485,10 @@ function registerServiceWorker() {
     });
 }
 
+// Lo primero, para que el aviso de versión nueva funcione aunque algo falle después.
+registerServiceWorker();
 els.legend.innerHTML = renderLegend();
 const shared = loadFromUrl();
 // Un enlace compartido se abre en el cifrado de quien lo abre.
 if (shared) els.input.value = convertNotation(shared, notation());
 run();
-registerServiceWorker();

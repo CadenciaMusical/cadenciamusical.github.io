@@ -2,7 +2,7 @@
 
 Teoría musical para principiantes: escribe unos acordes y Cadencia te dice en qué tonalidad están, qué grado y qué función tiene cada uno, y te deja escucharlos.
 
-PWA en HTML, CSS y JavaScript sin compilación, publicada en GitHub Pages: <https://emiliocasanovabiscarri.github.io/Cadencia/>
+PWA en HTML, CSS y JavaScript sin compilación, publicada en GitHub Pages: <https://cadenciamusical.github.io/>
 
 ## Probarla en local
 
