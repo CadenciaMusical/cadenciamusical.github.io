@@ -6,7 +6,7 @@ import { chordOnDegree, tonicChord, normalVersion } from './core/build.js';
 import { chordLabel, isLatin, keyName, setLatin } from './core/names.js';
 import { guitarVoicings } from './core/fretboard.js';
 import { defaultTonic } from './core/key.js';
-import { transposeText } from './core/transpose.js';
+import { convertNotation, transposeText } from './core/transpose.js';
 import { playChords, playChord, playNotes, stop } from './audio.js';
 import {
   renderErrors, renderKey, renderChords, renderDetail, renderLegend, renderGlossaryList, renderTerm, renderTranspose, renderModes,
@@ -22,7 +22,8 @@ const EXAMPLES = [
   { label: 'Doo-wop', chords: 'C Am F G' },
   { label: 'Blues', chords: 'C7 F7 C7 C7 F7 F7 C7 C7 G7 F7 C7 G7' },
   { label: 'Canon de Pachelbel', chords: 'D A Bm F#m G D G A' },
-  { label: 'En latino', chords: 'Lam Fa Do Sol' },
+  // Este se deja siempre en latino: enseña que ese cifrado también vale.
+  { label: 'En latino', chords: 'Lam Fa Do Sol', keepNotation: true },
 ];
 
 const $ = (sel) => document.querySelector(sel);
@@ -240,13 +241,15 @@ els.form.addEventListener('submit', (e) => {
 });
 
 els.examples.innerHTML = EXAMPLES.map(
-  (ex) => `<button type="button" class="chip" data-chords="${ex.chords}">${ex.label}</button>`,
+  (ex) =>
+    `<button type="button" class="chip" data-chords="${ex.chords}"${ex.keepNotation ? ' data-keep-notation' : ''}>${ex.label}</button>`,
 ).join('');
 
 els.examples.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-chords]');
   if (!btn) return;
-  els.input.value = btn.dataset.chords;
+  const { chords } = btn.dataset;
+  els.input.value = 'keepNotation' in btn.dataset ? chords : convertNotation(chords, notation());
   els.examplesMenu.open = false;
   state.forcedKey = null;
   state.original = null;
@@ -374,6 +377,10 @@ document.addEventListener('click', (e) => {
 // a cuál se cambia al tocarlo.
 function setNotation(latin) {
   setLatin(latin);
+  // Lo escrito en la casilla también cambia de cifrado (lo que no es un acorde se deja igual).
+  els.input.value = convertNotation(els.input.value, notation());
+  if (state.original) state.original.text = convertNotation(state.original.text, notation());
+  if (state.result) saveToUrl(els.input.value);
   els.notation.textContent = latin ? 'Do → C' : 'C → Do';
   els.notation.setAttribute('aria-label', latin ? 'Cambiar a cifrado americano (C, D, E…)' : 'Cambiar a cifrado latino (Do, Re, Mi…)');
   els.input.placeholder = latin ? 'Lam Fa Do Sol' : 'Am F C G';
@@ -382,6 +389,8 @@ function setNotation(latin) {
 }
 
 els.notation.addEventListener('click', () => setNotation(!isLatin()));
+
+const notation = () => (isLatin() ? 'latin' : 'american');
 
 // Tema: sigue al sistema hasta que el usuario elige uno.
 function setTheme(theme) {
@@ -478,6 +487,7 @@ function registerServiceWorker() {
 
 els.legend.innerHTML = renderLegend();
 const shared = loadFromUrl();
-if (shared) els.input.value = shared;
+// Un enlace compartido se abre en el cifrado de quien lo abre.
+if (shared) els.input.value = convertNotation(shared, notation());
 run();
 registerServiceWorker();

@@ -62,3 +62,36 @@ test('semitonos por el camino más corto', () => {
   assert.equal(semitonesBetween(key(0, 'major'), key(10, 'major')), -2);
   assert.equal(semitonesBetween(key(0, 'major'), key(6, 'major')), 6);
 });
+
+test('cambiar de cifrado lo escrito en la casilla', async () => {
+  const { convertNotation } = await import('../js/core/transpose.js');
+  assert.equal(convertNotation('Am F C G7', 'latin'), 'Lam Fa Do Sol7');
+  assert.equal(convertNotation('Lam Fa Do Sol7', 'american'), 'Am F C G7');
+  // Conserva el sufijo tal como se escribió, los separadores y lo que no es un acorde.
+  assert.equal(convertNotation('Do7M | Lamenor, Sib/Re Xyz', 'american'), 'C7M | Amenor, Bb/D Xyz');
+  assert.equal(convertNotation('LAM FA DO', 'american'), 'Am F C');
+  // Re disminuido escrito «Reo»: «Do» se leería como Do mayor.
+  assert.equal(convertNotation('Reo', 'american'), 'Ddim');
+});
+
+test('ida y vuelta entre cifrados sin cambiar ningún acorde', async () => {
+  const { convertNotation } = await import('../js/core/transpose.js');
+  const { parseChord } = await import('../js/core/parser.js');
+  const roots = ['C', 'C#', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+  const suffixes = ['', 'm', '7', 'm7', 'maj7', '7M', 'm7b5', 'dim', 'o', '°', 'aug', '+', 'sus4', 'add9', '6', '9', '/E'];
+  const key = (c) => `${c.pc} ${c.triad} ${c.seventh} ${c.bass && parseChord(c.bass).pc}`;
+  for (const r of roots) {
+    for (const s of suffixes) {
+      const original = parseChord(r + s);
+      if (!original.ok) continue;
+      const latin = convertNotation(r + s, 'latin');
+      const back = convertNotation(latin, 'american');
+      assert.equal(key(parseChord(latin)), key(original), `${r + s} → ${latin}`);
+      assert.equal(key(parseChord(back)), key(original), `${r + s} → ${latin} → ${back}`);
+    }
+  }
+});
+
+test('transportar también respeta los separadores', () => {
+  assert.equal(transposeText('C | G, Am - F', key(0, 'major'), key(2, 'major')), 'D | A, Bm - G');
+});

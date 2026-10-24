@@ -1,8 +1,9 @@
 // Transportar: cambiar todos los acordes a otra tonalidad manteniendo las
 // distancias entre ellos, así que el análisis (grados y funciones) no cambia.
+// También, reescribir el texto en el otro cifrado (americano ↔ latino).
 
-import { Interval, Note } from '../../vendor/tonal.mjs';
-import { parseProgression } from './parser.js';
+import { Chord, Interval, Note } from '../../vendor/tonal.mjs';
+import { parseChord, parseProgression, tokenize } from './parser.js';
 
 const LATIN = { C: 'Do', D: 'Re', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si' };
 
@@ -18,19 +19,52 @@ export function transposeNote(note, from, to) {
 
 const write = (note, notation) => (notation === 'latin' ? LATIN[note[0]] + note.slice(1) : note);
 
+const same = (a, b) => a.ok && a.pc === b.pc && a.triad === b.triad && a.seventh === b.seventh && a.bass === b.bass;
+
+// Escribe un acorde con otra raíz o en otro cifrado, conservando el sufijo tal
+// como lo escribió el usuario («Lam7» → «Am7»). Si con ese sufijo se leería
+// otra cosa («Reo», Re disminuido, daría «Do», Do mayor), prueba con los
+// otros nombres del acorde («Ddim»).
+export function writeChord(chord, notation, root = chord.root, bass = chord.bass) {
+  const tail = bass ? '/' + write(bass, notation) : '';
+  const expected = { ...chord, pc: Note.chroma(root), bass };
+  const suffixes = [chord.rawSuffix, chord.suffix, ...Chord.get(chord.root + chord.suffix).aliases];
+  for (const suffix of suffixes) {
+    const text = write(root, notation) + suffix + tail;
+    if (same(parseChord(text), expected)) return text;
+  }
+  return write(root, notation) + chord.suffix + tail;
+}
+
 // Devuelve el acorde transportado como texto, en el mismo cifrado y con el
 // mismo sufijo con que lo escribió el usuario («Lam7» → «Mim7»).
 export function transposeChord(chord, from, to) {
-  const root = write(transposeNote(chord.root, from, to), chord.notation);
-  const bass = chord.bass ? '/' + write(transposeNote(chord.bass, from, to), chord.notation) : '';
-  return root + chord.rawSuffix + bass;
+  const bass = chord.bass ? transposeNote(chord.bass, from, to) : null;
+  return writeChord(chord, chord.notation, transposeNote(chord.root, from, to), bass);
 }
 
-// Transporta un texto entero. Lo que no se reconoce como acorde se deja igual.
+// Cambia cada acorde de un texto con fn(acorde) y deja igual todo lo demás:
+// lo que no se reconoce como acorde y los separadores («|», comas…).
+function mapChords(text, fn) {
+  const chords = parseProgression(text);
+  let out = '';
+  let pos = 0;
+  tokenize(text).forEach((token, i) => {
+    const at = text.indexOf(token, pos);
+    out += text.slice(pos, at) + (chords[i].ok ? fn(chords[i]) : token);
+    pos = at + token.length;
+  });
+  return out + text.slice(pos);
+}
+
+// Transporta un texto entero.
 export function transposeText(text, from, to) {
-  return parseProgression(text)
-    .map((c) => (c.ok ? transposeChord(c, from, to) : c.input))
-    .join(' ');
+  return mapChords(text, (c) => transposeChord(c, from, to));
+}
+
+// Reescribe un texto en cifrado americano o latino («Lam Fa | Do» ↔ «Am F | C»).
+export function convertNotation(text, notation) {
+  return mapChords(text, (c) => writeChord(c, notation));
 }
 
 // Semitonos del camino más corto entre dos tónicas (de −5 a +6).
