@@ -256,6 +256,13 @@ body.empty .playbar { display: none; }
 .meter span { width: 18px; height: 8px; border-radius: 4px; background: var(--border); }
 .meter span.on { background: var(--accent); }
 
+/* Duda entre dos tonalidades: la más probable primero. */
+.key-options { display: flex; flex-wrap: wrap; gap: 4px 20px; align-items: flex-end; margin: 6px 0 4px; }
+.key-option .tag { font-size: 0.75rem; }
+.key-option .key-name { margin-top: 4px; }
+.key-option + .key-option .key-name { font-size: 1.5rem; color: var(--muted); }
+.key-card .key-options + p { margin-top: 8px; }
+
 .alternative {
   margin-top: 12px;
   padding-top: 12px;

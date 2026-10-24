@@ -29,3 +29,14 @@ test('los acordes de la tarjeta siguen el cifrado elegido', () => {
   setLatin(false);
   assert.match(renderProgressionCard(r), /Escuchar el final \(G → C\)/);
 });
+
+test('tonalidad dudosa: las dos opciones a la vista, con las pistas y el glosario', async () => {
+  const { renderKey } = await import('../js/ui/render.js');
+  setLatin(true);
+  const html = renderKey(analyze('Lam Fa Do Sol'));
+  setLatin(false);
+  assert.match(html, /Más probable[\s\S]*La menor[\s\S]*También posible[\s\S]*Do mayor/);
+  assert.match(html, /Empieza en Lam, la casa de La menor, pero acaba en Sol, que no es la casa de ninguna de las dos\./);
+  assert.match(html, /data-term="relativa"/);
+  assert.doesNotMatch(renderKey(analyze('C F G C')), /dos opciones/);
+});

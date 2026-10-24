@@ -3,6 +3,7 @@
 import { Note } from '../../vendor/tonal.mjs';
 import { keyName, chordLabel, noteName } from '../core/names.js';
 import { chordOnDegree, normalVersion } from '../core/build.js';
+import { isTonicChord } from '../core/key.js';
 
 export const FUNCTIONS = {
   T: {
@@ -133,13 +134,30 @@ export function modeVsKeyText(m, key) {
   return `La tonalidad apunta a ${k}; el modo toma ${noteName(m.tonic)} como casa. Son dos formas de oír lo mismo: escucha cuál te suena a final.`;
 }
 
-export function alternativeText(key, alt, relative) {
-  const a = keyName(key);
-  const b = keyName(alt);
-  if (relative) {
-    return `${a} y ${b} usan exactamente las mismas notas: son tonalidades «relativas». Lo que cambia es qué acorde suena a casa. Escucha la progresión terminando en cada una y decide cuál te suena a final.`;
-  }
-  return `${b} también encaja: comparte casi todos los acordes con ${a}. Escucha la progresión terminando en cada una y decide cuál te suena a final.`;
+// Por qué cuesta decidir entre la tonalidad detectada y la alternativa. Las
+// pistas son el primer y el último acorde: las canciones suelen empezar y,
+// sobre todo, acabar en casa.
+export function alternativeText(key, alt, relative, chords) {
+  const intro = relative
+    ? 'Usan las mismas notas (son tonalidades relativas), así que los acordes no bastan para decidir.'
+    : 'Comparten casi todos los acordes, así que cuesta decidir.';
+  return `${intro} ${cluesText(key, alt, chords)} Escucha cómo suena terminando en cada una: la que te suene a final es la buena.`;
+}
+
+function cluesText(key, alt, chords) {
+  if (chords.length < 2) return '';
+  const first = chords[0];
+  const last = chords[chords.length - 1];
+  const whose = (chord) => (isTonicChord(chord, key) ? key : isTonicChord(chord, alt) ? alt : null);
+  const start = whose(first);
+  const end = whose(last);
+  const startText = start ? `Empieza en ${chordLabel(first)}, la casa de ${keyName(start)}` : null;
+  let endText;
+  if (end) endText = `acaba en ${chordLabel(last)}, la casa de ${keyName(end)}`;
+  else endText = `acaba en ${chordLabel(last)}, que no es la casa de ninguna de las dos`;
+  if (!startText) return `${endText[0].toUpperCase()}${endText.slice(1)}.`;
+  const joiner = start === end ? ' y también ' : ', pero ';
+  return `${startText}${joiner}${endText}.`;
 }
 
 // Explicación extra según el tipo de acorde (ver core/classify.js). Texto sin HTML.

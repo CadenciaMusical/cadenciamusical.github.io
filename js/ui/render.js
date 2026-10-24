@@ -50,22 +50,16 @@ export function renderKey(result, { transposedFrom = null } = {}) {
     confidenceLine = `<p class="confidence"><span class="meter meter-${confidence}" aria-hidden="true">${meter}</span> Confianza ${confidence}. ${CONFIDENCE_TEXT[confidence]}</p>`;
   }
 
-  let alt = '';
-  if (alternative && !transposedFrom) {
-    alt = `
-      <div class="alternative">
-        <p><strong>¿O ${keyName(alternative)}?</strong> ${linkTerms(alternativeText(key, alternative, alternativeIsRelative))}</p>
-        <div class="button-row">
-          <button type="button" class="btn secondary" data-action="end-on" data-which="key">▶ Terminar en ${noteName(key.tonic)}</button>
-          <button type="button" class="btn secondary" data-action="end-on" data-which="alt">▶ Terminar en ${noteName(alternative.tonic)}</button>
-        </div>
-        <button type="button" class="link" data-action="use-alt">Analizar en ${keyName(alternative)}</button>
-      </div>`;
-  }
-
-  return `
-    <p class="eyebrow">Tonalidad</p>
-    <h2 class="key-name">${keyName(key)}</h2>
+  const altText = alternative && linkTerms(alternativeText(key, alternative, alternativeIsRelative, result.chords));
+  const altButtons = alternative
+    ? `
+      <div class="button-row">
+        <button type="button" class="btn secondary small" data-action="end-on" data-which="key">▶ Terminar en ${noteName(key.tonic)}</button>
+        <button type="button" class="btn secondary small" data-action="end-on" data-which="alt">▶ Terminar en ${noteName(alternative.tonic)}</button>
+      </div>
+      <button type="button" class="link" data-action="use-alt">Analizar en ${keyName(alternative)}</button>`
+    : '';
+  const more = `
     <details class="more" data-keep="key">
       <summary>Más sobre la tonalidad</summary>
       ${key.blues ? '<p class="tag">Blues</p>' : ''}
@@ -73,8 +67,32 @@ export function renderKey(result, { transposedFrom = null } = {}) {
       <p>${linkTerms(KEY_TEXT)}</p>
       <p>${linkTerms(MODE_TEXT[key.mode])}</p>
       <button type="button" class="btn secondary small" data-action="play-tonic">▶ Escuchar la tónica</button>
-      ${alt}
+      ${forced && alternative ? `<div class="alternative"><p><strong>¿O ${keyName(alternative)}?</strong> ${altText}</p>${altButtons}</div>` : ''}
     </details>`;
+
+  // Duda razonable en la tonalidad detectada: las dos opciones, a la vista.
+  if (alternative && !forced && !transposedFrom) {
+    return `
+      <p class="eyebrow">Tonalidad: hay dos opciones</p>
+      <div class="key-options">
+        <div class="key-option">
+          <span class="tag">Más probable</span>
+          <h2 class="key-name">${keyName(key)}</h2>
+        </div>
+        <div class="key-option">
+          <span class="tag">También posible</span>
+          <p class="key-name">${keyName(alternative)}</p>
+        </div>
+      </div>
+      <p>${altText}</p>
+      ${altButtons}
+      ${more}`;
+  }
+
+  return `
+    <p class="eyebrow">Tonalidad</p>
+    <h2 class="key-name">${keyName(key)}</h2>
+    ${more}`;
 }
 
 // marked: posiciones que forman una progresión conocida (ver progressionRanges).

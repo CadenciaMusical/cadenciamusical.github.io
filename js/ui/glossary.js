@@ -102,7 +102,7 @@ export const GLOSSARY = [
   {
     id: 'relativa',
     term: 'Tonalidad relativa',
-    match: ['relativas', 'relativa'],
+    match: ['tonalidades relativas', 'tonalidad relativa', 'relativas', 'relativa'],
     text: () => `Cada tonalidad mayor tiene una menor «relativa» que usa exactamente las mismas notas, como ${K('C', 'major')} y ${K('A', 'minor')}. Lo que cambia es qué acorde suena a casa.`,
     example: (k, label) => {
       const I = tonicChord(k);

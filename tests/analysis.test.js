@@ -17,16 +17,17 @@ test('la del pop: I–V–vi–IV', () => {
   assert.equal(fns(r), 'TDTS');
 });
 
-test('vi–IV–I–V: Do mayor, con La menor como duda relativa', () => {
-  const r = expectKey('Am F C G', 'C', 'major');
-  assert.equal(romans(r), 'vi IV I V');
+test('vi–IV–I–V: empieza en La menor, con Do mayor como duda relativa', () => {
+  const r = expectKey('Am F C G', 'A', 'minor');
+  assert.equal(romans(r), 'i VI III VII');
   assert.equal(r.confidence, 'baja');
-  assert.equal(`${r.alternative.tonic} ${r.alternative.mode}`, 'A minor');
+  assert.equal(`${r.alternative.tonic} ${r.alternative.mode}`, 'C major');
   assert.ok(r.alternativeIsRelative);
 });
 
 test('lo mismo en cifrado latino', () => {
-  assert.equal(romans(expectKey('Lam Fa Do Sol', 'C', 'major')), 'vi IV I V');
+  const r = expectKey('Lam Fa Do Sol', 'A', 'minor');
+  assert.equal(`${r.alternative.tonic} ${r.alternative.mode}`, 'C major');
 });
 
 test('doo-wop: I–vi–IV–V', () => {
@@ -115,4 +116,19 @@ test('disminuido de paso: C♯° → Dm', () => {
   assert.equal(r.items[1].kind, 'leading');
   assert.equal(r.items[1].roman, 'vii°/ii');
   assert.equal(analyze('C C#dim7 Dm7 G7 C').items[1].roman, 'vii°7/ii');
+});
+
+test('duda entre una tonalidad y su relativa: el primer y el último acorde dan las pistas', () => {
+  const doubt = (text) => {
+    const r = analyze(text);
+    return r.alternativeIsRelative ? `${r.key.tonic}${r.key.mode === 'minor' ? 'm' : ''} o ${r.alternative.tonic}${r.alternative.mode === 'minor' ? 'm' : ''}` : null;
+  };
+  assert.equal(doubt('Lam Fa Do Sol'), 'Am o C');
+  assert.equal(doubt('Em C G D'), 'Em o G');
+  assert.equal(doubt('F G Am'), 'Am o C');
+  // Empieza o acaba claramente en casa: sin duda.
+  assert.equal(doubt('C G Am F'), null);
+  assert.equal(doubt('Am F G C'), null);
+  assert.equal(doubt('Am F C G Am'), null);
+  assert.equal(doubt('C G Am Em F C F G'), null);
 });

@@ -2,12 +2,14 @@
 //
 // Se puntúan las 24 tonalidades (12 mayores y 12 menores):
 //   - cada acorde suma según cuánto encaja (ver classify.js);
-//   - suma acabar en la tónica (mucho), empezar en ella y que aparezca;
+//   - suma acabar en la tónica (mucho), empezar en ella (bastante) y que
+//     aparezca: el primer y el último acorde son las mejores pistas;
 //   - suma que aparezca el acorde de dominante y cada cadencia V → I;
 //   - una menor sin sensible (sin V mayor ni vii°) resta un poco: sin ella,
 //     Am F C G suena más a Do mayor que a La menor;
 //   - un blues (I7, IV7, V7) suma mucho a su tonalidad mayor.
-// La confianza depende de la distancia entre la primera y la segunda.
+// La confianza depende de la distancia entre la primera y la segunda. Si hay
+// una duda razonable, la segunda se ofrece como alternativa (ver detectKey).
 
 import { classify } from './classify.js';
 
@@ -15,7 +17,7 @@ const mod12 = (n) => ((n % 12) + 12) % 12;
 
 const BONUS = {
   last: 1.0,
-  first: 0.5,
+  first: 0.8,
   present: 0.3,
   dominant: 0.4,
   cadence: 0.6,
@@ -45,7 +47,7 @@ function tonicName(pc, mode, chords) {
   return TONIC_NAMES[mode][pc];
 }
 
-const isTonicChord = (chord, key) => mod12(chord.pc - key.pc) === 0 && chord.triad === (key.mode === 'major' ? 'M' : 'm');
+export const isTonicChord = (chord, key) => mod12(chord.pc - key.pc) === 0 && chord.triad === (key.mode === 'major' ? 'M' : 'm');
 const isDominantChord = (chord, key) => mod12(chord.pc - key.pc) === 7 && chord.triad === 'M';
 const isLeadingToneChord = (chord, key) => mod12(chord.pc - key.pc) === 11 && chord.triad === 'dim';
 
@@ -97,9 +99,13 @@ export function detectKey(chords) {
   const [best, second] = ranking;
   const margin = (best.score - second.score) / Math.max(Math.abs(best.score), 1);
   const confidence = margin >= 0.2 ? 'alta' : margin >= 0.08 ? 'media' : 'baja';
-  const threshold = best.score - Math.max(0.6, best.score * 0.12);
-  const close = ranking.slice(1).filter((k) => k.score >= threshold);
+  const close = ranking.slice(1).filter((k) => k.score >= best.score - Math.max(0.6, best.score * 0.12));
+  // La relativa usa las mismas notas, así que se le da más margen; salvo que
+  // la progresión empiece y acabe en la tónica de la primera: eso despeja la duda.
+  const clear = isTonicChord(chords[0], best) && isTonicChord(chords[chords.length - 1], best);
+  const relative = ranking.find((k) => isRelative(best, k));
+  const relativeClose = !clear && relative.score >= best.score - Math.max(1.0, best.score * 0.12);
   // Si la relativa está entre las cercanas, es la duda más interesante de explicar.
-  const alternative = close.find((k) => isRelative(best, k)) ?? close[0] ?? null;
+  const alternative = relativeClose ? relative : (close[0] ?? null);
   return { key: best, confidence, alternative, ranking };
 }
