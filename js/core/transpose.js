@@ -3,7 +3,7 @@
 // También, reescribir el texto en el otro cifrado (americano ↔ latino).
 
 import { Chord, Interval, Note } from '../../vendor/tonal.mjs';
-import { parseChord, parseProgression, tokenize } from './parser.js';
+import { parseChord, parseProgression, tokenSpans } from './parser.js';
 import { latinSuffix } from './names.js';
 
 const LATIN = { C: 'Do', D: 'Re', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si' };
@@ -53,10 +53,9 @@ function mapChords(text, fn) {
   const chords = parseProgression(text);
   let out = '';
   let pos = 0;
-  tokenize(text).forEach((token, i) => {
-    const at = text.indexOf(token, pos);
-    out += text.slice(pos, at) + (chords[i].ok ? fn(chords[i]) : token);
-    pos = at + token.length;
+  tokenSpans(text).forEach(({ token, start, end }, i) => {
+    out += text.slice(pos, start) + (chords[i].ok ? fn(chords[i]) : token);
+    pos = end;
   });
   return out + text.slice(pos);
 }

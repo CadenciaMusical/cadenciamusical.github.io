@@ -1,9 +1,9 @@
 // Generación del HTML de los resultados. Sin estado: recibe datos, devuelve HTML.
 
-import { chordLabel, chordName, keyName, noteName } from '../core/names.js';
+import { chordLabel, chordName, isLatin, keyName, noteName } from '../core/names.js';
 import { parseChord } from '../core/parser.js';
 import { defaultTonic } from '../core/key.js';
-import { transposeChord } from '../core/transpose.js';
+import { convertNotation, transposeChord } from '../core/transpose.js';
 import {
   FUNCTIONS, KEY_TEXT, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
   MODE_INFO, MODES_TEXT, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText,
@@ -20,18 +20,24 @@ export function escapeHtml(s) {
 
 const fnKey = (fn) => fn ?? 'X';
 
-export function renderErrors(errors) {
-  if (errors.length === 0) return '';
-  return errors
-    .map((e) => {
-      const tips = e.suggestions.length
-        ? `¿Querías decir ${e.suggestions
-            .map((s) => `<button type="button" class="chip suggestion" data-from="${escapeHtml(e.input)}" data-to="${escapeHtml(s)}">${escapeHtml(s)}</button>`)
-            .join(' ')}?`
-        : 'Prueba con algo como «Am», «G7» o «Sol».';
-      return `<p class="error"><strong>«${escapeHtml(e.input)}»</strong> no lo reconozco como acorde. ${tips}</p>`;
-    })
-    .join('');
+// parsed: todos los trozos escritos. Si alguno no es un acorde, se explica y
+// se sugiere el más parecido, en el cifrado de la página; un toque lo cambia
+// (data-index: qué trozo). Sin nada parecido, se ofrece quitarlo.
+export function renderErrors(parsed) {
+  const bad = parsed.map((c, index) => ({ ...c, index })).filter((c) => !c.ok);
+  if (bad.length === 0) return '';
+  const notation = isLatin() ? 'latin' : 'american';
+  const fix = (index, to, label) =>
+    `<button type="button" class="chip suggestion" data-index="${index}" data-to="${escapeHtml(to)}">${escapeHtml(label)}</button>`;
+  const items = bad.map((e) => {
+    const [best] = e.suggestions;
+    const tip = best
+      ? `¿Querías decir ${fix(e.index, convertNotation(best, notation), convertNotation(best, notation))}?`
+      : `No se parece a ningún acorde que conozca. ${fix(e.index, '', 'Quitarlo')} o escribe algo como ${isLatin() ? '«Lam» o «Sol7»' : '«Am» o «G7»'}.`;
+    return `<p class="error"><strong>«${escapeHtml(e.input)}»</strong> no lo reconozco como acorde. ${tip}</p>`;
+  });
+  const what = bad.length === 1 ? 'el acorde marcado' : 'los acordes marcados';
+  return `${items.join('')}<p class="hint">Corrige ${what} y analizo la progresión.</p>`;
 }
 
 const CONFIDENCE_LEVEL = { alta: 3, media: 2, baja: 1 };

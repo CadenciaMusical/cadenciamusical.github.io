@@ -18,6 +18,18 @@ export function tokenize(text) {
     .filter(Boolean);
 }
 
+// Cada trozo con su posición en el texto, para marcar uno en la casilla.
+export function tokenSpans(text) {
+  const spans = [];
+  let pos = 0;
+  for (const token of tokenize(text)) {
+    const start = text.indexOf(token, pos);
+    spans.push({ token, start, end: start + token.length });
+    pos = start + token.length;
+  }
+  return spans;
+}
+
 function normalizeAcc(acc) {
   return acc.replace('♯', '#').replace(/♭|B/, 'b');
 }
@@ -119,6 +131,13 @@ export function parseProgression(text) {
   // Si todo está en mayúsculas (bloqueo de mayúsculas), «LAM» es La menor.
   const allCaps = /[A-Z]/.test(text) && !/[a-z]/.test(text);
   return tokenize(text).map((t) => parseChord(t, { allCaps }));
+}
+
+// El cifrado en que está escrito todo lo reconocido: 'latin', 'american', o
+// null si se mezclan (o no hay acordes).
+export function writtenNotation(parsed) {
+  const used = new Set(parsed.filter((c) => c.ok).map((c) => c.notation));
+  return used.size === 1 ? [...used][0] : null;
 }
 
 // --- Sugerencias para lo que no se reconoce ---

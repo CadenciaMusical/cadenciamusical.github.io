@@ -1,7 +1,7 @@
 // Une la interfaz con el análisis y el sonido.
 
 import { analyze } from './core/analysis.js';
-import { tokenize } from './core/parser.js';
+import { tokenSpans, writtenNotation } from './core/parser.js';
 import { chordOnDegree, tonicChord, normalVersion } from './core/build.js';
 import { chordLabel, isLatin, keyName, setLatin } from './core/names.js';
 import { guitarVoicings } from './core/fretboard.js';
@@ -9,7 +9,7 @@ import { defaultTonic } from './core/key.js';
 import { convertNotation, transposeText } from './core/transpose.js';
 import { playChords, playChord, playNotes, stop } from './audio.js';
 import {
-  renderErrors, renderKey, renderProgressionCard, progressionRanges, renderChords, renderDetail, renderLegend, renderGlossaryList, renderTerm, renderTranspose, renderModes,
+  escapeHtml, renderErrors, renderKey, renderProgressionCard, progressionRanges, renderChords, renderDetail, renderLegend, renderGlossaryList, renderTerm, renderTranspose, renderModes,
 } from './ui/render.js';
 import { modeScale, typicalProgression } from './core/modes.js';
 import { Interval } from '../vendor/tonal.mjs';
@@ -22,8 +22,6 @@ const EXAMPLES = [
   { label: 'Doo-wop', chords: 'C Am F G' },
   { label: 'Blues', chords: 'C7 F7 C7 C7 F7 F7 C7 C7 G7 F7 C7 G7' },
   { label: 'Canon de Pachelbel', chords: 'D A Bm F#m G D G A' },
-  // Este se deja siempre en latino: enseña que ese cifrado también vale.
-  { label: 'En latino', chords: 'Lam Fa Do Sol', keepNotation: true },
 ];
 
 const $ = (sel) => document.querySelector(sel);
@@ -31,6 +29,7 @@ const $ = (sel) => document.querySelector(sel);
 const els = {
   form: $('#form'),
   input: $('#chords'),
+  marks: $('#chords-marks'),
   examples: $('#examples'),
   errors: $('#errors'),
   result: $('#result'),
@@ -58,6 +57,7 @@ const els = {
 
 const state = {
   result: null,
+  parsed: [], // todo lo escrito, reconocido o no
   forcedKey: null,
   selected: null,
   playing: false,
@@ -107,20 +107,28 @@ function run() {
   if (!text) {
     saveToUrl('');
     state.result = null;
+    state.parsed = [];
     render();
     return;
   }
-  state.result = analyze(text, { forcedKey: state.forcedKey });
+  const result = analyze(text, { forcedKey: state.forcedKey });
+  state.parsed = result.parsed;
+  // Si algo no es un acorde, no se analiza: primero hay que corregirlo.
+  state.result = result.errors.length ? null : result;
+  // Si todo lo escrito está en un cifrado, la página responde en ese mismo.
+  const written = writtenNotation(result.parsed);
+  if (written) setNotation(written === 'latin', { convertInput: false });
   saveToUrl(text);
   render();
 }
 
 function render() {
   const r = state.result;
-  els.errors.innerHTML = r ? renderErrors(r.errors) : '';
+  els.errors.innerHTML = renderErrors(state.parsed);
+  markErrors();
   const hasKey = Boolean(r && r.key);
   els.result.hidden = !hasKey;
-  // Sin análisis, solo se ve la casilla, centrada (ver body.empty en el CSS).
+  // Sin análisis, solo se ve la casilla (ver body.empty en el CSS).
   document.body.classList.toggle('empty', !hasKey);
   els.play.disabled = !hasKey;
   if (!hasKey) return;
@@ -135,6 +143,27 @@ function keepOpen(container, html) {
   const open = [...container.querySelectorAll('details[open][data-keep]')].map((d) => d.dataset.keep);
   container.innerHTML = html;
   for (const id of open) container.querySelector(`details[data-keep="${id}"]`)?.setAttribute('open', '');
+}
+
+// Marca en la casilla lo que no es un acorde: una capa detrás del texto
+// repite lo escrito (invisible) con esos trozos subrayados.
+function markErrors() {
+  const text = els.input.value;
+  const spans = tokenSpans(text);
+  const bad = spans.filter((_, i) => state.parsed[i] && !state.parsed[i].ok);
+  els.input.setAttribute('aria-invalid', String(bad.length > 0));
+  if (bad.length === 0) {
+    els.marks.textContent = '';
+    return;
+  }
+  let html = '';
+  let pos = 0;
+  for (const { start, end } of bad) {
+    html += `${escapeHtml(text.slice(pos, start))}<mark>${escapeHtml(text.slice(start, end))}</mark>`;
+    pos = end;
+  }
+  els.marks.innerHTML = html + escapeHtml(text.slice(pos));
+  els.marks.scrollLeft = els.input.scrollLeft;
 }
 
 // Se calcula al pintar, para que siga el cifrado elegido.
@@ -274,28 +303,40 @@ els.form.addEventListener('submit', (e) => {
 
 els.examples.innerHTML = EXAMPLES.map(
   (ex) =>
-    `<button type="button" class="chip" data-chords="${ex.chords}"${ex.keepNotation ? ' data-keep-notation' : ''}>${ex.label}</button>`,
+    `<button type="button" class="chip" data-chords="${ex.chords}">${ex.label}</button>`,
 ).join('');
 
 els.examples.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-chords]');
   if (!btn) return;
   const { chords } = btn.dataset;
-  els.input.value = 'keepNotation' in btn.dataset ? chords : convertNotation(chords, notation());
+  els.input.value = convertNotation(chords, notation());
   els.examplesMenu.open = false;
   state.forcedKey = null;
   state.original = null;
   run();
 });
 
+// Aceptar una sugerencia: cambia ese trozo (o lo quita) y vuelve a analizar.
 els.errors.addEventListener('click', (e) => {
   const btn = e.target.closest('.suggestion');
   if (!btn) return;
-  const tokens = tokenize(els.input.value);
-  const i = tokens.indexOf(btn.dataset.from);
-  if (i >= 0) tokens[i] = btn.dataset.to;
-  els.input.value = tokens.join(' ');
+  const text = els.input.value;
+  const span = tokenSpans(text)[Number(btn.dataset.index)];
+  // Si se ha seguido escribiendo, el trozo puede no ser ya el mismo.
+  if (!span || span.token !== state.parsed[Number(btn.dataset.index)]?.input) return;
+  const fixed = text.slice(0, span.start) + btn.dataset.to + text.slice(span.end);
+  els.input.value = btn.dataset.to ? fixed : fixed.replace(/\s{2,}/g, ' ').trim();
   run();
+});
+
+// Al escribir, la marca ya no está en su sitio: se quita hasta analizar otra vez.
+els.input.addEventListener('input', () => {
+  els.marks.textContent = '';
+  els.input.removeAttribute('aria-invalid');
+});
+els.input.addEventListener('scroll', () => {
+  els.marks.scrollLeft = els.input.scrollLeft;
 });
 
 els.grid.addEventListener('click', (e) => {
@@ -413,22 +454,32 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Cifrado de toda la página: americano (C) o latino (Do). El botón muestra
-// a cuál se cambia al tocarlo.
-function setNotation(latin) {
+// Cifrado de toda la página: latino (Do) o americano (C). Se recuerda.
+// convertInput: reescribir también lo escrito en la casilla (no hace falta si
+// el cambio viene de lo que ha escrito el usuario).
+function setNotation(latin, { convertInput = true } = {}) {
   setLatin(latin);
-  // Lo escrito en la casilla también cambia de cifrado (lo que no es un acorde se deja igual).
-  els.input.value = convertNotation(els.input.value, notation());
-  if (state.original) state.original.text = convertNotation(state.original.text, notation());
-  if (state.result) saveToUrl(els.input.value);
-  els.notation.textContent = latin ? 'Do → C' : 'C → Do';
-  els.notation.setAttribute('aria-label', latin ? 'Cambiar a cifrado americano (C, D, E…)' : 'Cambiar a cifrado latino (Do, Re, Mi…)');
+  if (convertInput) {
+    // Lo que no es un acorde se deja igual.
+    els.input.value = convertNotation(els.input.value, notation());
+    if (state.original) state.original.text = convertNotation(state.original.text, notation());
+    if (state.result) saveToUrl(els.input.value);
+  }
+  for (const btn of els.notation.querySelectorAll('[data-notation]')) {
+    const on = btn.dataset.notation === notation();
+    btn.classList.toggle('on', on);
+    btn.setAttribute('aria-pressed', String(on));
+  }
   els.input.placeholder = latin ? 'Lam Fa Do Sol' : 'Am F C G';
-  save('cadencia-notation', latin ? 'latin' : 'american');
-  render();
+  save('cadencia-notation', notation());
 }
 
-els.notation.addEventListener('click', () => setNotation(!isLatin()));
+els.notation.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-notation]');
+  if (!btn) return;
+  setNotation(btn.dataset.notation === 'latin');
+  render();
+});
 
 const notation = () => (isLatin() ? 'latin' : 'american');
 
@@ -528,7 +579,8 @@ els.glossaryList.innerHTML = renderGlossaryList();
 
 const savedTheme = load('cadencia-theme');
 if (savedTheme === 'dark' || savedTheme === 'light') setTheme(savedTheme);
-setNotation(load('cadencia-notation') === 'latin');
+// Latino por defecto, salvo que el usuario haya elegido el americano.
+setNotation(load('cadencia-notation') !== 'american');
 if (load('cadencia-instrument') === 'guitar') state.instrument = 'guitar';
 // --- Sin conexión ---
 

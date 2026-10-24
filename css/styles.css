@@ -22,6 +22,8 @@
   --fn-D: #7C3AED;  --fn-D-bg: #F0EAFD;
   --fn-X: #5B6170;  --fn-X-bg: #EEEFF2;
 
+  --error: #C0262D;  --error-bg: #FDE8E8;
+
   --radius: 16px;
   --tap: 48px;
   color-scheme: light;
@@ -43,6 +45,7 @@
     --fn-S: #6FD495;  --fn-S-bg: #18321F;
     --fn-D: #C4A3FF;  --fn-D-bg: #2E2245;
     --fn-X: #B4B8C2;  --fn-X-bg: #2F3036;
+    --error: #FF8A8A;  --error-bg: #3A1F1F;
     --key-white: #F3ECE7;
     --key-black: #120E0C;
     --key-line: #4A3E37;
@@ -65,6 +68,7 @@
   --fn-S: #6FD495;  --fn-S-bg: #18321F;
   --fn-D: #C4A3FF;  --fn-D-bg: #2E2245;
   --fn-X: #B4B8C2;  --fn-X-bg: #2F3036;
+  --error: #FF8A8A;  --error-bg: #3A1F1F;
   --key-white: #F3ECE7;
   --key-black: #120E0C;
   --key-line: #4A3E37;
@@ -101,7 +105,7 @@ button { font: inherit; color: inherit; }
 
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand h1 { font-size: 1.35rem; letter-spacing: -0.01em; }
-.topbar-actions { display: flex; gap: 4px; }
+.topbar-actions { display: flex; align-items: center; gap: 4px; }
 
 .icon-btn {
   min-width: var(--tap);
@@ -169,18 +173,52 @@ main {
 
 .input-row { display: flex; gap: 8px; }
 
-#chords {
+/* La casilla y, detrás, una copia invisible de lo escrito que solo deja ver
+   el subrayado de los acordes que no se reconocen (ver markErrors en app.js). */
+.input-field {
+  position: relative;
   flex: 1;
   min-width: 0;
-  min-height: 52px;
-  padding: 0 14px;
-  font-size: 1.15rem;
   border-radius: 12px;
-  border: 2px solid var(--border);
   background: var(--bg);
+}
+#chords,
+.input-marks {
+  font: inherit;
+  font-size: 1.15rem;
+  letter-spacing: normal;
+  padding: 0 14px;
+  border: 2px solid transparent;
+}
+#chords {
+  position: relative;
+  width: 100%;
+  min-height: 52px;
+  border-color: var(--border);
+  border-radius: 12px;
+  background: transparent;
   color: var(--text);
 }
 #chords:focus { border-color: var(--accent); outline: none; }
+#chords[aria-invalid="true"] { border-color: var(--error); }
+.input-marks {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: pre;
+  color: transparent;
+  pointer-events: none;
+}
+.input-marks mark {
+  color: transparent;
+  background: var(--error-bg);
+  border-radius: 4px;
+  text-decoration: underline wavy var(--error);
+  text-decoration-skip-ink: none;
+  text-underline-offset: 5px;
+}
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 
@@ -204,7 +242,8 @@ main {
   border-left: 4px solid var(--accent);
 }
 
-/* --- Pantalla inicial: solo la casilla, centrada --- */
+/* --- Pantalla inicial: solo la casilla, arriba (como tras analizar, para
+   que nada se mueva) --- */
 
 .examples-menu { margin-top: 12px; }
 .examples-menu .chips { padding: 4px 0 4px; }
@@ -222,18 +261,6 @@ main {
 .examples-menu[open] summary::after { transform: translateY(2px) rotate(-135deg); }
 
 body.empty { padding-bottom: 0; }
-body.empty main {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  /* Toda la pantalla menos la cabecera, para que la casilla quede en medio. */
-  min-height: calc(100dvh - 68px - env(safe-area-inset-top));
-  padding-bottom: 68px;
-}
-body.empty .input-card .label { text-align: center; font-size: 1.25rem; }
-body.empty .examples-menu summary,
-body.empty .examples-menu .chips { justify-content: center; }
-body.empty .input-card .hint,
 body.empty .glossary,
 body.empty .playbar { display: none; }
 
@@ -394,6 +421,11 @@ details summary {
   background: var(--surface-2);
 }
 .special p:first-child { margin-top: 0; }
+
+/* --- Selector de cifrado, en la cabecera: más pequeño --- */
+
+.segmented.compact { margin: 0; padding: 2px; }
+.segmented.compact .seg { min-width: 0; min-height: 36px; padding: 0 10px; font-size: 0.85rem; }
 
 /* --- Diagramas: selector Piano / Guitarra --- */
 
