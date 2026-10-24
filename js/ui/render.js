@@ -111,6 +111,13 @@ export function renderKey(result, { transposedFrom = null } = {}) {
     ${more}`;
 }
 
+// El nombre en la tarjeta: más pequeño cuanto más largo, y si aun así no
+// cabe, parte antes del paréntesis o de la barra (Sol♯ / (add13)).
+function cardSymbol(label) {
+  const size = label.length >= 8 ? ' long' : label.length >= 6 ? ' mid' : '';
+  return `<span class="symbol${size}">${escapeHtml(label).replace(/[(/]/g, '<wbr>$&')}</span>`;
+}
+
 // marked: posiciones que forman una progresión conocida (ver progressionRanges).
 // turns: dónde empieza cada vuelta de una progresión repetida (ver progressionTurns).
 export function renderChords(items, { selected = null, marked = new Set(), turns = new Map() } = {}) {
@@ -123,8 +130,9 @@ export function renderChords(items, { selected = null, marked = new Set(), turns
         <button type="button" class="chord fn-${f}${cls}" data-index="${i}" aria-pressed="${i === selected}">
           ${turns.has(i) ? `<span class="turn">↻ ${turns.get(i)}.ª vuelta</span>` : ''}
           <span class="roman">${item.roman}</span>
-          <span class="symbol">${chordLabel(item.chord)}</span>
-          <span class="badge">${FUNCTIONS[f].name}${special ? ' ✦' : ''}</span>
+          ${cardSymbol(chordLabel(item.chord))}
+          ${special ? '<span class="star" title="Algo especial">✦</span>' : ''}
+          <span class="badge">${FUNCTIONS[f].name}</span>
         </button>`;
     })
     .join('');

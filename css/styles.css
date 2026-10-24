@@ -413,7 +413,7 @@ details summary {
 
 .chord-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
   gap: 8px;
   margin: 12px 0;
 }
@@ -423,7 +423,7 @@ details summary {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 12px 6px 10px;
+  padding: 12px 4px 10px;
   border-radius: 14px;
   border: 2px solid var(--border);
   border-top: 6px solid var(--fn);
@@ -432,8 +432,14 @@ details summary {
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 .chord .roman { font-family: Georgia, "Times New Roman", serif; font-size: 1.05rem; color: var(--fn); font-weight: 700; }
-.chord .symbol { font-size: 1.5rem; font-weight: 700; }
-.chord .badge { margin-top: 4px; }
+.chord { min-width: 0; }
+.chord .symbol { font-size: 1.5rem; font-weight: 700; line-height: 1.15; text-align: center; text-wrap: balance; max-width: 100%; margin-bottom: 4px; }
+.chord .symbol.mid { font-size: 1.25rem; }
+.chord .symbol.long { font-size: 1.05rem; }
+/* «Fuera de la tonalidad» no cabe en una línea: se parte en dos, centrada. */
+.chord .badge { margin-top: auto; max-width: 100%; padding: 2px 6px; font-size: 0.75rem; white-space: normal; text-align: center; text-wrap: balance; hyphens: auto; line-height: 1.25; border-radius: 10px; }
+/* Acorde especial (prestado, dominante secundaria…): una estrella en la esquina. */
+.chord .star { position: absolute; top: 4px; right: 8px; color: var(--fn); font-size: 0.85rem; line-height: 1; }
 .chord.selected { border-color: var(--fn); border-top-width: 6px; }
 .chord.playing { transform: translateY(-3px); box-shadow: 0 0 0 3px var(--fn); }
 
