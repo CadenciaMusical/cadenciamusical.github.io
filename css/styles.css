@@ -185,7 +185,14 @@ main {
 
 /* --- Entrada --- */
 
-.input-row { display: flex; gap: 8px; }
+.input-row { display: flex; gap: 8px; align-items: flex-start; }
+.input-row .btn { min-height: 52px; }
+
+/* En móvil, el botón va debajo, a todo el ancho: la casilla se queda con
+   toda la fila y una progresión larga se ve entera. */
+@media (max-width: 599px) {
+  .input-row { flex-direction: column; align-items: stretch; }
+}
 
 /* La casilla y, detrás, una copia invisible de lo escrito que solo deja ver
    el subrayado de los acordes que no se reconocen (ver markErrors en app.js). */
@@ -200,14 +207,21 @@ main {
 .input-marks {
   font: inherit;
   font-size: 1.15rem;
+  line-height: 1.4;
   letter-spacing: normal;
-  padding: 0 14px;
+  padding: 12px 14px;
   border: 2px solid transparent;
+  /* Si no cabe en una línea, sigue en la siguiente (la casilla crece). */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 #chords {
   position: relative;
+  display: block;
   width: 100%;
   min-height: 52px;
+  resize: none;
+  overflow: hidden;
   border-color: var(--border);
   border-radius: 12px;
   background: transparent;
@@ -218,10 +232,7 @@ main {
 .input-marks {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
   overflow: hidden;
-  white-space: pre;
   color: transparent;
   pointer-events: none;
 }

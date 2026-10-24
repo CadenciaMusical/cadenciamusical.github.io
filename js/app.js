@@ -125,6 +125,7 @@ function run() {
 function render() {
   const r = state.result;
   els.errors.innerHTML = renderErrors(state.parsed);
+  fitInput();
   markErrors();
   const hasKey = Boolean(r && r.key);
   els.result.hidden = !hasKey;
@@ -163,7 +164,13 @@ function markErrors() {
     pos = end;
   }
   els.marks.innerHTML = html + escapeHtml(text.slice(pos));
-  els.marks.scrollLeft = els.input.scrollLeft;
+}
+
+// La casilla crece con lo escrito: una progresión larga se ve entera, en
+// varias líneas si hace falta.
+function fitInput() {
+  els.input.style.height = 'auto';
+  els.input.style.height = `${els.input.scrollHeight + els.input.offsetHeight - els.input.clientHeight}px`;
 }
 
 // Se calcula al pintar, para que siga el cifrado elegido.
@@ -338,10 +345,17 @@ els.errors.addEventListener('click', (e) => {
 els.input.addEventListener('input', () => {
   els.marks.textContent = '';
   els.input.removeAttribute('aria-invalid');
+  fitInput();
 });
-els.input.addEventListener('scroll', () => {
-  els.marks.scrollLeft = els.input.scrollLeft;
+// Es un área de texto para que quepa en varias líneas, pero Intro analiza.
+els.input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+    e.preventDefault();
+    els.form.requestSubmit();
+  }
 });
+// Al cambiar el ancho (girar el móvil), cambia cuántas líneas hacen falta.
+addEventListener('resize', fitInput);
 
 els.grid.addEventListener('click', (e) => {
   const btn = e.target.closest('.chord');
