@@ -42,6 +42,8 @@ const els = {
   play: $('#play'),
   notation: $('#notation'),
   themeToggle: $('#theme-toggle'),
+  updateToast: $('#update-toast'),
+  updateBtn: $('#update-btn'),
   glossaryList: $('#glossary-list'),
   termDialog: $('#term-dialog'),
   termTitle: $('#term-title'),
@@ -78,6 +80,20 @@ function save(name, value) {
   }
 }
 
+// La progresión va en la dirección (#Am%20F%20C%20G) para poder compartirla.
+function saveToUrl(text) {
+  const hash = text ? '#' + encodeURIComponent(text) : '';
+  history.replaceState(null, '', location.pathname + location.search + hash);
+}
+
+function loadFromUrl() {
+  try {
+    return decodeURIComponent(location.hash.slice(1));
+  } catch {
+    return '';
+  }
+}
+
 // --- Análisis ---
 
 function run() {
@@ -85,11 +101,13 @@ function run() {
   const text = els.input.value.trim();
   state.selected = null;
   if (!text) {
+    saveToUrl('');
     state.result = null;
     render();
     return;
   }
   state.result = analyze(text, { forcedKey: state.forcedKey });
+  saveToUrl(text);
   render();
 }
 
@@ -400,5 +418,40 @@ const savedTheme = load('cadencia-theme');
 if (savedTheme === 'dark' || savedTheme === 'light') setTheme(savedTheme);
 setNotation(load('cadencia-notation') === 'latin');
 if (load('cadencia-instrument') === 'guitar') state.instrument = 'guitar';
+// --- Sin conexión ---
+
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  let updating = false;
+  const offer = (worker) => {
+    els.updateToast.hidden = false;
+    els.updateBtn.onclick = () => {
+      updating = true;
+      worker.postMessage('skip-waiting');
+    };
+  };
+  // Solo se recarga cuando el usuario ha pedido actualizar (no en la primera visita).
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (updating) location.reload();
+  });
+  navigator.serviceWorker
+    .register('sw.js')
+    .then((reg) => {
+      if (reg.waiting && navigator.serviceWorker.controller) offer(reg.waiting);
+      reg.addEventListener('updatefound', () => {
+        const worker = reg.installing;
+        worker.addEventListener('statechange', () => {
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) offer(worker);
+        });
+      });
+    })
+    .catch(() => {
+      /* sin service worker la app funciona igual, pero no sin conexión */
+    });
+}
+
 els.legend.innerHTML = renderLegend();
-render();
+const shared = loadFromUrl();
+if (shared) els.input.value = shared;
+run();
+registerServiceWorker();

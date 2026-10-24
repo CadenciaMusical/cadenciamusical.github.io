@@ -14,6 +14,12 @@ function ensureContext() {
     master.gain.value = 0.9;
     master.connect(comp).connect(ctx.destination);
   }
+  // En iPhone, sin esto el interruptor de silencio apaga el sonido de la web.
+  try {
+    if (navigator.audioSession) navigator.audioSession.type = 'playback';
+  } catch {
+    /* navegador sin audioSession */
+  }
   // Los navegadores móviles solo dejan sonar tras un toque del usuario.
   if (ctx.state === 'suspended') ctx.resume();
   return ctx;
