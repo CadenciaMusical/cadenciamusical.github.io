@@ -40,3 +40,10 @@ test('tonalidad dudosa: las dos opciones a la vista, con las pistas y el glosari
   assert.match(html, /data-term="relativa"/);
   assert.doesNotMatch(renderKey(analyze('C F G C')), /dos opciones/);
 });
+
+test('una progresión que aparece dos veces se muestra una sola vez', () => {
+  for (const text of ['C F G C F G C', 'D C G D D C G D']) {
+    const html = renderProgressionCard(analyze(text));
+    assert.equal(html.match(/class="match-name"/g).length, 2, text); // la progresión y cómo acaba
+  }
+});

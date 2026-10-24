@@ -52,6 +52,22 @@ export const PROGRESSIONS = [
     songs: ['La Bamba (Ritchie Valens)', 'Twist and Shout (The Beatles)', 'Louie Louie (The Kingsmen)'],
   },
   {
+    id: 'basic-major',
+    name: 'La de toda la vida (I–IV–V–I)',
+    steps: ['I', 'IV', 'V', 'I'],
+    mode: 'major',
+    text: 'El camino más básico de la música: sales de casa (IV), llega la tensión (V) y vuelves a casa (I). Con estos tres acordes se acompañan miles de canciones, y es lo primero que se aprende en la guitarra o el piano.',
+    songs: ['Himnos, villancicos y canciones infantiles', 'El final de muchísimas obras clásicas'],
+  },
+  {
+    id: 'basic-minor',
+    name: 'La de toda la vida, en menor (i–iv–V–i)',
+    steps: ['i', 'iv', 'V', 'i'],
+    mode: 'minor',
+    text: 'El mismo camino en menor: casa (i), salida (iv), tensión (V) y vuelta (i). Fíjate en que el V es mayor aunque la tonalidad sea menor: así empuja con más fuerza hacia casa.',
+    songs: ['Canciones populares y tangos en menor', 'El final de muchas obras clásicas en menor'],
+  },
+  {
     id: 'ii-v-i',
     name: 'ii–V–I',
     steps: ['ii', 'V', 'I'],

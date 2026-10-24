@@ -124,7 +124,9 @@ export function renderChords(items, { selected = null, marked = new Set() } = {}
 // --- Progresión conocida y cadencia final ---
 
 // Como mucho dos progresiones: las más largas (findMatches ya las ordena).
-const shownProgressions = (result) => result.progressions.slice(0, 2);
+// Si una sale varias veces (C F G C F G C), se muestra una sola vez.
+const shownProgressions = (result) =>
+  result.progressions.filter((m, i, all) => all.findIndex((o) => o.id === m.id) === i).slice(0, 2);
 const finalCadence = (result) => result.cadences.find((c) => c.atEnd) ?? null;
 
 // Las posiciones que se marcan en las tarjetas de los acordes: solo si la

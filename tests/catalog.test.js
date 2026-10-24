@@ -132,3 +132,17 @@ test('casos de la tarjeta «Progresión conocida»', () => {
   assert.equal(end('C A7 Dm G7 Fm C'), 'minor-plagal');
   assert.equal(end('Do La7 Rem Sol7 Fam Do'), 'minor-plagal');
 });
+
+test('las dos progresiones básicas, con su cadencia perfecta', () => {
+  const end = (r) => r.cadences.find((c) => c.atEnd)?.id;
+  const major = analyze('C F G C');
+  assert.ok(find(major, 'basic-major').whole);
+  assert.equal(find(major, 'basic-major').label, 'I–IV–V–I');
+  assert.equal(end(major), 'perfect');
+  for (const text of ['Am Dm E Am', 'Am Dm E7 Am']) {
+    const r = analyze(text);
+    assert.ok(find(r, 'basic-minor')?.whole, text);
+    assert.equal(find(r, 'basic-minor').label, 'i–iv–V–i');
+    assert.equal(end(r), 'perfect', text);
+  }
+});
