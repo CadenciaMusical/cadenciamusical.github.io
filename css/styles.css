@@ -430,13 +430,15 @@ details summary {
 /* Al bajar hasta el detalle, que no quede bajo la barra de «Escuchar». */
 .detail { scroll-margin: 16px 0 calc(96px + env(safe-area-inset-bottom)); }
 
-.detail-head {
+/* El nombre y el grado en una línea; las notas, debajo, con todo el ancho. */
+.detail-title {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: baseline;
   gap: 12px;
 }
 .detail-head h3 { font-size: 1.4rem; }
+.detail-head .muted { margin-top: 4px; }
 .roman.big { font-family: Georgia, "Times New Roman", serif; font-size: 2rem; font-weight: 700; color: var(--fn); }
 
 .special {
@@ -575,9 +577,11 @@ details.more[open] summary { margin-bottom: 4px; }
 /* Con una hoja abierta, la página de detrás no se mueve. */
 html:has(.sheet[open]) { overflow: hidden; }
 
-/* El detalle del acorde, en la hoja: la X arriba a la derecha. */
-.sheet-close { position: absolute; top: 4px; right: 8px; }
-.detail-sheet .detail-head { padding-right: 40px; }
+/* El detalle del acorde, en la hoja: la X arriba a la derecha, separada del
+   borde, y el grado junto al nombre, más pequeño, para no robar sitio. */
+.sheet-close { position: absolute; top: 12px; right: 12px; min-width: 44px; height: 44px; }
+.detail-sheet .detail-title { justify-content: flex-start; padding-right: 56px; }
+.detail-sheet .roman.big { font-size: 1.4rem; }
 .detail-sheet #detail-body { padding-top: 8px; }
 
 @media (min-width: 600px) {

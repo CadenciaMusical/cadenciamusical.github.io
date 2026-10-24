@@ -25,3 +25,14 @@ test('la casilla es un área de texto que crece y se analiza con Intro', () => {
 test('en móvil, el botón Analizar va debajo de la casilla, a todo el ancho', () => {
   assert.match(narrowCss, /\.input-row \{[^}]*flex-direction: column[^}]*align-items: stretch/);
 });
+
+test('hoja del acorde: la ✕ separada del borde y con 44 px de área táctil', () => {
+  const close = /\.sheet-close \{([^}]*)\}/.exec(css)[1];
+  assert.match(close, /top: 12px/);
+  assert.match(close, /right: 12px/);
+  assert.match(close, /min-width: 44px/);
+  assert.match(close, /height: 44px/);
+  // El grado, más pequeño en la hoja, y sitio para la ✕ junto al nombre.
+  assert.match(css, /\.detail-sheet \.roman\.big \{ font-size: 1\.4rem; \}/);
+  assert.match(css, /\.detail-sheet \.detail-title \{[^}]*padding-right: 56px/);
+});

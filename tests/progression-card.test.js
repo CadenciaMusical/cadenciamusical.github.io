@@ -47,3 +47,22 @@ test('una progresión que aparece dos veces se muestra una sola vez', () => {
     assert.equal(html.match(/class="match-name"/g).length, 2, text); // la progresión y cómo acaba
   }
 });
+
+test('detalle del acorde: nombre y grado, notas debajo, diagrama y botones antes de la explicación', async () => {
+  const { renderDetail } = await import('../js/ui/render.js');
+  setLatin(false);
+  const r = analyze('C A7 Dm G7 C');
+  for (const instrument of ['piano', 'guitar']) {
+    const html = renderDetail(r.items[1], r.key, { instrument });
+    const at = (s) => html.indexOf(s);
+    // El grado va en la misma línea que el nombre; las notas, debajo, fuera de ella.
+    assert.match(html, /class="detail-title">\s*<h3>A7<\/h3>\s*<span class="roman big">V7\/ii<\/span>\s*<\/div>\s*<p class="muted">/);
+    for (const [before, after] of [
+      ['class="detail-head', 'class="diagram'],
+      ['class="diagram', 'data-action="play-selected"'],
+      ['data-action="arpeggio-selected"', 'class="badge'],
+      ['data-action="arpeggio-selected"', 'class="special"'],
+      ['class="special"', 'class="explain"'],
+    ]) assert.ok(at(before) >= 0 && at(before) < at(after), `${instrument}: ${before} antes que ${after}`);
+  }
+});

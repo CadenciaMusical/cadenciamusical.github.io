@@ -244,26 +244,28 @@ export function renderDetail(item, key, { instrument = 'piano', position = 0 } =
         ${normal ? `<button type="button" class="btn secondary small" data-action="context-normal">▶ Con ${chordLabel(normal)} en su lugar</button>` : ''}
       </div>`
     : '';
+  // Lo más útil arriba, a la vista sin desplazarse: el nombre, el diagrama y
+  // los botones para oírlo. La explicación, después.
   return `
     <div class="detail-head fn-${f}">
-      <div>
+      <div class="detail-title">
         <h3>${chordLabel(item.chord)}</h3>
-        <p class="muted">${chordName(item.chord)} · notas ${notes}</p>
+        <span class="roman big">${item.roman}</span>
       </div>
-      <span class="roman big">${item.roman}</span>
+      <p class="muted">${chordName(item.chord)} · notas ${notes}</p>
+    </div>
+    ${renderDiagram(item.chord, f, instrument, position)}
+    <div class="button-row">
+      <button type="button" class="btn secondary" data-action="play-selected">▶ Acorde</button>
+      <button type="button" class="btn secondary" data-action="arpeggio-selected">▶ Nota a nota</button>
     </div>
     <p><span class="badge fn-${f}">${fn.name} · ${fn.short}</span></p>
     <p>${linkTerms(fn.text)}</p>
     ${extra ? `<div class="special"><p><strong>✦ Algo especial.</strong> ${linkTerms(extra)}</p>${compare}</div>` : ''}
-    ${renderDiagram(item.chord, f, instrument, position)}
     <details class="explain">
       <summary>¿Qué significa «${item.roman}»?</summary>
       <p>${linkTerms(DEGREE_TEXT)}</p>
-    </details>
-    <div class="button-row">
-      <button type="button" class="btn secondary" data-action="play-selected">▶ Acorde</button>
-      <button type="button" class="btn secondary" data-action="arpeggio-selected">▶ Nota a nota</button>
-    </div>`;
+    </details>`;
 }
 
 export function renderGlossaryList() {
