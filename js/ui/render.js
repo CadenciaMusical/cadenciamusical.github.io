@@ -6,7 +6,7 @@ import { defaultTonic } from '../core/key.js';
 import { transposeChord } from '../core/transpose.js';
 import {
   FUNCTIONS, KEY_TEXT, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
-  MODE_INFO, VARIANT_INFO, MODES_TEXT, modeName, modeCharText, modeForeignText, modeVsKeyText,
+  MODE_INFO, MODES_TEXT, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText,
 } from './texts.js';
 import { GLOSSARY, linkTerms, termText } from './glossary.js';
 import { normalVersion } from '../core/build.js';
@@ -306,16 +306,26 @@ export function renderTranspose(result, { original = null } = {}) {
     </details>`;
 }
 
+// El jónico y el eólico son la escala mayor y la menor de siempre: mejor
+// llamarlos así que con un nombre que asusta.
+function plainModeName(m) {
+  if (m.id === 'ionian') return keyName({ tonic: m.tonic, mode: 'major' });
+  if (m.id === 'aeolian' && !m.variant) return keyName({ tonic: m.tonic, mode: 'minor' });
+  return modeName(m);
+}
+
+// Solo cuando la progresión es claramente modal (ver isClearlyModal); si no,
+// cadena vacía y la tarjeta no se muestra.
 export function renderModes(result) {
-  const { modes, key } = result;
-  if (!modes) return '';
+  const { modes, key, modal } = result;
+  if (!modal) return '';
   const m = modes.main;
   const info = MODE_INFO[m.id];
   const char = modeCharText(m);
   const heard = m.charChords.length ? ` La oyes en ${m.charChords.map((c) => chordLabel(c)).join(', ')}.` : '';
   const foreign = modeForeignText(m);
   const songs = info.songs.length ? `<p class="muted">Lo oirás en: ${info.songs.join(' · ')}</p>` : '';
-  const compareLabel = m.charNote ? keyName({ tonic: m.tonic, mode: m.id === 'lydian' || m.id === 'mixolydian' ? 'major' : 'minor' }) : null;
+  const parallel = parallelKeyName(m);
 
   const others = modes.others.length
     ? `
@@ -327,7 +337,7 @@ export function renderModes(result) {
             : `Faltan notas para descartarlo.`;
           return `
             <div class="mode-other">
-              <div><strong>${linkTerms(modeName(o))}</strong> <span class="muted">${why}</span></div>
+              <div><strong>${linkTerms(plainModeName(o))}</strong> <span class="muted">${why}</span></div>
               <button type="button" class="btn secondary small" data-action="mode-scale" data-which="${modes.others.indexOf(o)}">▶ Escala</button>
             </div>`;
         })
@@ -337,20 +347,21 @@ export function renderModes(result) {
   return `
     <p class="eyebrow">Modo</p>
     <h2 class="key-name">${modeName(m)}</h2>
+    <p>${linkTerms(modeIntroText(m))}</p>
+    <p class="scale-notes">${m.scale.map((n) => `<span class="${n === m.charNote ? 'char' : ''}">${noteName(n)}</span>`).join('')}</p>
+    ${char ? `<p><strong>${char}</strong>${heard}</p>` : ''}
+    <div class="button-row">
+      <button type="button" class="btn secondary small" data-action="mode-compare">▶ Oír la diferencia con ${parallel}</button>
+      <button type="button" class="btn secondary small" data-action="mode-typical">▶ Ejemplo típico</button>
+    </div>
+    <p class="hint">Suena primero la escala de ${parallel} y después la de ${modeName(m)}: la nota marcada es la que cambia.</p>
     <details class="more" data-keep="mode">
       <summary>Más sobre el modo</summary>
       <p>${linkTerms(MODES_TEXT)}</p>
-      <p class="scale-notes">${m.scale.map((n) => `<span class="${n === m.charNote ? 'char' : ''}">${noteName(n)}</span>`).join('')}</p>
-      <p>${linkTerms(VARIANT_INFO[m.variant] ?? info.text)}</p>
-      ${char ? `<p><strong>${char}</strong>${heard}</p>` : ''}
       ${foreign ? `<p class="special">${linkTerms(foreign)}</p>` : ''}
       <p class="muted">${linkTerms(modeVsKeyText(m, key))}</p>
       ${songs}
-      <div class="button-row">
-        <button type="button" class="btn secondary small" data-action="mode-scale" data-which="main">▶ Escala</button>
-        ${compareLabel ? `<button type="button" class="btn secondary small" data-action="mode-compare">▶ Comparar con ${compareLabel}</button>` : ''}
-        <button type="button" class="btn secondary small" data-action="mode-typical">▶ Ejemplo típico</button>
-      </div>
+      <button type="button" class="btn secondary small" data-action="mode-scale" data-which="main">▶ Escala de ${modeName(m)}</button>
       ${others}
     </details>`;
 }

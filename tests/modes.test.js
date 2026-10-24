@@ -84,3 +84,32 @@ test('el frigio dominante explica las dos notas que cambian, en cualquier tonali
   assert.equal(modeCharText(main('E F G F E')), 'Frente a Mi menor, cambian dos notas: Fa en lugar de Fa♯, y Sol♯ en lugar de Sol.');
   assert.equal(modeCharText(main('Bb Cb Db Cb Bb')), 'Frente a Si♭ menor, cambian dos notas: Do♭ en lugar de Do, y Re en lugar de Re♭.');
 });
+
+test('la tarjeta del modo solo sale si la progresión es claramente modal', () => {
+  const modal = (text) => analyze(text).modal;
+  // Mayor, menor o menor armónica de siempre: nada que contar.
+  for (const t of ['C G Am F', 'Am F C G', 'Am G F E', 'C F G7 C', 'Dm7 G7 Cmaj7']) assert.equal(modal(t), false, t);
+  // Con una nota de fuera (un préstamo) o sin pistas claras de cuál es la casa.
+  for (const t of ['C Eb F C', 'F G F G Em']) assert.equal(modal(t), false, t);
+  for (const [t, id] of [['D C G D', 'mixolydian'], ['Re Do Sol Re', 'mixolydian'], ['Dm G Dm G', 'dorian'], ['Em F G Em', 'phrygian'], ['C D C D', 'lydian']]) {
+    const r = analyze(t);
+    assert.ok(r.modal, t);
+    assert.equal(r.modes.main.id, id, t);
+  }
+  assert.equal(analyze('E F G F E').modes.main.variant, 'phrygian-dominant');
+  assert.ok(modal('E F G F E'));
+});
+
+test('la tarjeta del modo: explicación sencilla y botón para oír la diferencia', async () => {
+  const { renderModes } = await import('../js/ui/render.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(false);
+  assert.equal(renderModes(analyze('C G Am F')), '');
+  const html = renderModes(analyze('D C G D'));
+  assert.match(html, /no suena del todo a D mayor/);
+  assert.match(html, /data-action="mode-compare">▶ Oír la diferencia con D mayor/);
+  assert.doesNotMatch(html, /jónico|eólico/);
+  setLatin(true);
+  assert.match(renderModes(analyze('Re Do Sol Re')), /Oír la diferencia con Re mayor/);
+  setLatin(false);
+});

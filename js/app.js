@@ -147,7 +147,9 @@ function renderGrid() {
   els.progressionCard.hidden = !progression;
   els.progressionCard.innerHTML = progression;
   keepOpen(els.transposeCard, renderTranspose(state.result, { original: state.original && { keyName: originalKeyName() } }));
-  keepOpen(els.modesCard, renderModes(state.result));
+  const modes = renderModes(state.result);
+  els.modesCard.hidden = !modes;
+  keepOpen(els.modesCard, modes);
 }
 
 // En móvil, el detalle sale en una hoja inferior; en pantallas grandes va

@@ -55,19 +55,19 @@ export const MODE_INFO = {
     songs: ['Casi todo el pop: Let It Be (The Beatles)'],
   },
   dorian: {
-    text: 'Es menor, pero con la sexta mayor: suena menos triste, con un punto de jazz, funk o folk.',
+    text: 'Es como la escala menor, pero con la sexta nota medio tono más alta: suena menos triste, con un punto de jazz, funk o folk.',
     songs: ['Oye Como Va (Santana)', 'Scarborough Fair (canción tradicional)'],
   },
   phrygian: {
-    text: 'Es menor, con la segunda a solo medio tono de la tónica: suena oscuro, con aire español y flamenco.',
+    text: 'Es como la escala menor, pero con la segunda nota pegadita a la tónica (a medio tono): suena oscuro, con aire español y flamenco.',
     songs: ['El «modo de Mi» del flamenco'],
   },
   lydian: {
-    text: 'Es mayor, con la cuarta aumentada: suena luminoso, flotante, de ensueño. Es muy de bandas sonoras.',
+    text: 'Es como la escala mayor, pero con la cuarta nota medio tono más alta: suena luminoso, flotante, de ensueño. Es muy de bandas sonoras.',
     songs: ['La sintonía de Los Simpson', 'Flying in a Blue Dream (Joe Satriani)'],
   },
   mixolydian: {
-    text: 'Es mayor, con la séptima menor: suena a rock, a blues y a folk.',
+    text: 'Es como la escala mayor, pero con la séptima nota medio tono más baja: suena a rock, a blues y a folk.',
     songs: ['Sweet Home Alabama (Lynyrd Skynyrd)', 'Norwegian Wood (The Beatles)'],
   },
   aeolian: {
@@ -75,7 +75,7 @@ export const MODE_INFO = {
     songs: ['All Along the Watchtower (Bob Dylan)'],
   },
   locrian: {
-    text: 'Su acorde de tónica es disminuido, así que nunca acaba de sonar a casa: tenso y extraño. Es el modo menos usado.',
+    text: 'Es como la escala menor, pero con la segunda y la quinta nota más bajas: su acorde de casa nunca acaba de sonar a reposo. Tenso y extraño, es el modo menos usado.',
     songs: [],
   },
 };
@@ -97,10 +97,19 @@ export function modeName(m) {
   return `${tonic} ${m.name}`;
 }
 
+// La escala mayor o menor de siempre con la que se compara el modo.
+export const parallelKeyName = (m) => keyName({ tonic: m.tonic, mode: m.id === 'lydian' || m.id === 'mixolydian' ? 'major' : 'minor' });
+
+// Primera explicación del modo, para quien no sabe qué es.
+export function modeIntroText(m) {
+  const info = VARIANT_INFO[m.variant] ?? MODE_INFO[m.id].text;
+  return `Esta progresión no suena del todo a ${parallelKeyName(m)}: usa una escala con alguna nota distinta, y eso le da otro color. A estas escalas se las llama modos. ${info}`;
+}
+
 // La nota que distingue el modo de la escala mayor o menor de siempre.
 export function modeCharText(m) {
   if (!m.charNote) return '';
-  const parallel = keyName({ tonic: m.tonic, mode: m.id === 'lydian' || m.id === 'mixolydian' ? 'major' : 'minor' });
+  const parallel = parallelKeyName(m);
   const first = `${noteName(m.charNote)} en lugar de ${noteName(m.insteadNote)}`;
   if (m.variant === 'phrygian-dominant') {
     const third = m.scale[2];

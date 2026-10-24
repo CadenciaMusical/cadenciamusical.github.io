@@ -173,3 +173,26 @@ export function detectModes(chords, key = null) {
     others: candidates.slice(1, 4).map(describe),
   };
 }
+
+// ¿Merece la pena hablar del modo? Solo si la progresión es claramente modal:
+//   - no es el mayor ni el menor de siempre (jónico, eólico, menor armónica);
+//   - se oye su nota característica y no sobra ninguna nota (salvo la del
+//     frigio dominante, que es parte de ese sonido);
+//   - hay al menos dos pistas de que su tónica es la casa: empezar en ella,
+//     acabar en ella, que coincida con la tonalidad o que suene en la mitad
+//     de los acordes o más.
+const PLAIN = new Set(['ionian', 'aeolian']);
+
+export function isClearlyModal(m, chords, key) {
+  if (!m || PLAIN.has(m.id)) return false;
+  if (m.charChords.length === 0) return false;
+  if (m.foreign.length > 0 && m.variant !== 'phrygian-dominant') return false;
+  const home = (c) => c.pc === m.pc;
+  const clues = [
+    home(chords[0]),
+    home(chords[chords.length - 1]),
+    key?.pc === m.pc,
+    chords.filter(home).length >= chords.length / 2,
+  ];
+  return clues.filter(Boolean).length >= 2;
+}
