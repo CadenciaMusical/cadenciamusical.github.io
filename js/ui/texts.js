@@ -124,8 +124,9 @@ export function modeCharText(m) {
 export function modalKeyText(m) {
   const parallel = parallelKeyName(m);
   const changed = changedNotes(m);
-  const notes = changed.length === 2 ? `${changed[0]}, y ${changed[1]}` : changed[0];
-  return `La casa es ${noteName(m.tonic)}, como en ${parallel}, pero con ${notes}. Ese cambio le da otro color: es el modo ${m.variant === 'phrygian-dominant' ? 'frigio dominante' : m.name}.`;
+  const two = changed.length === 2;
+  const notes = two ? `${changed[0]}, y ${changed[1]}` : changed[0];
+  return `La casa es ${noteName(m.tonic)}, como en ${parallel}, pero con ${notes}. ${two ? 'Esos cambios le dan' : 'Ese cambio le da'} otro color: es el modo ${m.variant === 'phrygian-dominant' ? 'frigio dominante' : m.name}.`;
 }
 
 // Las notas que no caben en el modo.

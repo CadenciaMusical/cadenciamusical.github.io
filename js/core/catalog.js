@@ -155,6 +155,20 @@ export const CADENCES = [
     text: 'La del final con sorpresa: la dominante promete volver a casa (i), pero llega el VI. Engaña al oído y deja la historia abierta.',
   },
   {
+    id: 'phrygian',
+    name: 'Cadencia frigia',
+    steps: ['♭II', 'i|I'],
+    mode: 'minor',
+    text: 'El final flamenco: el acorde que está medio tono por encima de la tónica (el ♭II) baja hasta ella, y el bajo se desliza solo medio tono. Suena a final, como la cadencia perfecta, pero oscuro y con aire español en lugar de rotundo.',
+  },
+  {
+    id: 'phrygian',
+    name: 'Cadencia frigia',
+    steps: ['♭II', 'I'],
+    mode: 'major',
+    text: 'El final flamenco: el acorde que está medio tono por encima de la tónica (el ♭II) baja hasta ella, y el bajo se desliza solo medio tono. Suena a final, como la cadencia perfecta, pero oscuro y con aire español en lugar de rotundo.',
+  },
+  {
     id: 'half',
     name: 'Semicadencia',
     steps: ['V'],

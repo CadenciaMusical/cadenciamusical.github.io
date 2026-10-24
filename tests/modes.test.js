@@ -159,3 +159,36 @@ test('transportar una progresión modal parte de su centro', async () => {
   assert.equal(keyName(r2.key), 'Si dórico');
   assert.equal(r2.items.map((i) => i.roman).join(' '), 'i IV i IV');
 });
+
+test('frigio y frigio dominante: centro en Mi, I–♭II y sin cadencia rota', async () => {
+  const { keyName } = await import('../js/core/names.js');
+  const { renderKey, renderProgressionCard } = await import('../js/ui/render.js');
+  setLatin(true);
+  const romans = (r) => r.items.map((i) => i.roman).join(' ');
+  const flamenco = analyze('E F E F');
+  assert.equal(keyName(flamenco.key), 'Mi frigio dominante');
+  assert.equal(romans(flamenco), 'I ♭II I ♭II');
+  assert.ok(!flamenco.cadences.some((c) => c.id === 'deceptive'));
+  assert.doesNotMatch(renderProgressionCard(flamenco), /Cadencia rota/);
+  assert.match(renderKey(flamenco), /Esos cambios le dan otro color/);
+  // «Escuchar la tónica» toca Mi mayor, no Mi menor.
+  const { tonicChord } = await import('../js/core/build.js');
+  assert.equal(tonicChord(flamenco.key).triad, 'M');
+  const frigio = analyze('Em F Em F');
+  assert.equal(keyName(frigio.key), 'Mi frigio');
+  assert.equal(romans(frigio), 'i ♭II i ♭II');
+});
+
+test('cadencia frigia: acabar en ♭II → I', async () => {
+  const { renderProgressionCard } = await import('../js/ui/render.js');
+  const end = (text) => analyze(text).cadences.find((c) => c.atEnd)?.id;
+  assert.equal(end('E F G F E'), 'phrygian');
+  assert.equal(end('Em F Em'), 'phrygian');
+  assert.equal(end('E F E F'), undefined);
+  assert.match(renderProgressionCard(analyze('E F G F E')), /Cadencia frigia[\s\S]*final flamenco/);
+  // La andaluza sigue en La menor, con su semicadencia.
+  const andaluza = analyze('Am G F E');
+  assert.equal(`${andaluza.key.tonic} ${andaluza.key.mode}`, 'A minor');
+  assert.ok(andaluza.progressions.some((p) => p.id === 'andalusian'));
+  assert.equal(end('Am G F E'), 'half');
+});
