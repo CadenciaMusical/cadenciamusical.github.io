@@ -61,3 +61,8 @@ test('en pantallas anchas, el piano y la guitarra van centrados y el piano crece
   assert.match(wide, /\.diagram \{ text-align: center; \}/);
   assert.match(wide, /\.diagram \.button-row,\s*\.button-row\.listen \{ justify-content: center; \}/);
 });
+
+test('pie con la autoría, y el año se pone solo', () => {
+  assert.match(html, /<footer class="site-footer">\s*<p>© <span id="year">\d{4}<\/span> Emilio Casanova Biscarri · <a href="mailto:ecasanovabisc@gmail\.com">ecasanovabisc@gmail\.com<\/a><\/p>/);
+  assert.match(app, /\$\('#year'\)\.textContent = new Date\(\)\.getFullYear\(\)/);
+});

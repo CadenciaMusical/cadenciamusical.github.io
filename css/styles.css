@@ -602,6 +602,19 @@ html:has(.sheet[open]) { overflow: hidden; }
   .sheet[open] { animation: none; }
 }
 
+/* --- Pie: autoría --- */
+
+.site-footer {
+  max-width: 720px;
+  margin: 24px auto 0;
+  padding: 0 16px 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.site-footer p { margin: 0; }
+.site-footer a { color: inherit; }
+
 /* --- Aviso de versión nueva --- */
 
 .toast {

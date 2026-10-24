@@ -55,6 +55,9 @@ const els = {
   termPlay: $('#term-play'),
 };
 
+// El año del pie, siempre el actual (en el HTML va uno por si falla el JS).
+$('#year').textContent = new Date().getFullYear();
+
 const state = {
   result: null,
   parsed: [], // todo lo escrito, reconocido o no
