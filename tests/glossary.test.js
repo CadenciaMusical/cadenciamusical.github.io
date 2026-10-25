@@ -79,3 +79,21 @@ test('tónica, subdominante y dominante explican su papel en el glosario', async
   // Los demás términos no cambian.
   assert.doesNotMatch(html('cadencia'), /badge|tres papeles/);
 });
+
+test('versión «normal» de los disminuidos con séptima', () => {
+  const normal = (text, i) => {
+    const r = analyze(text, { forcedKey: { pc: 0, mode: 'major', tonic: 'C' } });
+    const c = normalVersion(r.items[i], r.key);
+    return c && c.root + c.suffix;
+  };
+  assert.equal(normal('Fa°7 Do', 0), 'G7');
+  assert.equal(normal('Do Do#°7 Rem', 1), 'A7');
+  assert.equal(normal('Do La°7 Do', 1), 'C');
+  assert.equal(normal('Fa°7 Sol°7 Domaj7', 1), 'G');
+  assert.equal(normal('Do Mib°7 Rem', 1), null);
+});
+
+test('el glosario explica los cuatro nombres de un disminuido con séptima', () => {
+  assert.match(linkTerms('cada acorde tiene cuatro nombres'), /data-term="disminuido-septima"/);
+  assert.match(linkTerms('otro disminuido con séptima'), /data-term="disminuido-septima"/);
+});

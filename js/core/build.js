@@ -34,9 +34,29 @@ export function normalVersion(item, key) {
       const d = diatonicAt(item.st);
       return d ? chordOnDegree(key, item.st, d.triad) : null;
     }
+    case 'dim7':
+      return dim7Normal(item, key, diatonicAt);
     case 'color':
     case 'blues':
       return chordOnDegree(key, item.st, item.chord.triad);
+    default:
+      return null;
+  }
+}
+
+// vii°7 → V7 (comparten tres notas); vii°7/x → V7/x; el de nota común, sin
+// el adorno; el de paso, el acorde de la tonalidad con su misma raíz.
+function dim7Normal(item, key, diatonicAt) {
+  switch (item.role) {
+    case 'tonic':
+    case 'secondary':
+      return chordOnDegree(key, (item.target.st + 7) % 12, 'M', '7');
+    case 'common':
+      return chordOnDegree(key, item.target.st, item.target.triad);
+    case 'passing': {
+      const d = diatonicAt(item.st);
+      return d && d.triad !== 'dim' ? chordOnDegree(key, item.st, d.triad) : null;
+    }
     default:
       return null;
   }

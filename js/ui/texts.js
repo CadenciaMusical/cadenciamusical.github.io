@@ -3,6 +3,7 @@
 import { Note } from '../../vendor/tonal.mjs';
 import { keyName, chordLabel, noteName } from '../core/names.js';
 import { chordOnDegree, normalVersion } from '../core/build.js';
+import { parseChord } from '../core/parser.js';
 import { isTonicChord } from '../core/key.js';
 
 export const FUNCTIONS = {
@@ -20,6 +21,12 @@ export const FUNCTIONS = {
     name: 'Dominante',
     short: 'Tensión',
     text: 'Crea tensión y «pide» volver a casa. Cuando por fin llega la tónica, se nota un alivio.',
+  },
+  // Los °7 de paso y de nota común: ni reposo, ni movimiento, ni tensión propios.
+  P: {
+    name: 'De paso',
+    short: 'Puente',
+    text: 'No tiene un papel propio en la tonalidad: hace de puente o de adorno y lleva el oído hacia el acorde que viene después.',
   },
   X: {
     name: 'Fuera de la tonalidad',
@@ -217,6 +224,8 @@ export function kindText(item, key) {
     }
     case 'leading':
       return `Es un acorde disminuido «de paso»: está medio tono por debajo de ${label(target)} y lo prepara, igual que la sensible prepara la tónica. Por eso se escribe ${item.roman}.`;
+    case 'dim7':
+      return dim7Text(item, key);
     case 'modal': {
       const parallel = keyName({ tonic: key.tonic, mode: key.mode });
       const char = key.modal.charNote;
@@ -235,6 +244,40 @@ export function kindText(item, key) {
       return 'En el blues, la tónica y la subdominante también llevan séptima (I7, IV7): es parte de su sonido característico.';
     case 'chromatic':
       return `No pertenece a ${name}. Aporta un color sorprendente.`;
+    default:
+      return '';
+  }
+}
+
+// Un disminuido con séptima (ver classifyDim7 en core/classify.js). Si se
+// analiza con otro de sus cuatro nombres, se dice primero.
+function dim7Text(item, key) {
+  const label = (c) => chordLabel(c);
+  const written = label(item.chord);
+  const read = item.readAs && parseChord(item.readAs + 'dim7');
+  const renamed = read && read.pc !== item.chord.pc
+    ? `${written} suena exactamente igual que ${label(read)}: sus cuatro notas están a la misma distancia, así que cada acorde disminuido tiene cuatro nombres. `
+    : '';
+  const target = item.target ? chordOnDegree(key, item.target.st, item.target.triad) : null;
+  const normal = normalVersion(item, key);
+  switch (item.role) {
+    case 'tonic': {
+      const borrowed = item.from ? ` Viene prestado de ${keyName({ tonic: key.tonic, mode: item.from })}, donde es de la tonalidad.` : '';
+      return `${renamed}Hace de dominante: lleva ${noteName(item.readAs)}, la sensible, que está medio tono por debajo de ${noteName(key.tonic)} y tira hacia ella. Por eso resuelve en ${label(target)}, igual que ${label(normal)}, con el que comparte tres notas.${borrowed}`;
+    }
+    case 'secondary':
+      return `${renamed}Funciona como una dominante secundaria, pero disminuida: lleva ${noteName(item.readAs)}, que está medio tono por debajo de ${noteName(target.root)}, y tira hacia ${label(target)} (el ${item.target.roman}). Por eso se escribe ${item.roman}, que se lee «séptimo del ${item.target.roman}». Hace lo mismo que ${label(normal)}, la dominante de ${label(target)}.`;
+    case 'common':
+      return `${renamed}Es un disminuido de nota común: comparte con ${label(target)} su raíz, ${noteName(item.readAs)}, que se queda quieta mientras las demás se mueven medio tono. No lleva a un sitio nuevo: adorna ${label(target)} con un instante de tensión.`;
+    case 'passing': {
+      const { semitones, parallel, prev, next, until } = item.passing;
+      const moves = semitones > 0 ? 'sube' : 'baja';
+      const end = until ? `hasta ${label(until)}` : 'hasta el final';
+      if (prev) return `Es un acorde de paso: viene de ${label(prev)}, otro disminuido con séptima, y los dos ${moves}n juntos, en paralelo, ${end}.`;
+      const dist = Math.abs(semitones) === 1 ? 'medio tono' : 'un tono';
+      if (parallel) return `Es un acorde de paso: ${moves} ${dist} hasta ${label(next)}, otro disminuido con séptima, y los dos ${moves}n juntos, en paralelo, ${end}.`;
+      return `Es un acorde de paso: ${moves} ${dist} hasta ${label(next)} y lo prepara.`;
+    }
     default:
       return '';
   }

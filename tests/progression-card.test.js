@@ -79,3 +79,29 @@ test('con la guitarra, una sola fila: Acorde, Nota a nota y Otra posición; con 
   assert.equal(guitar.match(/class="button-row listen"/g).length, 1);
   assert.deepEqual(actions(renderDetail(r.items[1], r.key, { instrument: 'piano' })), ['play-selected', 'arpeggio-selected']);
 });
+
+test('los disminuidos con séptima: ✦, su papel, el nombre con que se leen y botones para compararlos', async () => {
+  const { renderDetail, renderChords } = await import('../js/ui/render.js');
+  setLatin(true);
+  const text = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
+  const tonic = analyze('Fa°7 Do');
+  const detail = text(renderDetail(tonic.items[0], tonic.key));
+  assert.match(detail, /Fa°7 suena exactamente igual que Si°7: sus cuatro notas están a la misma distancia/);
+  assert.match(detail, /prestado de Do menor/);
+  assert.match(renderDetail(tonic.items[0], tonic.key), /data-action="context">▶ Así suena[\s\S]*data-action="context-normal">▶ Con Sol7 en su lugar/);
+
+  const passing = analyze('Fa°7 Sol°7 Domaj7');
+  const cards = renderChords(passing.items);
+  assert.equal(cards.match(/class="star"/g).length, 2);
+  assert.equal(cards.match(/De paso/g).length, 2);
+  assert.doesNotMatch(cards, /Fuera de la tonalidad/);
+  assert.match(text(renderDetail(passing.items[0], passing.key)), /sube un tono hasta Sol°7, otro disminuido con séptima, y los dos suben juntos, en paralelo, hasta Domaj7/);
+  assert.match(renderDetail(passing.items[1], passing.key), /Con Sol en su lugar/);
+
+  const common = analyze('Do La°7 Do');
+  assert.match(text(renderDetail(common.items[1], common.key)), /La°7 suena exactamente igual que Do°7[\s\S]*disminuido de nota común/);
+  // Sin otro nombre, no hace falta explicarlo.
+  const plain = analyze('Si°7 Do');
+  assert.doesNotMatch(text(renderDetail(plain.items[0], plain.key)), /suena exactamente igual/);
+  setLatin(false);
+});

@@ -446,6 +446,7 @@ details summary {
 .fn-T { --fn: var(--fn-T); --fn-bg: var(--fn-T-bg); }
 .fn-S { --fn: var(--fn-S); --fn-bg: var(--fn-S-bg); }
 .fn-D { --fn: var(--fn-D); --fn-bg: var(--fn-D-bg); }
+.fn-P,
 .fn-X { --fn: var(--fn-X); --fn-bg: var(--fn-X-bg); }
 
 .badge {

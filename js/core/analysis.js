@@ -35,7 +35,11 @@ export function analyze(text, { forcedKey = null } = {}) {
     if (!forcedKey) confidence = modalConfidence(modes.main, chords);
   }
 
-  const items = chords.map((chord, i) => ({ chord, ...classify(chord, key, chords[i + 1] ?? null) }));
+  const items = chords.map((chord, i) => ({ chord, ...classify(chord, key, chords[i + 1] ?? null, chords[i - 1] ?? null) }));
+  // Una cadena de °7 en paralelo (F°7 G°7 Cmaj7) va hasta el primer acorde que no lo es.
+  items.forEach((item, i) => {
+    if (item.passing?.parallel) item.passing.until = chords.slice(i + 1).find((c) => c.seventh !== 'dim7') ?? null;
+  });
   const { progressions, cadences: found } = findMatches(chords, key, relativeOf(key));
   // Un bucle no acaba: vuelve al primer acorde. Su «final» no es una cadencia.
   const period = loopPeriod(chords);

@@ -77,7 +77,7 @@ export function scoreKey(chords, key) {
   key = { ...key, blues: isBlues(chords, key) };
   let score = key.blues ? BONUS.blues : 0;
   chords.forEach((c, i) => {
-    score += classify(c, key, chords[i + 1] ?? null).fit;
+    score += classify(c, key, chords[i + 1] ?? null, chords[i - 1] ?? null).fit;
   });
   if (loopPeriod(chords)) {
     if (isTonicChord(chords[0], key)) score += BONUS.loopFirst;

@@ -41,7 +41,8 @@ function normalizeSuffix(raw) {
     .replace(/♯/g, '#')
     .replace(/♭/g, 'b')
     .replace(/[°º]/g, 'dim')
-    .replace(/ø/g, 'm7b5')
+    // «Cø» y «Cø7»: el 7 ya va dentro de m7b5.
+    .replace(/ø7?/g, 'm7b5')
     // El triángulo es maj7, con el 7 o sin él: CΔ, CΔ7.
     .replace(/Δ7?/g, 'maj7');
   s = s

@@ -4,6 +4,7 @@
 import { Interval, Note } from '../../vendor/tonal.mjs';
 import { chordOnDegree, tonicChord } from '../core/build.js';
 import { DEGREES } from '../core/theory.js';
+import { parseChord } from '../core/parser.js';
 import { MODES, modeScale } from '../core/modes.js';
 import { MODE_INFO } from './texts.js';
 import { chordLabel, keyName, noteName } from '../core/names.js';
@@ -30,6 +31,7 @@ const degreeNote = (k, semitones) => noteName(Note.transpose(k.tonic, ['1P', '2m
 // Para los textos con ejemplos concretos, que siguen el cifrado elegido.
 const K = (tonic, mode) => keyName({ tonic, mode });
 const sym = (root, suffix = '') => noteName(root) + suffix;
+const dim7 = (root) => chordLabel(parseChord(root + 'dim7'));
 
 // text: una cadena, o una función si nombra notas (para seguir el cifrado).
 // fn: en tónica, subdominante y dominante, su papel (FUNCTIONS en texts.js),
@@ -226,6 +228,22 @@ export const GLOSSARY = [
     example: (k, label) => {
       const d = degrees(k);
       return { chords: [d.vii, d.I], caption: `${label(d.vii)} va a ${label(d.I)}, medio tono por encima.` };
+    },
+  },
+  {
+    id: 'disminuido-septima',
+    term: 'Disminuido con séptima',
+    match: ['disminuidos con séptima', 'disminuido con séptima', 'cuatro nombres'],
+    text: () => `Un acorde disminuido con una nota más. Sus cuatro notas están a la misma distancia (tres semitonos), así que es simétrico: ${dim7('B')}, ${dim7('D')}, ${dim7('F')} y ${dim7('Ab')} tienen las mismas notas y suenan exactamente igual. Cada uno tiene cuatro nombres, y por eso el mismo acorde puede llevar a sitios distintos: se le llama por el nombre que explica adónde va.`,
+    example: (k, label) => {
+      const I = tonicChord(k);
+      // El vi en mayor, el III en menor: los dos, medio tono por encima de una nota del vii°7.
+      const other = k.mode === 'major' ? chordOnDegree(k, 9, 'm') : chordOnDegree(k, 3, 'M');
+      const dim = (target) => {
+        const root = Note.transpose(target.root, '-2m');
+        return parseChord((/##|bb/.test(root.slice(1)) ? Note.simplify(root) : root) + 'dim7');
+      };
+      return { chords: [dim(I), I, dim(other), other], caption: `${label(dim(I))} lleva a ${label(I)}, y el mismo acorde, llamado ${label(dim(other))}, lleva a ${label(other)}.` };
     },
   },
   {

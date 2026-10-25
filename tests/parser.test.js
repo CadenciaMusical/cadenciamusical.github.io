@@ -38,6 +38,8 @@ test('variantes de símbolos', () => {
   assert.equal(parseChord('B°').seventh, null);
   assert.equal(parseChord('B°').triad, 'dim');
   assert.equal(parseChord('Cø').seventh, 'm7b5');
+  assert.equal(parseChord('Cø7').seventh, 'm7b5');
+  assert.equal(parseChord('Siø7').seventh, 'm7b5');
   assert.equal(parseChord('Am7-5').seventh, 'm7b5');
   assert.equal(parseChord('Lam7M').seventh, 'mMaj7');
 });
