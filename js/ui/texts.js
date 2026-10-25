@@ -186,9 +186,13 @@ export function modeVsKeyText(m, key) {
 // pistas son el primer y el último acorde: las canciones suelen empezar y,
 // sobre todo, acabar en casa.
 export function alternativeText(key, alt, relative, chords) {
+  // Un modo frente al mayor o el menor con sus mismas notas (Re dórico y Do mayor).
+  const mode = Boolean(key.modal) !== Boolean(alt.modal) && sameScale(key, alt) && (key.modal ? key : alt);
   const intro = relative
     ? 'Usan las mismas notas (son tonalidades relativas), así que los acordes no bastan para decidir.'
-    : 'Comparten casi todos los acordes, así que cuesta decidir.';
+    : mode
+      ? `Usan las mismas notas, pero ${keyName(mode)} toma ${noteName(mode.tonic)} como casa: es un modo, una escala con las notas de siempre y otro centro. Los acordes no bastan para decidir.`
+      : 'Comparten casi todos los acordes, así que cuesta decidir.';
   const last = chords[chords.length - 1];
   const ending = isTonicChord(last, key) ? key : isTonicChord(last, alt) ? alt : null;
   const listen = ending
@@ -196,6 +200,10 @@ export function alternativeText(key, alt, relative, chords) {
     : 'Escucha cómo suena terminando en cada una: la que te suene a final es la buena.';
   return `${intro} ${cluesText(key, alt, chords)} ${listen}`;
 }
+
+// Las notas de la escala de una tonalidad o de un modo, como clases de altura.
+const scaleOf = (k) => (k.modal ? k.modal.degrees.map((d) => d.st) : SCALE_STEPS[k.mode]).map((st) => (k.pc + st) % 12).sort((a, b) => a - b).join();
+const sameScale = (a, b) => scaleOf(a) === scaleOf(b);
 
 function cluesText(key, alt, chords) {
   if (chords.length < 2) return '';

@@ -1,7 +1,7 @@
 // Punto de entrada del análisis: texto → acordes → tonalidad → grados y funciones.
 
 import { parseProgression } from './parser.js';
-import { detectKey, scoreKey, isRelative, loopPeriod, pedalOf } from './key.js';
+import { detectKey, scoreKey, isRelative, isTonicChord, loopPeriod, pedalOf } from './key.js';
 import { classify, classifyAlone } from './classify.js';
 import { findMatches, relativeOf } from './matcher.js';
 import { detectModes, isClearlyModal, modeDegrees } from './modes.js';
@@ -46,8 +46,13 @@ export function analyze(text, { forcedKey = null } = {}) {
   // haya elegido otra tonalidad a mano.
   if (modal && (!forcedKey || forcedKey.pc === modes.main.pc)) {
     key = modalKey(modes.main);
-    alternative = null;
-    if (!forcedKey) confidence = modalConfidence(modes.main, chords);
+    // Si la ha elegido el usuario, la detectada sigue ahí para volver a ella.
+    if (!forcedKey) {
+      alternative = null;
+      confidence = modalConfidence(modes.main, chords);
+    } else if (alternative?.pc === key.pc && alternative.mode === key.mode) alternative = null;
+  } else if (!forcedKey) {
+    alternative = modalAlternative(modes, chords, key) ?? alternative;
   }
 
   const items = chords.map((chord, i) => ({ chord, ...classify(chord, key, chords[i + 1] ?? null, chords[i - 1] ?? null) }));
@@ -101,6 +106,22 @@ function modalKey(m) {
     blues: false,
     modal: { id: m.id, name: m.name, variant: m.variant, charNote: m.charNote, triad: degrees[0].triad, degrees },
   };
+}
+
+// Si la tonalidad no empieza ni acaba en su tónica, pero la progresión
+// empieza (o, si no, acaba) en el centro de un modo con las mismas notas,
+// ese modo es mejor alternativa que la relativa: Dm F C G puede ser Do mayor
+// o Re dórico. El jónico y el eólico no cuentan: son el mayor y el menor.
+const PLAIN = new Set(['ionian', 'aeolian']);
+
+function modalAlternative(modes, chords, key) {
+  const first = chords[0];
+  const last = chords[chords.length - 1];
+  if (!modes || isTonicChord(first, key) || isTonicChord(last, key)) return null;
+  const fits = [modes.main, ...modes.others].filter((m) => m.sameNotes && !PLAIN.has(m.id) && m.foreign.length === 0 && m.charChords.length > 0);
+  const on = (chord) => fits.find((m) => isTonicChord(chord, modalKey(m)));
+  const m = on(first) ?? on(last);
+  return m ? modalKey(m) : null;
 }
 
 // Empezar o acabar en el centro lo deja claro; si no, hay alguna duda.

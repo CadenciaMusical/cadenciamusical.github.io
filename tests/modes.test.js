@@ -288,3 +288,29 @@ test('un acorde con séptima de fuera de la tonalidad nunca pasa por diatónico'
   assert.equal(mixo.items[0].kind, 'modal');
   assert.match(plainText(renderDetail(mixo.items[0], mixo.key)), /lleva Do, la nota que distingue el modo/);
 });
+
+test('alternativa modal: si empieza en el centro de un modo con las mismas notas', async () => {
+  const { keyName } = await import('../js/core/names.js');
+  const { renderKey } = await import('../js/ui/render.js');
+  setLatin(true);
+  const r = analyze('Rem Fa Do Sol');
+  assert.equal(keyName(r.key), 'Do mayor');
+  assert.equal(keyName(r.alternative), 'Re dórico');
+  assert.equal(r.alternativeIsRelative, false);
+  const html = renderKey(r);
+  assert.match(html, /data-action="use-alt">Analizar en Re dórico/);
+  assert.match(plainText(html), /Usan las mismas notas, pero Re dórico toma Re como casa/);
+  // «Analizar en Re dórico» funciona como las demás: con Do mayor para volver.
+  const chosen = analyze('Rem Fa Do Sol', { forcedKey: r.alternative });
+  assert.equal(keyName(chosen.key), 'Re dórico');
+  assert.equal(chosen.items.map((i) => i.roman).join(' '), 'i III VII IV');
+  assert.ok(chosen.forced);
+  assert.equal(keyName(chosen.alternative), 'Do mayor');
+  assert.match(plainText(renderKey(chosen)), /¿O Do mayor\?.*Usan las mismas notas, pero Re dórico toma Re como casa/s);
+  // La del pop, en menor: la alternativa sigue siendo la relativa.
+  const pop = analyze('Am F C G');
+  assert.equal(keyName(pop.alternative), 'Do mayor');
+  assert.ok(pop.alternativeIsRelative);
+  // Si empieza o acaba en su tónica, no hace falta otra: ii–V–I.
+  assert.equal(analyze('Dm7 G7 Cmaj7').alternative, null);
+});
