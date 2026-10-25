@@ -405,7 +405,8 @@ test('en un bucle, la casa es el primer acorde', async () => {
   assert.equal(keyName(prestado.key), 'Do mayor');
   assert.equal(romans(prestado), 'I iv I iv');
   assert.equal(prestado.items[1].kind, 'borrowed');
-  assert.equal(keyName(prestado.alternative), 'Fa menor');
+  // Acabar en Fam no es un final: el bucle vuelve a Do. No hay alternativa.
+  assert.equal(prestado.alternative, null);
   setLatin(false);
 });
 

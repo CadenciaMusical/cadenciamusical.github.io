@@ -6,6 +6,9 @@ import { classify, classifyAlone } from './classify.js';
 import { findMatches, relativeOf } from './matcher.js';
 import { detectModes, isClearlyModal, modeDegrees } from './modes.js';
 import { bassLines, inversionOf, pedalLine } from './bass.js';
+import { Note } from '../../vendor/tonal.mjs';
+
+const mod12 = (n) => ((n % 12) + 12) % 12;
 
 // forcedKey: { pc, mode, tonic } si el usuario ha elegido la tonalidad a mano.
 export function analyze(text, { forcedKey = null } = {}) {
@@ -33,7 +36,7 @@ export function analyze(text, { forcedKey = null } = {}) {
     return {
       parsed, chords, errors, key, confidence: 'baja', forced: false, alternative: null, alternativeIsRelative: false,
       unclear: true,
-      items: chords.map((chord) => ({ chord, ...classifyAlone() })),
+      items: chords.map((chord) => ({ chord, ...classifyAlone(), special: true })),
       progressions: [], cadences: [], modes: null, modal: false, loop: null, bassLines: [], pedal: null, rests,
     };
   }
@@ -53,10 +56,12 @@ export function analyze(text, { forcedKey = null } = {}) {
     } else if (alternative?.pc === key.pc && alternative.mode === key.mode) alternative = null;
   } else if (!forcedKey) {
     alternative = modalAlternative(modes, chords, key) ?? alternative;
+    if (alternative && isLoopLike(chords) && !reasonableInLoop(alternative, chords, key)) alternative = null;
   }
 
   const items = chords.map((chord, i) => ({ chord, ...classify(chord, key, chords[i + 1] ?? null, chords[i - 1] ?? null) }));
   items.forEach((item, i) => {
+    item.special = isSpecial(item, key);
     item.inversion = inversionOf(item.chord, chords[i + 1] ?? null);
   });
   // Una cadena de °7 en paralelo (F°7 G°7 Cmaj7) va hasta el primer acorde que no lo es.
@@ -100,6 +105,28 @@ function rozaLocrian(chords, key) {
   return first;
 }
 
+// En un bucle, el último acorde no es un final: no sirve para proponer otra
+// tonalidad (Do Fam Do Fam no está en Fa menor por acabar en Fam). Solo se
+// mantienen las que se apoyan en algo más: las mismas notas (la relativa o
+// un modo) o que el bucle empiece en su tónica.
+function reasonableInLoop(alt, chords, key) {
+  return isRelative(key, alt) || Boolean(alt.modal) || isTonicChord(chords[0], alt);
+}
+
+// ¿Lleva ✦? Fuera de los modos, todo lo que no es de la tonalidad. En un
+// modo, la tónica es la casa y nunca la lleva; el resto de sus acordes, solo
+// si tienen alguna nota que no es de la escala mayor o menor de referencia
+// (el Re con Fa♯ en La dórico, no el Sol). Si todo es especial, nada lo es.
+const NATURAL = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10] };
+
+function isSpecial(item, key) {
+  const plain = item.kind === 'diatonic' || item.kind === 'blues';
+  if (!key.modal) return !plain;
+  if (item.st === 0) return false;
+  if (!plain && item.kind !== 'modal') return true;
+  return item.chord.notes.some((n) => !NATURAL[key.mode].includes(mod12(Note.chroma(n) - key.pc)));
+}
+
 export const isSymmetric = (c) => (c.triad === 'aug' && (!c.seventh || c.seventh === '7')) || c.seventh === 'dim7';
 
 // Los modos que se parecen a la escala mayor (lidio, mixolidio) se analizan
@@ -126,7 +153,8 @@ const PLAIN = new Set(['ionian', 'aeolian']);
 
 function modalAlternative(modes, chords, key) {
   const first = chords[0];
-  const last = chords[chords.length - 1];
+  // En un bucle, el último acorde no es un final: solo cuenta el primero.
+  const last = isLoopLike(chords) ? first : chords[chords.length - 1];
   if (!modes || isTonicChord(first, key) || isTonicChord(last, key)) return null;
   const fits = [modes.main, ...modes.others].filter((m) => m.sameNotes && !PLAIN.has(m.id) && m.foreign.length === 0 && m.charChords.length > 0);
   const on = (chord) => fits.find((m) => isTonicChord(chord, modalKey(m)));

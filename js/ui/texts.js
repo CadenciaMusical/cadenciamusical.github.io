@@ -4,7 +4,7 @@ import { Note } from '../../vendor/tonal.mjs';
 import { keyName, chordLabel, noteName, VARIANT_NAMES } from '../core/names.js';
 import { chordOnDegree, normalVersion } from '../core/build.js';
 import { parseChord } from '../core/parser.js';
-import { isTonicChord } from '../core/key.js';
+import { isTonicChord, isLoopLike } from '../core/key.js';
 
 export const FUNCTIONS = {
   T: {
@@ -193,6 +193,10 @@ export function alternativeText(key, alt, relative, chords) {
     : mode
       ? `Usan las mismas notas, pero ${keyName(mode)} toma ${noteName(mode.tonic)} como casa: es un modo, una escala con las notas de siempre y otro centro. Los acordes no bastan para decidir.`
       : 'Comparten casi todos los acordes, así que cuesta decidir.';
+  // En un bucle no hay final: ni el último acorde es pista ni se puede «acabar».
+  if (isLoopLike(chords)) {
+    return `${intro} ${loopCluesText(key, alt, chords)} Escucha unas cuantas vueltas: la que te suene a casa, donde descansa cada vuelta, es la buena.`;
+  }
   const last = chords[chords.length - 1];
   const ending = isTonicChord(last, key) ? key : isTonicChord(last, alt) ? alt : null;
   const listen = ending
@@ -221,18 +225,41 @@ function cluesText(key, alt, chords) {
   return `${startText}${joiner}${endText}.`;
 }
 
+// En un bucle solo el primer acorde es pista: el último no es un final.
+function loopCluesText(key, alt, chords) {
+  const first = chords[0];
+  const start = isTonicChord(first, key) ? key : isTonicChord(first, alt) ? alt : null;
+  const ends = 'Es un bucle: el último acorde no es un final, porque vuelve a empezar, así que no sirve de pista.';
+  return start ? `Empieza en ${chordLabel(first)}, la casa de ${keyName(start)}. ${ends}` : ends;
+}
+
 // Un bucle que gira alrededor de un disminuido (result.locrian).
 export function locrianText(chord, key) {
   return `Si giras alrededor de ${chordLabel(chord)}, estás rozando el modo locrio: casi nadie lo usa porque su casa es un acorde disminuido, que no suena a reposo. Por eso tu oído (y Cadencia) prefiere oír ${keyName(key)}.`;
 }
 
 // Una progresión en bucle (result.loop): no tiene final, vuelve al principio.
+// La casa es la que ha decidido el análisis, aunque el bucle no empiece en
+// ella (Si° Do Si° Do gira alrededor de Do). Un disminuido nunca es la casa.
 export function loopText(result) {
-  const { chords, loop } = result;
+  const { chords, loop, key } = result;
   const first = chordLabel(chords[0]);
   const times = loop.times === 2 ? 'dos veces' : `${loop.times} veces`;
   const pattern = loop.period === 2 ? `${first} y ${chordLabel(chords[1])} se van alternando` : `los mismos ${loop.period} acordes se repiten ${times}`;
-  return `Es un bucle: ${pattern}. No tiene un final propio, sino que da vueltas y vuelve siempre a ${first}, que por eso suena a casa. En una canción, así suelen ser las estrofas o los estribillos que se repiten; el final llega cuando la canción cambia de parte.`;
+  const song = 'En una canción, así suelen ser las estrofas o los estribillos que se repiten; el final llega cuando la canción cambia de parte.';
+  const isHome = (c) => c.pc === key.pc && c.triad !== 'dim';
+  if (isHome(chords[0])) {
+    return `Es un bucle: ${pattern}. No tiene un final propio, sino que da vueltas y vuelve siempre a ${first}, que por eso suena a casa. ${song}`;
+  }
+  const home = chords.slice(0, loop.period).find(isHome);
+  if (home) {
+    const h = chordLabel(home);
+    return `Es un bucle: ${pattern}. Empieza en ${first}, pero la casa es ${h}: el bucle gira a su alrededor y cada vuelta descansa en ${h}. ${song}`;
+  }
+  if (chords[0].triad === 'dim') {
+    return `Es un bucle: ${pattern}. No tiene un final propio, sino que da vueltas y vuelve siempre a ${first}, pero, como es un acorde disminuido, no llega a sonar a reposo: se oye ${keyName(key)}. ${song}`;
+  }
+  return `Es un bucle: ${pattern}. No tiene un final propio, sino que da vueltas y vuelve siempre a ${first}, aunque la casa es ${noteName(key.tonic)}. ${song}`;
 }
 
 // Explicación extra según el tipo de acorde (ver core/classify.js). Texto sin HTML.

@@ -262,10 +262,12 @@ test('lidio dominante: el lidio con la séptima menor', async () => {
   assert.match(modes, /<span class="char">Fa♯<\/span><span class="">Sol<\/span><span class="">La<\/span><span class="char">Si♭<\/span>/);
   assert.match(modes, /data-action="mode-compare">▶ Oír la diferencia con Do mayor/);
   assert.match(modes, /las notas marcadas son las que cambian/);
-  // El Do7 es de casa, pero no de Do mayor: su Si♭ se marca y se explica.
+  // El Do7 es de casa, pero no de Do mayor: su Si♭ se explica, sin ✦ (es la tónica).
   assert.equal(r.items[0].kind, 'modal');
   assert.equal(r.items[0].fn, 'T');
-  assert.match(plainText(renderDetail(r.items[0], r.key)), /✦ Algo especial.*lleva Si♭, que no es de su escala/s);
+  const detail = plainText(renderDetail(r.items[0], r.key));
+  assert.match(detail, /lleva Si♭, que no es de su escala/);
+  assert.doesNotMatch(detail, /✦/);
   // El ejemplo típico lleva la séptima en la tónica.
   assert.deepEqual(typicalProgression('lydian', 'C', 'lydian-dominant').map((c) => c.root + c.suffix), ['C7', 'D', 'C7', 'D']);
 });
@@ -337,4 +339,25 @@ test('el locrio, en el glosario de modos, explica por qué casi no se usa', asyn
   const entry = glossaryEntry('modo-locrian');
   assert.equal(entry.term, 'Modo locrio');
   assert.match(termText(entry), /acorde de casa es disminuido/);
+});
+
+test('en un modo, la ✦ solo en los acordes con una nota característica, nunca en la tónica', async () => {
+  const { renderChords } = await import('../js/ui/render.js');
+  setLatin(true);
+  const stars = (text) => analyze(text).items.map((i) => (i.special ? '✦' : '·')).join(' ');
+  // Re lleva el Fa♯ del lidio; el Do7 es la casa.
+  assert.equal(stars('Do7 Re Do7 Re'), '· ✦ · ✦');
+  // El Fa del mixolidio, solo en Fa/Sol.
+  assert.equal(stars('Sol Do/Sol Sol Fa/Sol'), '· · · ✦');
+  // El Fa del frigio; el Sol sería igual en Mi menor.
+  assert.equal(stars('Mim Fa Sol Fa'), '· ✦ · ✦');
+  // El Mi mayor lleva Sol♯, pero es la tónica del frigio dominante.
+  assert.equal(stars('Mi Fa Mi Fa'), '· ✦ · ✦');
+  // El Re del dórico, con su Fa♯.
+  assert.equal(stars('Lam Re Lam Re'), '· ✦ · ✦');
+  // Fuera de los modos, como siempre: el Fam prestado lleva ✦.
+  assert.equal(stars('Do Fam Do Fam'), '· ✦ · ✦');
+  // Y así se ve en las tarjetas.
+  const grid = renderChords(analyze('Do7 Re Do7 Re').items);
+  assert.equal((grid.match(/class="star"/g) ?? []).length, 2);
 });

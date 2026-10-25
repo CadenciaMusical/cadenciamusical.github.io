@@ -144,7 +144,7 @@ export function renderChords(items, { selected = null, marked = new Set(), turns
   return items
     .map((item, i) => {
       const f = fnKey(item.fn);
-      const special = item.kind !== 'diatonic' && item.kind !== 'blues';
+      const special = item.special ?? (item.kind !== 'diatonic' && item.kind !== 'blues');
       const cls = `${i === selected ? ' selected' : ''}${marked.has(i) ? ' marked' : ''}`;
       return `
         <button type="button" class="chord fn-${f}${cls}" data-index="${i}" aria-pressed="${i === selected}">
@@ -352,7 +352,8 @@ export function renderDetail(item, key, { instrument = 'piano', position = 0 } =
     <p><span class="badge fn-${f}">${fn.name} · ${fn.short}</span></p>
     <p>${linkTerms(fn.text)}</p>
     ${item.inversion ? `<p>${linkTerms(inversionText(item))}</p>` : ''}
-    ${extra ? `<div class="special"><p><strong>✦ Algo especial.</strong> ${linkTerms(extra)}</p>${compare}</div>` : ''}
+    ${extra && item.special !== false ? `<div class="special"><p><strong>✦ Algo especial.</strong> ${linkTerms(extra)}</p>${compare}</div>` : ''}
+    ${extra && item.special === false ? `<p>${linkTerms(extra)}</p>${compare}` : ''}
     ${item.roman ? `<details class="explain">
       <summary>¿Qué significa «${item.roman}»?</summary>
       <p>${linkTerms(DEGREE_TEXT)}</p>

@@ -131,3 +131,45 @@ test('la tarjeta del bajo, con botón para oír solo el bajo', async () => {
   assert.doesNotMatch(renderDetail(r.items[0], r.key), /en el bajo:/);
   setLatin(false);
 });
+
+test('la tarjeta «Da vueltas» usa la casa que ha decidido el análisis', async () => {
+  const { analyze } = await import('../js/core/analysis.js');
+  const { keyName, setLatin } = await import('../js/core/names.js');
+  const { loopText } = await import('../js/ui/texts.js');
+  setLatin(true);
+  for (const [text, first] of [['Si° Do Si° Do', 'Si°'], ['Siø7 Do Siø7 Do', 'Sim7b5']]) {
+    const r = analyze(text);
+    assert.equal(keyName(r.key), 'Do mayor', text);
+    const t = loopText(r);
+    assert.match(t, new RegExp(`^Es un bucle: ${first} y Do se van alternando\. Empieza en ${first}, pero la casa es Do: el bucle gira a su alrededor y cada vuelta descansa en Do\.`), text);
+    // Nunca un disminuido como casa.
+    assert.doesNotMatch(t, new RegExp(`${first}, que por eso suena a casa`), text);
+  }
+  // Si empieza en la casa, como siempre.
+  assert.match(loopText(analyze('Lam Re Lam Re')), /vuelve siempre a Lam, que por eso suena a casa/);
+  setLatin(false);
+});
+
+test('en un bucle, el último acorde no decide alternativas', async () => {
+  const { analyze } = await import('../js/core/analysis.js');
+  const { keyName, setLatin } = await import('../js/core/names.js');
+  const { renderKey } = await import('../js/ui/render.js');
+  setLatin(true);
+  const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
+  const r = analyze('Do Fam Do Fam');
+  assert.equal(keyName(r.key), 'Do mayor');
+  assert.equal(r.alternative, null);
+  assert.doesNotMatch(plain(renderKey(r)), /acaba en Fam|Fa menor/);
+  // La relativa sí, por las notas que comparten, sin hablar del final.
+  const dim = analyze('Si° Do Si° Do');
+  assert.equal(keyName(dim.alternative), 'La menor');
+  const text = plain(renderKey(dim));
+  assert.match(text, /Usan las mismas notas \(son tonalidades relativas\)/);
+  assert.match(text, /el último acorde no es un final/);
+  assert.doesNotMatch(text, /[Aa]caba en|terminando en/);
+  // Si no es un bucle, como siempre.
+  const pop = analyze('Am F C G');
+  assert.equal(keyName(pop.alternative), 'Do mayor');
+  assert.match(plain(renderKey(pop)), /Empieza en Lam, la casa de La menor, pero acaba en Sol, que no es la casa de ninguna de las dos\. Escucha cómo suena terminando en cada una/);
+  setLatin(false);
+});
