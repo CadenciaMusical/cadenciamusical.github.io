@@ -170,3 +170,19 @@ test('una progresión que se repite entera es una sola, con sus vueltas', async 
   assert.equal(find(once, 'andalusian').times, 1);
   assert.deepEqual([...progressionRanges(once)], []);
 });
+
+test('blues menor de 12 compases, con y sin séptimas', () => {
+  for (const text of [
+    'Lam Lam Lam Lam Rem Rem Lam Lam Mi7 Rem Lam Mi7',
+    'Lam7 Lam7 Lam7 Lam7 Rem7 Rem7 Lam7 Lam7 Mi7 Rem7 Lam7 Mi7',
+    // The Thrill Is Gone: ♭VI7 → V7 en los compases 9 y 10.
+    'Am7 Am7 Am7 Am7 Dm7 Dm7 Am7 Am7 F7 E7 Am7 E7',
+  ]) {
+    const r = analyze(text);
+    assert.equal(`${r.key.tonic} ${r.key.mode}`, 'A minor', text);
+    assert.ok(find(r, 'minor-blues')?.whole, text);
+    assert.equal(find(r, 'blues'), undefined, text);
+  }
+  // El mayor sigue siendo el mayor.
+  assert.equal(find(analyze('C7 F7 C7 C7 F7 F7 C7 C7 G7 F7 C7 G7'), 'minor-blues'), undefined);
+});

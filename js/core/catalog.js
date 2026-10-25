@@ -117,6 +117,17 @@ export const PROGRESSIONS = [
     text: 'La forma del blues: 12 compases repartidos entre I, IV y V, normalmente todos con séptima. Escrito con un acorde por compás.',
     songs: ['Johnny B. Goode (Chuck Berry)', 'Hound Dog (Elvis Presley)', 'Sweet Home Chicago'],
   },
+  {
+    id: 'minor-blues',
+    name: 'Blues menor de 12 compases',
+    // En los compases 9 y 10, el V puede ser menor, o llegar desde el ♭VI (The Thrill Is Gone).
+    steps: ['i', 'i|iv', 'i', 'i', 'iv', 'iv', 'i', 'i', 'V|v|VI', 'iv|V|v', 'i', 'i|V|v'],
+    mode: 'minor',
+    bars: true,
+    label: 'i – iv – i – V – iv – i',
+    text: 'La misma forma de 12 compases del blues, pero en menor: la tónica y la subdominante son acordes menores, y suena más oscuro y melancólico. Escrito con un acorde por compás, con o sin séptimas.',
+    songs: ['The Thrill Is Gone (B.B. King)', 'Mr. P.C. (John Coltrane)', 'Equinox (John Coltrane)'],
+  },
 ];
 
 // Solo se muestran las que cierran la progresión (atEnd en matcher.js).
