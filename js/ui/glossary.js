@@ -32,6 +32,7 @@ const degreeNote = (k, semitones) => noteName(Note.transpose(k.tonic, ['1P', '2m
 const K = (tonic, mode) => keyName({ tonic, mode });
 const sym = (root, suffix = '') => noteName(root) + suffix;
 const dim7 = (root) => chordLabel(parseChord(root + 'dim7'));
+const aug = (root) => chordLabel(parseChord(root + 'aug'));
 
 // text: una cadena, o una función si nombra notas (para seguir el cifrado).
 // fn: en tónica, subdominante y dominante, su papel (FUNCTIONS en texts.js),
@@ -244,6 +245,18 @@ export const GLOSSARY = [
         return parseChord((/##|bb/.test(root.slice(1)) ? Note.simplify(root) : root) + 'dim7');
       };
       return { chords: [dim(I), I, dim(other), other], caption: `${label(dim(I))} lleva a ${label(I)}, y el mismo acorde, llamado ${label(dim(other))}, lleva a ${label(other)}.` };
+    },
+  },
+  {
+    id: 'aumentado',
+    term: 'Acorde aumentado',
+    match: ['acordes aumentados', 'acorde aumentado', 'aumentados', 'aumentado', 'tres nombres'],
+    text: () => `Un acorde mayor con la quinta subida medio tono: suena tenso, misterioso. Sus tres notas están a la misma distancia (cuatro semitonos), así que es simétrico: ${aug('C')}, ${aug('E')} y ${aug('G#')} tienen las mismas notas y suenan exactamente igual. Cada uno tiene tres nombres. Suele ir de paso: sobre la dominante, empuja con más fuerza hacia la tónica.`,
+    example: (k, label) => {
+      const V = chordOnDegree(k, 7, 'M');
+      const Vaug = chordOnDegree(k, 7, 'aug');
+      const I = tonicChord(k);
+      return { chords: [V, Vaug, I], caption: `${label(V)}, ${label(Vaug)} y ${label(I)}: la quinta sube medio tono y empuja hacia la llegada.` };
     },
   },
   {

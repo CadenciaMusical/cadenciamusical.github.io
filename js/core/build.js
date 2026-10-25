@@ -30,12 +30,17 @@ export function normalVersion(item, key) {
     case 'secondary':
     case 'borrowed':
     case 'modal':
+    case 'dorian':
     case 'leading': {
       const d = diatonicAt(item.st);
       return d ? chordOnDegree(key, item.st, d.triad) : null;
     }
     case 'dim7':
       return dim7Normal(item, key, diatonicAt);
+    case 'augmented':
+      return chordOnDegree(key, (item.target.st + 7) % 12, 'M', item.chord.seventh === '7' ? '7' : '');
+    case 'suspension':
+      return chordOnDegree(key, item.st, item.resolvesTo.triad, item.resolvesTo.seventh ?? '');
     case 'color':
     case 'blues':
       return chordOnDegree(key, item.st, item.chord.triad);

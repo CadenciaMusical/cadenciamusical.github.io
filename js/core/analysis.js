@@ -2,7 +2,7 @@
 
 import { parseProgression } from './parser.js';
 import { detectKey, scoreKey, isRelative, loopPeriod } from './key.js';
-import { classify } from './classify.js';
+import { classify, classifyAlone } from './classify.js';
 import { findMatches, relativeOf } from './matcher.js';
 import { detectModes, isClearlyModal, modeDegrees } from './modes.js';
 
@@ -21,6 +21,17 @@ export function analyze(text, { forcedKey = null } = {}) {
     // La detectada pasa a ser la alternativa que se ofrece.
     alternative = key.pc === chosen.pc && key.mode === chosen.mode ? alternative : key;
     key = chosen;
+  }
+
+  // Si todos los acordes son simétricos (aumentados o °7), ninguno fija una
+  // tonalidad: cualquiera de sus notas podría ser la casa. Mejor decirlo.
+  if (!forcedKey && chords.every(isSymmetric)) {
+    return {
+      parsed, chords, errors, key, confidence: 'baja', forced: false, alternative: null, alternativeIsRelative: false,
+      unclear: true,
+      items: chords.map((chord) => ({ chord, ...classifyAlone() })),
+      progressions: [], cadences: [], modes: null, modal: false, loop: null,
+    };
   }
 
   const modes = detectModes(chords, key);
@@ -63,6 +74,8 @@ export function analyze(text, { forcedKey = null } = {}) {
     loop,
   };
 }
+
+export const isSymmetric = (c) => (c.triad === 'aug' && (!c.seventh || c.seventh === '7')) || c.seventh === 'dim7';
 
 // Los modos que se parecen a la escala mayor (lidio, mixolidio) se analizan
 // desde el mayor; el resto, desde el menor. modal guarda lo que hace falta

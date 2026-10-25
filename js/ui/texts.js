@@ -28,6 +28,12 @@ export const FUNCTIONS = {
     short: 'Puente',
     text: 'No tiene un papel propio en la tonalidad: hace de puente o de adorno y lleva el oído hacia el acorde que viene después.',
   },
+  // Sin tonalidad clara (solo aumentados o °7), no hay papel que dar.
+  N: {
+    name: 'Sin tonalidad',
+    short: 'Flotante',
+    text: 'Sin una tonalidad clara no hay casa a la que volver, así que el acorde no tiene un papel fijo: flota.',
+  },
   X: {
     name: 'Fuera de la tonalidad',
     short: 'Sorpresa',
@@ -233,6 +239,18 @@ export function kindText(item, key) {
       if (has) return `No es de ${parallel}, pero sí de ${name}: lleva ${noteName(char)}, la nota que distingue el modo. Es el acorde que le da su color.`;
       return `No es de ${parallel}, pero sí de ${name}, así que aquí suena en casa.`;
     }
+    case 'suspension': {
+      const root = item.chord.root;
+      const third = noteName(Note.transpose(root, item.resolvesTo.triad === 'M' ? '3M' : '3m'));
+      const resolved = label(normalVersion(item, key));
+      const [instead, moves] = item.sus === 'sus2' ? [`la segunda (${noteName(Note.transpose(root, '2M'))})`, 'sube'] : [`la cuarta (${noteName(Note.transpose(root, '4P'))})`, 'baja'];
+      return `Es un acorde suspendido: en lugar de la tercera (${third}) lleva ${instead}, y por eso suena abierto, «en el aire». Justo después se resuelve: esa nota ${moves} a ${third} y llega ${resolved}, que suena a alivio.`;
+    }
+    case 'dorian': {
+      const minorIV = chordOnDegree(key, 5, 'm');
+      const sixth = noteName(Note.transpose(key.tonic, '6M'));
+      return `Es el «cuarto dórico». En ${name}, el acorde del cuarto grado suele ser menor (${label(minorIV)}), pero aquí es mayor: lleva ${sixth}, la sexta nota del modo dórico (y de la escala menor melódica). Le da a la tonalidad menor un toque más luminoso, sin perder su carácter.`;
+    }
     case 'borrowed': {
       const parallel = keyName({ tonic: key.tonic, mode: item.from });
       const color = item.from === 'minor' ? 'más oscuro, melancólico' : 'más luminoso';
@@ -242,8 +260,14 @@ export function kindText(item, key) {
       return `El acorde es de ${name}, pero la nota que le añade (su séptima) no. Es un toque de color.`;
     case 'blues':
       return 'En el blues, la tónica y la subdominante también llevan séptima (I7, IV7): es parte de su sonido característico.';
-    case 'chromatic':
-      return `No pertenece a ${name}. Aporta un color sorprendente.`;
+    case 'chromatic': {
+      const same = item.chord.triad === 'aug' ? ` ${sameAsText(item.chord)}` : '';
+      return `No pertenece a ${name}. Aporta un color sorprendente.${same}`;
+    }
+    case 'augmented':
+      return augmentedText(item, key);
+    case 'symmetric':
+      return `${sameAsText(item.chord)} Por eso, solo, no apunta a ninguna tonalidad: según el acorde que venga después, puede llevar a sitios distintos.`;
     default:
       return '';
   }
@@ -281,4 +305,56 @@ function dim7Text(item, key) {
     default:
       return '';
   }
+}
+
+// Los otros nombres de un acorde simétrico: C+ → [E+, G♯+]; C°7 → [E♭°7, G♭°7, A°7].
+function otherNames(chord) {
+  const [suffix, steps] = chord.seventh === 'dim7' ? ['dim7', ['3m', '5d', '6M']] : ['aug', ['3M', '5A']];
+  return steps.map((i) => {
+    const n = Note.transpose(chord.root, i);
+    // Si♯ o Mi♯ se leen peor que Do o Fa.
+    return parseChord((/##|bb|^(B#|E#|Cb|Fb)$/.test(n) ? Note.simplify(n) : n) + suffix);
+  });
+}
+
+const listJoin = (xs) => (xs.length === 1 ? xs[0] : `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`);
+
+// «Do+ suena exactamente igual que Mi+ y Sol♯+…».
+function sameAsText(chord) {
+  const dim = chord.seventh === 'dim7';
+  const others = listJoin(otherNames(chord).map((c) => chordLabel(c)));
+  return dim
+    ? `${chordLabel(chord)} tiene sus cuatro notas a la misma distancia (tres semitonos), así que suena exactamente igual que ${others}: cada acorde disminuido tiene cuatro nombres.`
+    : `${chordLabel(chord)} tiene sus tres notas a la misma distancia (cuatro semitonos), así que suena exactamente igual que ${others}: cada acorde aumentado tiene tres nombres.`;
+}
+
+// Una dominante aumentada (ver classifyAug en core/classify.js).
+function augmentedText(item, key) {
+  const label = (c) => chordLabel(c);
+  const read = parseChord(item.readAs + 'aug');
+  const renamed = read.pc !== item.chord.pc
+    ? `${label(item.chord)} suena exactamente igual que ${label(read)}: sus tres notas están a la misma distancia, así que cada acorde aumentado tiene tres nombres. `
+    : '';
+  const target = chordOnDegree(key, item.target.st, item.target.triad);
+  const raised = Note.transpose(item.readAs, '5A');
+  const third = Note.transpose(target.root, item.target.triad === 'M' ? '3M' : '3m');
+  const plain = label(normalVersion(item, key));
+  const what = item.role === 'dominant'
+    ? `Es una dominante aumentada: ${plain} con la quinta subida medio tono (${noteName(Note.simplify(raised))}).`
+    : `Es una dominante aumentada, la de ${label(target)} (el ${item.target.roman}): ${plain} con la quinta subida medio tono (${noteName(Note.simplify(raised))}). Por eso se escribe ${item.roman}.`;
+  return `${renamed}${what} Esa nota sube otro medio tono hasta ${noteName(third)}, la tercera de ${label(target)}, y hace la llegada aún más tensa.`;
+}
+
+// Cuando todos los acordes son simétricos (aumentados o °7), la tonalidad no
+// está clara. Si además son el mismo acorde con distintos nombres, se dice.
+export function unclearKeyText(chords) {
+  const set = (c) => [...new Set(c.notes.map((n) => Note.chroma(n)))].sort().join();
+  const labels = [...new Set(chords.map((c) => chordLabel(c)))];
+  const one = chords.every((c) => set(c) === set(chords[0]));
+  const kind = chords[0].seventh === 'dim7' ? 'disminuido con séptima' : 'aumentado';
+  const count = chords[0].seventh === 'dim7' ? 'cuatro' : 'tres';
+  const same = one && labels.length > 1
+    ? `${listJoin(labels)} son el mismo acorde ${kind} con distintos nombres: tienen las mismas notas y suenan igual. `
+    : '';
+  return `${same}Los acordes aumentados y los disminuidos con séptima son simétricos: sus notas están a la misma distancia, así que ninguna destaca como casa y cada uno tiene ${one ? count : 'varios'} nombres. Sin un acorde mayor o menor que la fije, no hay una tonalidad clara. Prueba a añadir uno y oirás hacia dónde van.`;
 }

@@ -117,22 +117,71 @@ function classifyDim7(chord, key, next, prev, base) {
   return null;
 }
 
+// Como el °7, el aumentado es simétrico (sus tres notas están a cuatro
+// semitonos): C+ = E+ = G♯+. Si una de sus lecturas es la quinta del acorde
+// siguiente, es una dominante con la quinta subida medio tono:
+//   'dominant'  — va a la tónica (V+)
+//   'secondary' — va a otro grado (V+/x)
+// readAs: la raíz con que se lee (G en B+ → C). Si no, null.
+function classifyAug(chord, key, next, base) {
+  if (!next || (next.triad !== 'M' && next.triad !== 'm')) return null;
+  const notes = [0, 4, 8].map((i) => mod12(chord.pc + i));
+  if (!notes.includes(mod12(next.pc + 7))) return null;
+  const nextSt = mod12(next.pc - key.pc);
+  const target = targetDegree(nextSt, key.mode);
+  if (!target) return null;
+  const fifth = Note.transpose(next.root, '5P');
+  const readAs = /##|bb/.test(fifth.slice(1)) ? Note.simplify(fifth) : fifth;
+  const seventh = chord.seventh === '7' ? '7' : '';
+  const targetRoman = romanFor(nextSt, target.triad, null, key.mode);
+  return {
+    ...base,
+    roman: nextSt === 0 ? `V+${seventh}` : `V+${seventh}/${targetRoman}`,
+    fn: 'D',
+    kind: 'augmented',
+    role: nextSt === 0 ? 'dominant' : 'secondary',
+    readAs,
+    target: { st: nextSt, triad: target.triad, roman: targetRoman, resolves: true },
+    fit: nextSt === 0 ? 0.5 : 0.4,
+  };
+}
+
+// Sin tonalidad clara (ver analyze): el acorde, sin grado ni función.
+export const classifyAlone = () => ({ st: null, roman: '', fn: 'N', kind: 'symmetric', fit: 0 });
+
 // key: { pc, mode, blues? }. next: el acorde siguiente (o null); prev, el anterior.
-// Devuelve { st, roman, fn, kind, fit, target? }. fn: T, S, D, P (de paso) o null.
+// Devuelve { st, roman, fn, kind, fit, target? }. fn: T, S, D, P (de paso), N (sin tonalidad) o null.
 //   kind: 'diatonic'  — pertenece a la tonalidad
 //         'blues'     — I7 o IV7 de un blues
+//         'suspension'— un sus de la tonalidad que se resuelve en el acorde
+//                       siguiente, con la misma raíz (Gsus4 → G)
 //         'color'     — pertenece, pero con una séptima que no es de la tonalidad
 //         'secondary' — dominante secundaria (V/x)
 //         'leading'   — disminuido que lleva al acorde de un semitono por encima (vii°/x)
 //         'tritone'   — sustituto tritonal de una dominante (subV/x)
+//         'augmented' — dominante aumentada (V+ o V+/x; ver classifyAug)
+//         'symmetric' — sin tonalidad clara (ver classifyAlone)
 //         'dim7'      — disminuido con séptima, leído con el nombre que
 //                       explica adónde va (ver classifyDim7)
+//         'dorian'    — el IV mayor en una tonalidad menor («cuarto dórico»)
 //         'modal'     — es del modo de la progresión, no del mayor o el menor
 //         'borrowed'  — préstamo de la tonalidad paralela (mayor ↔ menor)
 //         'chromatic' — ajeno a la tonalidad
 //   fit: cuánto apoya este acorde a la tonalidad (lo usa la detección).
 //   target: { st, triad, roman, resolves } — el acorde hacia el que empuja.
 export function classify(chord, key, next = null, prev = null) {
+  const result = classifyChord(chord, key, next, prev);
+  if (chord.triad !== 'sus') return result;
+  // Vsus4 o Vsus2: sin la tercera, la nota que la sustituye.
+  const sus = /sus2/.test(chord.suffix) ? 'sus2' : 'sus4';
+  const roman = result.roman.replace(/sus$/, sus);
+  if (result.kind === 'diatonic' && next && next.pc === chord.pc && (next.triad === 'M' || next.triad === 'm')) {
+    return { ...result, roman, kind: 'suspension', sus, resolvesTo: { triad: next.triad, seventh: next.seventh } };
+  }
+  return { ...result, roman };
+}
+
+function classifyChord(chord, key, next, prev) {
   const st = mod12(chord.pc - key.pc);
   const roman = romanFor(st, chord.triad, chord.seventh, key.mode);
   const base = { st, roman };
@@ -163,14 +212,20 @@ export function classify(chord, key, next = null, prev = null) {
     const dim = classifyDim7(chord, key, next, prev, base);
     if (dim) return dim;
   }
+  if (chord.triad === 'aug') {
+    const aug = classifyAug(chord, key, next, base);
+    if (aug) return aug;
+  }
 
   // Dominante secundaria: un acorde mayor (o con séptima de dominante) que
-  // está una quinta por encima de otro grado de la tonalidad.
+  // está una quinta por encima de otro grado de la tonalidad y va a él, o a
+  // su sustituto tritonal (D7 → D♭7 → C). Si no va, se busca otra explicación.
   if (isDominantShape(chord) && st !== 7) {
     const targetSt = mod12(st + 5);
     const target = targetDegree(targetSt, key.mode);
-    if (target && targetSt !== 0) {
-      const resolves = next && mod12(next.pc - key.pc) === targetSt;
+    const nextAt = next && mod12(next.pc - key.pc);
+    const resolves = nextAt === targetSt || (nextAt === mod12(targetSt + 6) && next.triad === 'M' && next.seventh === '7');
+    if (target && targetSt !== 0 && resolves) {
       const targetRoman = romanFor(targetSt, target.triad, null, key.mode);
       return {
         ...base,
@@ -178,8 +233,8 @@ export function classify(chord, key, next = null, prev = null) {
         degreeRoman: roman,
         fn: 'D',
         kind: 'secondary',
-        target: { st: targetSt, triad: target.triad, roman: targetRoman, resolves: Boolean(resolves) },
-        fit: resolves ? 0.5 : -0.2,
+        target: { st: targetSt, triad: target.triad, roman: targetRoman, resolves: true },
+        fit: 0.5,
       };
     }
   }
@@ -223,6 +278,12 @@ export function classify(chord, key, next = null, prev = null) {
   }
 
   if (degree) return { ...base, fn: degree.fn, kind: 'color', fit: 0.6 };
+
+  // En menor, el IV mayor (D en La menor) toma la sexta nota del dórico o de
+  // la menor melódica: es el «cuarto dórico».
+  if (key.mode === 'minor' && st === 5 && chord.triad === 'M' && (!chord.seventh || chord.seventh === '7')) {
+    return { ...base, fn: 'S', kind: 'dorian', fit: 0.3 };
+  }
 
   const borrowed = findDegree(st, chord, PARALLEL[key.mode]);
   if (borrowed) {

@@ -189,7 +189,9 @@ function renderGrid() {
   const progression = renderProgressionCard(r);
   els.progressionCard.hidden = !progression;
   els.progressionCard.innerHTML = progression;
-  keepOpen(els.transposeCard, renderTranspose(state.result, { original: state.original && { keyName: originalKeyName() } }));
+  // Sin tonalidad clara, no hay desde dónde transportar.
+  els.transposeCard.hidden = Boolean(r.unclear);
+  if (!r.unclear) keepOpen(els.transposeCard, renderTranspose(state.result, { original: state.original && { keyName: originalKeyName() } }));
   const modes = renderModes(state.result);
   els.modesCard.hidden = !modes;
   keepOpen(els.modesCard, modes);

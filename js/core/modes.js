@@ -120,9 +120,14 @@ function variantOf(modeId, foreignSteps) {
 export function detectModes(chords, key = null) {
   if (chords.length === 0) return null;
 
+  // Los °7 no cuentan para la escala: son simétricos, y cualquiera de sus
+  // notas puede ser una sensible prestada (ver classifyDim7). Su Sol♭ haría
+  // de Re mayor un Re menor, o su Mi♭, de Re menor un Re frigio.
+  const scaleChords = chords.filter((c) => c.seventh !== 'dim7');
+
   // Cuántas veces sale cada nota (una por acorde).
   const uses = new Map();
-  for (const c of chords) {
+  for (const c of scaleChords) {
     for (const pc of new Set(c.notes.map((n) => Note.chroma(n)))) uses.set(pc, (uses.get(pc) ?? 0) + 1);
   }
 
@@ -166,7 +171,7 @@ export function detectModes(chords, key = null) {
     const scale = modeScale(mode.id, tonic, variant);
     const charNote = mode.char === null ? null : scale[steps(mode).indexOf(mode.char)];
     const insteadNote = mode.instead && Note.transpose(tonic, mode.instead);
-    const charChords = mode.char === null ? [] : chords.filter((c) => c.notes.some((n) => Note.chroma(n) === mod12(center + mode.char)));
+    const charChords = mode.char === null ? [] : scaleChords.filter((c) => c.notes.some((n) => Note.chroma(n) === mod12(center + mode.char)));
     return {
       id: mode.id,
       name: mode.name,
@@ -192,7 +197,7 @@ export function detectModes(chords, key = null) {
 
 // ¿Merece la pena hablar del modo? Solo si la progresión es claramente modal:
 //   - no es el mayor ni el menor de siempre (jónico, eólico, menor armónica);
-//   - se oye su nota característica y no sobra ninguna nota (salvo la del
+//   - se oye su nota característica (no solo en un V7/V) y no sobra ninguna nota (salvo la del
 //     frigio dominante, que es parte de ese sonido);
 //   - hay al menos dos pistas de que su tónica es la casa: empezar en ella,
 //     acabar en ella, que coincida con la tonalidad o que suene en la mitad
@@ -202,6 +207,13 @@ const PLAIN = new Set(['ionian', 'aeolian']);
 export function isClearlyModal(m, chords, key) {
   if (!m || PLAIN.has(m.id)) return false;
   if (m.charChords.length === 0) return false;
+  // Un II7 que va al V (D7 → G en Do) es la dominante de la dominante, no el
+  // color lidio. El IV7 → ♭VII del dórico (D7 → G en La) sí es del modo.
+  const charPc = Note.chroma(m.charNote);
+  const resolving = (c, i) =>
+    c.triad === 'M' && c.seventh === '7' && c.pc === mod12(m.pc + 2) && chords[i + 1]?.pc === mod12(m.pc + 7);
+  const colored = chords.filter((c, i) => c.notes.some((n) => Note.chroma(n) === charPc) && !resolving(c, i));
+  if (colored.length === 0) return false;
   if (m.foreign.length > 0 && m.variant !== 'phrygian-dominant') return false;
   const home = (c) => c.pc === m.pc;
   const clues = [

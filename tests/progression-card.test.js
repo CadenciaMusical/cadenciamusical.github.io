@@ -105,3 +105,14 @@ test('los disminuidos con séptima: ✦, su papel, el nombre con que se leen y b
   assert.doesNotMatch(text(renderDetail(plain.items[0], plain.key)), /suena exactamente igual/);
   setLatin(false);
 });
+
+test('el cuarto dórico lleva ✦ y se explica', async () => {
+  const { renderDetail, renderChords } = await import('../js/ui/render.js');
+  setLatin(true);
+  const r = analyze('Lam Re Mi Lam');
+  assert.equal(renderChords(r.items).match(/class="star"/g).length, 1);
+  const html = renderDetail(r.items[1], r.key).replace(/<[^>]+>/g, '');
+  assert.match(html, /cuarto dórico[\s\S]*suele ser menor \(Rem\)[\s\S]*lleva Fa♯/);
+  assert.match(renderDetail(r.items[1], r.key), /Con Rem en su lugar/);
+  setLatin(false);
+});

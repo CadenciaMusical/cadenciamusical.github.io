@@ -5,7 +5,7 @@ import { parseChord } from '../core/parser.js';
 import { defaultTonic, isTonicChord } from '../core/key.js';
 import { convertNotation, transposeChord } from '../core/transpose.js';
 import {
-  FUNCTIONS, KEY_TEXT, loopText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
+  FUNCTIONS, KEY_TEXT, loopText, unclearKeyText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
   MODE_INFO, VARIANT_INFO, MODES_TEXT, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText, modeListenTitle,
 } from './texts.js';
 import { GLOSSARY, linkTerms, termText } from './glossary.js';
@@ -47,6 +47,12 @@ const CONFIDENCE_LEVEL = { alta: 3, media: 2, baja: 1 };
 // transposedFrom: el nombre de la tonalidad original si se ha transportado.
 export function renderKey(result, { transposedFrom = null } = {}) {
   const { key, confidence, alternative, alternativeIsRelative, forced } = result;
+  if (result.unclear) {
+    return `
+      <p class="eyebrow">Tonalidad</p>
+      <h2 class="key-name">No hay una tonalidad clara</h2>
+      <p>${linkTerms(unclearKeyText(result.chords))}</p>`;
+  }
   const level = CONFIDENCE_LEVEL[confidence];
   const meter = [1, 2, 3].map((i) => `<span class="${i <= level ? 'on' : ''}"></span>`).join('');
   let confidenceLine;
@@ -129,7 +135,7 @@ export function renderChords(items, { selected = null, marked = new Set(), turns
       return `
         <button type="button" class="chord fn-${f}${cls}" data-index="${i}" aria-pressed="${i === selected}">
           ${turns.has(i) ? `<span class="turn">↻ ${turns.get(i)}.ª vuelta</span>` : ''}
-          <span class="roman">${item.roman}</span>
+          ${item.roman ? `<span class="roman">${item.roman}</span>` : ''}
           ${cardSymbol(chordLabel(item.chord))}
           ${special ? '<span class="star" title="Algo especial">✦</span>' : ''}
           <span class="badge">${FUNCTIONS[f].name}</span>
@@ -292,7 +298,7 @@ export function renderDetail(item, key, { instrument = 'piano', position = 0 } =
     <div class="detail-head fn-${f}">
       <div class="detail-title">
         <h3>${chordLabel(item.chord)}</h3>
-        <span class="roman big">${item.roman}</span>
+        ${item.roman ? `<span class="roman big">${item.roman}</span>` : ''}
       </div>
       <p class="muted">${chordName(item.chord)} · notas ${notes}</p>
     </div>
@@ -301,10 +307,10 @@ export function renderDetail(item, key, { instrument = 'piano', position = 0 } =
     <p><span class="badge fn-${f}">${fn.name} · ${fn.short}</span></p>
     <p>${linkTerms(fn.text)}</p>
     ${extra ? `<div class="special"><p><strong>✦ Algo especial.</strong> ${linkTerms(extra)}</p>${compare}</div>` : ''}
-    <details class="explain">
+    ${item.roman ? `<details class="explain">
       <summary>¿Qué significa «${item.roman}»?</summary>
       <p>${linkTerms(DEGREE_TEXT)}</p>
-    </details>`;
+    </details>` : ''}`;
 }
 
 export function renderGlossaryList() {

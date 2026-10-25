@@ -213,3 +213,28 @@ test('si la tonalidad ya es el modo, la tarjeta del modo no repite la explicaci�
   const forced = renderModes(analyze('Lam Re Lam Re', { forcedKey: { pc: 7, mode: 'major', tonic: 'G' } }));
   assert.match(forced, /La dórico<\/h2>[\s\S]*no suena del todo a La menor/);
 });
+
+test('los °7 no deciden el modo: sus notas no son de la escala', () => {
+  for (const [text, roman, readAs] of [['Do#°7 Rem', 'vii°7', undefined], ['Mi°7 Rem', 'vii°7', 'C#'], ['Mib°7 Rem', '♭ii°7', undefined]]) {
+    const r = analyze(text);
+    assert.equal(`${r.key.tonic} ${r.key.mode}`, 'D minor', text);
+    assert.equal(r.key.modal, undefined, text);
+    assert.equal(r.modal, false, text);
+    assert.equal(r.items[0].roman, roman, text);
+    assert.equal(r.items[0].readAs, readAs, text);
+  }
+  // Mi♭°7 = Do°7 = Fa♯°7 = La°7: no lleva la sensible de Re, así que es de paso.
+  assert.equal(analyze('Mib°7 Rem').items[0].role, 'passing');
+  // Sin °7, el frigio sigue ahí.
+  const r = analyze('Mim Fa Mim Fa');
+  assert.ok(r.modal);
+  assert.equal(r.key.modal.id, 'phrygian');
+});
+
+test('un V7/V no convierte la tonalidad en lidio; el IV7 del dórico sigue siendo dórico', () => {
+  const r = analyze('Do Re7 Sol Do');
+  assert.equal(r.modal, false);
+  assert.equal(r.items.map((i) => i.roman).join(' '), 'I V7/V V I');
+  assert.equal(analyze('Do Re Do Re').key.modal.id, 'lydian');
+  assert.equal(analyze('Lam Re7 Sol Lam').key.modal.id, 'dorian');
+});

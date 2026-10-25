@@ -227,3 +227,110 @@ test('los semidisminuidos se analizan como antes', () => {
   assert.equal(romans(expectKey('Dm7 G7 C Bø7 C', 'C', 'major')), 'ii7 V7 I viiø7 I');
   assert.equal(dim7('C C#m7b5 Dm G7 C', 1).roman, 'viiø7/ii');
 });
+
+// --- Dominantes secundarias: solo si van a su destino ---
+
+test('una dominante secundaria tiene que ir a su destino', () => {
+  // Re mayor en La menor no va a Sol: es el «cuarto dórico».
+  for (const [text, roman] of [['Lam Re Mi Lam', 'i IV V i'], ['Lam Re7 Mi7 Lam', 'i IV7 V7 i']]) {
+    const r = expectKey(text, 'A', 'minor');
+    assert.equal(romans(r), roman, text);
+    assert.equal(r.items[1].kind, 'dorian', text);
+    assert.equal(r.items[1].fn, 'S', text);
+    assert.equal(r.modal, false, text);
+  }
+  // Solos, acaban en cadencia perfecta en Sol mayor y en La menor; en Do mayor:
+  const inC = (text, i) => analyze(text, { forcedKey: C_MAJOR }).items[i];
+  assert.equal(inC('Do Re7 Sol', 1).roman, 'V7/V');
+  assert.equal(inC('Do Mi7 Lam', 1).roman, 'V7/vi');
+  assert.notEqual(inC('Do Re7 Fa', 1).kind, 'secondary');
+  // Llegar al sustituto tritonal del destino también vale.
+  assert.equal(romans(expectKey('Do Re7 Reb7 Do', 'C', 'major')), 'I V7/V subV7 I');
+  assert.equal(romans(expectKey('Mi7 La7 Re7 Sol7 Do', 'C', 'major')), 'V7/vi V7/ii V7/V V7 I');
+  // Si vuelve una y otra vez a la tónica, es La dórico.
+  const dorian = analyze('Lam Re Lam Re');
+  assert.equal(dorian.key.modal.id, 'dorian');
+  assert.equal(dorian.items[1].kind, 'modal');
+});
+
+// --- Acordes sus: sin tercera, no deciden entre mayor y menor ---
+
+test('los sus pesan por su fundamental, no por sus notas añadidas', () => {
+  const r = analyze('Dosus2 Fasus2');
+  const key = (k) => `${k.tonic} ${k.mode}`;
+  assert.deepEqual([key(r.key), key(r.alternative)].sort(), ['C major', 'F major']);
+  assert.equal(r.confidence, 'baja');
+  assert.equal(romans(r), r.key.tonic === 'F' ? 'Vsus2 Isus2' : 'Isus2 IVsus2');
+});
+
+test('una suspensión que se resuelve', async () => {
+  const { kindText } = await import('../js/ui/texts.js');
+  const { normalVersion } = await import('../js/core/build.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  const sus4 = expectKey('Solsus4 Sol Do', 'C', 'major');
+  assert.equal(romans(sus4), 'Vsus4 V I');
+  assert.equal(sus4.items[0].kind, 'suspension');
+  assert.match(kindText(sus4.items[0], sus4.key), /en lugar de la tercera \(Si\) lleva la cuarta \(Do\)[\s\S]*baja a Si y llega Sol/);
+  const home = expectKey('Do Dosus4 Do', 'C', 'major');
+  assert.equal(romans(home), 'I Isus4 I');
+  assert.equal(home.items[1].fn, 'T');
+  const sus2 = expectKey('Lam Lasus2 Lam', 'A', 'minor');
+  assert.match(kindText(sus2.items[1], sus2.key), /lleva la segunda \(Si\)[\s\S]*sube a Do y llega Lam/);
+  // Con séptima, se resuelve en el acorde con séptima.
+  const seventh = expectKey('Sol7sus4 Sol7 Do', 'C', 'major');
+  assert.equal(normalVersion(seventh.items[0], seventh.key).input, 'G7');
+  // Si no se resuelve, es un acorde de la tonalidad sin más.
+  assert.equal(analyze('Do Fa Solsus4 Do').items[2].kind, 'diatonic');
+  setLatin(false);
+});
+
+// --- Acordes aumentados ---
+
+test('solo acordes simétricos: no hay una tonalidad clara', async () => {
+  const { renderKey, renderChords } = await import('../js/ui/render.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  for (const text of ['Do+ Mi+ Sol#+', 'Do+', 'Do°7 Mib°7']) {
+    const r = analyze(text);
+    assert.ok(r.unclear, text);
+    assert.ok(r.items.every((i) => i.kind === 'symmetric' && i.roman === '' && i.fn === 'N'), text);
+    assert.match(renderKey(r), /No hay una tonalidad clara/, text);
+    assert.doesNotMatch(renderChords(r.items), /class="roman"|Fuera de la tonalidad/, text);
+  }
+  const html = renderKey(analyze('Do+ Mi+ Sol#+')).replace(/<[^>]+>/g, '');
+  assert.match(html, /Do\+, Mi\+ y Sol♯\+ son el mismo acorde aumentado/);
+  // Con la tonalidad elegida a mano, se analiza en ella.
+  assert.ok(!analyze('Do+ Mi+ Sol#+', { forcedKey: C_MAJOR }).unclear);
+  // Basta un acorde mayor o menor para fijarla.
+  assert.ok(!analyze('Do+ Do').unclear);
+  setLatin(false);
+});
+
+test('dominante aumentada: V+ y V+/x', async () => {
+  const { kindText } = await import('../js/ui/texts.js');
+  const { normalVersion } = await import('../js/core/build.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  const r = expectKey('Sol Sol+ Do', 'C', 'major');
+  assert.equal(romans(r), 'V V+ I');
+  assert.equal(`${r.items[1].kind} ${r.items[1].role} ${r.items[1].fn}`, 'augmented dominant D');
+  assert.match(kindText(r.items[1], r.key), /dominante aumentada: Sol con la quinta subida medio tono \(Re♯\)[\s\S]*hasta Mi, la tercera de Do/);
+  assert.equal(normalVersion(r.items[1], r.key).input, 'G');
+  // Do Do+ Fa acaba en Fa (V–V+–I); en Do mayor, V+/IV.
+  assert.equal(romans(expectKey('Do Do+ Fa', 'F', 'major')), 'V V+ I');
+  assert.equal(analyze('Do Do+ Fa', { forcedKey: C_MAJOR }).items[1].roman, 'V+/IV');
+  // Con otro de sus nombres: Si+ = Sol+.
+  const renamed = expectKey('Si+ Do', 'C', 'major');
+  assert.equal(`${renamed.items[0].roman} ${renamed.items[0].readAs}`, 'V+ G');
+  assert.match(kindText(renamed.items[0], renamed.key), /^Si\+ suena exactamente igual que Sol\+/);
+  // En menor, también: Mi+ → Lam.
+  assert.equal(romans(expectKey('Mi+ Lam', 'A', 'minor')), 'V+ i');
+  // Sin resolver, sigue siendo cromático, con sus tres nombres.
+  const lone = analyze('Do Fa+ Sol');
+  assert.equal(lone.items[1].kind, 'chromatic');
+  assert.match(kindText(lone.items[1], lone.key), /igual que La\+ y Do♯\+/);
+  const sym = analyze('Do+ Mi+ Sol#+');
+  assert.match(kindText(sym.items[1], sym.key), /igual que Sol♯\+ y Do\+/);
+  setLatin(false);
+});

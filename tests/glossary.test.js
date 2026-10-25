@@ -97,3 +97,7 @@ test('el glosario explica los cuatro nombres de un disminuido con séptima', () 
   assert.match(linkTerms('cada acorde tiene cuatro nombres'), /data-term="disminuido-septima"/);
   assert.match(linkTerms('otro disminuido con séptima'), /data-term="disminuido-septima"/);
 });
+
+test('el glosario explica los tres nombres de un acorde aumentado', () => {
+  assert.match(linkTerms('cada acorde aumentado tiene tres nombres'), /data-term="aumentado"/);
+});

@@ -62,7 +62,10 @@ export function loopPeriod(chords) {
   return null;
 }
 
-export const isTonicChord = (chord, key) => mod12(chord.pc - key.pc) === 0 && chord.triad === (key.mode === 'major' ? 'M' : 'm');
+// Un sus o un acorde de quinta no tiene tercera: sobre la tónica, vale igual
+// en mayor que en menor, así que no inclina la balanza hacia ninguno.
+export const isTonicChord = (chord, key) =>
+  mod12(chord.pc - key.pc) === 0 && (chord.triad === (key.mode === 'major' ? 'M' : 'm') || chord.triad === 'sus' || chord.triad === '5');
 const isDominantChord = (chord, key) => mod12(chord.pc - key.pc) === 7 && chord.triad === 'M';
 const isLeadingToneChord = (chord, key) => mod12(chord.pc - key.pc) === 11 && chord.triad === 'dim';
 
