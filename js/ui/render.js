@@ -5,7 +5,7 @@ import { parseChord } from '../core/parser.js';
 import { defaultTonic, isTonicChord } from '../core/key.js';
 import { convertNotation, transposeChord } from '../core/transpose.js';
 import {
-  FUNCTIONS, KEY_TEXT, loopText, locrianText, unclearKeyText, bassLineTitle, bassLineText, pedalText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
+  FUNCTIONS, KEY_TEXT, loopText, locrianText, pentatonicText, symmetricScaleText, mediantsText, unclearKeyText, bassLineTitle, bassLineText, pedalText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
   MODE_INFO, VARIANT_INFO, MODES_TEXT, twoChanges, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText, modeListenTitle,
 } from './texts.js';
 import { GLOSSARY, linkTerms, termText } from './glossary.js';
@@ -13,7 +13,7 @@ import { normalVersion } from '../core/build.js';
 import { guitarVoicings } from '../core/fretboard.js';
 import { renderPiano } from './piano.js';
 import { renderGuitar } from './guitar.js';
-import { modeScale } from '../core/modes.js';
+import { plainScale } from '../core/modes.js';
 import { Note } from '../../vendor/tonal.mjs';
 
 export function escapeHtml(s) {
@@ -49,10 +49,17 @@ const CONFIDENCE_LEVEL = { alta: 3, media: 2, baja: 1 };
 export function renderKey(result, { transposedFrom = null } = {}) {
   const { key, confidence, alternative, alternativeIsRelative, forced } = result;
   if (result.unclear) {
+    const scale = result.symmetricScale;
+    const why = scale
+      ? `
+      <p>${linkTerms(symmetricScaleText(scale))}</p>
+      <p class="scale-notes">${scale.scale.map((n) => `<span>${noteName(n)}</span>`).join('')}</p>
+      <button type="button" class="btn secondary small" data-action="play-symmetric">▶ Escuchar la escala</button>`
+      : `<p>${linkTerms(unclearKeyText(result.chords))}</p>`;
     return `
       <p class="eyebrow">Tonalidad</p>
       <h2 class="key-name">No hay una tonalidad clara</h2>
-      <p>${linkTerms(unclearKeyText(result.chords))}</p>`;
+      ${why}`;
   }
   const level = CONFIDENCE_LEVEL[confidence];
   const meter = [1, 2, 3].map((i) => `<span class="${i <= level ? 'on' : ''}"></span>`).join('');
@@ -91,6 +98,12 @@ export function renderKey(result, { transposedFrom = null } = {}) {
     </details>`;
 
   const locrian = result.locrian ? `<p class="muted">${linkTerms(locrianText(result.locrian, key))}</p>` : '';
+  const pentatonic = result.pentatonic
+    ? `
+      <p>${linkTerms(pentatonicText(result.pentatonic))}</p>
+      <p class="scale-notes">${result.pentatonic.scale.map((n) => `<span>${noteName(n)}</span>`).join('')}</p>
+      <button type="button" class="btn secondary small" data-action="play-pentatonic">▶ Escuchar la pentatónica</button>`
+    : '';
 
   // Duda razonable en la tonalidad detectada: las dos opciones, a la vista.
   if (alternative && !forced && !transposedFrom) {
@@ -109,6 +122,7 @@ export function renderKey(result, { transposedFrom = null } = {}) {
       <p>${altText}</p>
       ${altButtons}
       ${locrian}
+      ${pentatonic}
       ${more}`;
   }
 
@@ -119,6 +133,7 @@ export function renderKey(result, { transposedFrom = null } = {}) {
     <h2 class="key-name">${keyName(key)}</h2>
     ${modal}
     ${locrian}
+    ${pentatonic}
     ${more}`;
 }
 
@@ -217,7 +232,8 @@ export function renderProgressionCard(result) {
   const { loop } = result;
   const bass = result.bassLines ?? [];
   const { pedal } = result;
-  if (!progressions.length && !cadence && !loop && !bass.length && !pedal) return '';
+  const mediants = result.mediants ?? [];
+  if (!progressions.length && !cadence && !loop && !bass.length && !pedal && !mediants.length) return '';
 
   const blocks = progressions.map(
     (m, i) => `
@@ -231,6 +247,15 @@ export function renderProgressionCard(result) {
         ${playRange(m, 'Escuchar')}
       </div>`,
   );
+  for (const run of mediants) {
+    blocks.push(`
+      <div class="match">
+        <p class="eyebrow">✦ Algo especial</p>
+        <h2 class="match-name">Mediantes cromáticas</h2>
+        <p>${linkTerms(mediantsText(run, result.chords))}</p>
+        ${playRange(run, `Escuchar los saltos (${chordsIn(result, run, ' → ')})`)}
+      </div>`);
+  }
   if (loop) {
     const cycle = { start: 0, end: loop.period - 1 };
     blocks.push(`
@@ -425,15 +450,15 @@ export function renderTranspose(result, { original = null } = {}) {
 // El jónico y el eólico son la escala mayor y la menor de siempre: mejor
 // llamarlos así que con un nombre que asusta.
 function plainModeName(m) {
-  if (m.id === 'ionian') return keyName({ tonic: m.tonic, mode: 'major' });
+  if (m.id === 'ionian' && !m.variant) return keyName({ tonic: m.tonic, mode: 'major' });
   if (m.id === 'aeolian' && !m.variant) return keyName({ tonic: m.tonic, mode: 'minor' });
   return modeName(m);
 }
 
 // La escala del modo, con marcadas las notas que cambian frente al mayor o
-// el menor de siempre (dos en el frigio dominante y en el lidio dominante).
+// el menor de siempre (dos en el frigio dominante, la menor melódica…).
 function scaleNotes(m) {
-  const plain = modeScale(m.id === 'lydian' || m.id === 'mixolydian' ? 'ionian' : 'aeolian', m.tonic);
+  const plain = plainScale(m.id, m.tonic);
   return `<p class="scale-notes">${m.scale.map((n, i) => `<span class="${Note.chroma(n) !== Note.chroma(plain[i]) ? 'char' : ''}">${noteName(n)}</span>`).join('')}</p>`;
 }
 

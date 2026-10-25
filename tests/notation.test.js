@@ -26,9 +26,25 @@ test('el cifrado elegido se aplica a notas, acordes y tonalidades', () => {
 test('en latino, aumentado, disminuido y add9 con símbolos también en la página', () => {
   setLatin(true);
   const labels = ['Faug', 'Cdim', 'Cdim7', 'Fadd9', 'Bm7b5'].map((s) => chordLabel(parseChord(s)));
-  assert.deepEqual(labels, ['Fa+', 'Do°', 'Do°7', 'Fa(add9)', 'Sim7b5']);
+  assert.deepEqual(labels, ['Fa+', 'Do°', 'Do°7', 'Fa(add9)', 'Siø7']);
   setLatin(false);
   assert.equal(chordLabel(parseChord('Faug')), 'Faug');
+});
+
+test('los disminuidos, con su símbolo en los dos cifrados, en las tarjetas y en los textos', async () => {
+  const { renderChords, renderKey, renderProgressionCard } = await import('../js/ui/render.js');
+  const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
+  setLatin(false);
+  assert.deepEqual(['Bdim', 'Bo', 'Bdim7', 'Bm7b5', 'Bø7'].map((s) => chordLabel(parseChord(s))), ['B°', 'B°', 'B°7', 'Bø7', 'Bø7']);
+  for (const [text, label] of [['Bdim C Bdim C', 'B°'], ['Bm7b5 C Bm7b5 C', 'Bø7']]) {
+    const r = analyze(text);
+    assert.match(renderChords(r.items), new RegExp(`class="symbol">${label}<`), text);
+    assert.match(plain(renderKey(r)), new RegExp(`Si giras alrededor de ${label},`), text);
+    assert.match(plain(renderProgressionCard(r)), new RegExp(`Es un bucle: ${label} y C se van alternando\\. Empieza en ${label},`), text);
+    assert.doesNotMatch(plain(renderKey(r) + renderProgressionCard(r)), /Bdim|Bm7b5/, text);
+  }
+  setLatin(true);
+  assert.match(plain(renderKey(analyze('Siø7 Do Siø7 Do'))), /Si giras alrededor de Siø7,/);
 });
 
 test('se puede pedir un cifrado concreto aunque el elegido sea otro', () => {

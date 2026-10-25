@@ -14,7 +14,10 @@
 //   - un acorde que se mantiene varios compases seguidos (aunque cambie el
 //     bajo, como Am Am/G Am/F♯) también pesa más si es la tónica;
 //   - una nota pedal (el bajo se queda en la misma nota mientras los acordes
-//     cambian, como G C/G G F/G) decide la casa: suma mucho a su tonalidad.
+//     cambian, como G C/G G F/G) decide la casa: suma mucho a su tonalidad;
+//   - un riff de acordes de quinta (sin tercera) que empieza en una nota y
+//     cuyas fundamentales son de su pentatónica menor (C5 E♭5 F5 G5 B♭5) es
+//     de esa menor: es lo más típico del rock.
 // La confianza depende de la distancia entre la primera y la segunda. Si hay
 // una duda razonable, la segunda se ofrece como alternativa (ver detectKey).
 
@@ -34,7 +37,21 @@ const BONUS = {
   loopFirst: 3.5,
   held: 0.6,
   pedal: 2.5,
+  pentatonic: 1.0,
 };
+
+// Las pentatónicas, en semitonos desde la tónica.
+export const PENTATONIC = { major: [0, 2, 4, 7, 9], minor: [0, 3, 5, 7, 10] };
+
+// Si todos los acordes son de quinta y hay al menos cuatro fundamentales
+// distintas, todas de la pentatónica de la tonalidad: su modo. Si no, null.
+// (Con tres, como C5 F5 G5, es solo el I–IV–V de siempre.)
+export function pentatonicOf(chords, key) {
+  if (!chords.every((c) => c.triad === '5')) return null;
+  const steps = new Set(chords.map((c) => mod12(c.pc - key.pc)));
+  if (steps.size < 4 || ![...steps].every((st) => PENTATONIC[key.mode].includes(st))) return null;
+  return key.mode;
+}
 
 const TONIC_NAMES = {
   sharps: ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'],
@@ -105,6 +122,18 @@ export function isLoopLike(chords) {
   return rest.length >= 3 && rest.every((c, i) => sameChord(c, rest[rest.length - 1 - i])) && !sameChord(rest[0], chords[0]) && !resolvesElsewhere(chords);
 }
 
+// Un acorde mayor que alterna con el menor una quinta por debajo (Mi Lam Mi
+// Lam): suele ser su dominante, así que se oye en los dos sitios. Devuelve
+// { dominant, tonic } (los dos acordes) o null.
+export function fifthAlternation(chords) {
+  if (chords.length < 3 || chords.some((c, i) => i > 0 && c.pc === chords[i - 1].pc)) return null;
+  const [a, b] = chords;
+  if (!chords.every((c, i) => c.pc === (i % 2 ? b : a).pc && c.triad === (i % 2 ? b : a).triad)) return null;
+  const dominant = [a, b].find((c) => c.triad === 'M' && (!c.seventh || c.seventh === '7'));
+  const tonic = [a, b].find((c) => c.triad === 'm');
+  return dominant && tonic && mod12(dominant.pc - tonic.pc) === 7 ? { dominant, tonic } : null;
+}
+
 // El mismo acorde seguido, aunque cambie el bajo (Am Am/G Am/F♯).
 const sameHarmony = (a, b) => a.pc === b.pc && a.triad === b.triad;
 
@@ -124,8 +153,9 @@ function heldRuns(chords) {
 // en mayor que en menor, así que no inclina la balanza hacia ninguno.
 export const isTonicChord = (chord, key) =>
   mod12(chord.pc - key.pc) === 0 && (chord.triad === (key.mode === 'major' ? 'M' : 'm') || chord.triad === 'sus' || chord.triad === '5');
-const isDominantChord = (chord, key) => mod12(chord.pc - key.pc) === 7 && chord.triad === 'M';
+const isDominantChord = (chord, key) => mod12(chord.pc - key.pc) === 7 && (chord.triad === 'M' || chord.altered);
 const isLeadingToneChord = (chord, key) => mod12(chord.pc - key.pc) === 11 && chord.triad === 'dim';
+const isOpenDominant = (chord, key) => mod12(chord.pc - key.pc) === 7 && chord.triad === '5';
 
 function isBlues(chords, key) {
   if (key.mode !== 'major') return false;
@@ -138,7 +168,7 @@ export function scoreKey(chords, key) {
   key = { ...key, blues: isBlues(chords, key) };
   let score = key.blues ? BONUS.blues : 0;
   chords.forEach((c, i) => {
-    score += classify(c, key, chords[i + 1] ?? null, chords[i - 1] ?? null).fit;
+    score += classify(c, key, chords[i + 1] ?? null, chords[i - 1] ?? null, chords[i + 2] ?? null).fit;
   });
   if (isLoopLike(chords)) {
     if (isTonicChord(chords[0], key)) score += BONUS.loopFirst;
@@ -150,7 +180,9 @@ export function scoreKey(chords, key) {
   if (pedalOf(chords) === key.pc) score += BONUS.pedal;
   if (chords.some((c) => isTonicChord(c, key))) score += BONUS.present;
   if (chords.some((c) => isDominantChord(c, key))) score += BONUS.dominant;
-  else if (key.mode === 'minor' && !chords.some((c) => isLeadingToneChord(c, key))) score += BONUS.noLeadingTone;
+  // Sin tercera, el V5 de un riff puede ser mayor: no falta la sensible.
+  else if (key.mode === 'minor' && !chords.some((c) => isLeadingToneChord(c, key) || isOpenDominant(c, key))) score += BONUS.noLeadingTone;
+  if (key.mode === 'minor' && pentatonicOf(chords, key) && mod12(chords[0].pc - key.pc) === 0) score += BONUS.pentatonic;
   for (let i = 0; i + 1 < chords.length; i++) {
     if (isDominantChord(chords[i], key) && isTonicChord(chords[i + 1], key)) score += BONUS.cadence;
   }

@@ -405,8 +405,9 @@ test('en un bucle, la casa es el primer acorde', async () => {
   assert.equal(keyName(prestado.key), 'Do mayor');
   assert.equal(romans(prestado), 'I iv I iv');
   assert.equal(prestado.items[1].kind, 'borrowed');
-  // Acabar en Fam no es un final: el bucle vuelve a Do. No hay alternativa.
-  assert.equal(prestado.alternative, null);
+  // Acabar en Fam no es un final, pero Do alterna con Fam, una quinta por
+  // debajo: también se oye como su V. La alternativa es Fa menor por eso.
+  assert.equal(keyName(prestado.alternative), 'Fa menor');
   setLatin(false);
 });
 
@@ -462,5 +463,187 @@ test('nota pedal: el bajo que no se mueve decide la casa', async () => {
   // Un acorde que se mantiene no es una nota pedal: arriba no cambia nada.
   assert.equal(analyze('Am Am Am F').pedal, null);
   assert.equal(analyze('C G Am F').pedal, null);
+  setLatin(false);
+});
+
+// --- Acordes de quinta («5»): sin tercera, ni mayores ni menores ---
+
+test('los acordes de quinta cuentan por su fundamental, y sus grados no sugieren tercera', async () => {
+  const { renderKey } = await import('../js/ui/render.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
+  // La pentatónica menor de Do, lo más típico del rock: nunca Si♭ mayor.
+  const rock = expectKey('Do5 Mib5 Fa5 Sol5 Sib5', 'C', 'minor');
+  assert.equal(romans(rock), 'I5 III5 IV5 V5 VII5');
+  assert.deepEqual(rock.pentatonic, { mode: 'minor', tonic: 'C', scale: ['C', 'Eb', 'F', 'G', 'Bb'] });
+  const html = renderKey(rock);
+  assert.match(plain(html), /Estos acordes salen de la escala pentatónica menor de Do, la más usada en el rock y el blues\./);
+  assert.match(html, /data-action="play-pentatonic">▶ Escuchar la pentatónica/);
+  // Sus fundamentales no son de la pentatónica de Mi: Mi menor, sin pentatónica.
+  const e = expectKey('Mi5 Sol5 La5 Do5 Re5', 'E', 'minor');
+  assert.equal(e.pentatonic, null);
+  // El I–IV–V de siempre, sin terceras: Do, y no hay pentatónica que nombrar.
+  const basic = expectKey('Do5 Fa5 Sol5 Do5', 'C', 'major');
+  assert.equal(romans(basic), 'I5 IV5 V5 I5');
+  assert.equal(basic.pentatonic, null);
+  // Si la duda es entre Do mayor y Do menor, se explica por qué.
+  assert.match(plain(renderKey(basic)), /Ninguno de estos acordes lleva tercera, que es la nota que decide entre mayor y menor/);
+  setLatin(false);
+});
+
+// --- Dominantes alteradas ---
+
+test('las dominantes alteradas no son aumentados simétricos', async () => {
+  const { kindText } = await import('../js/ui/texts.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  const g = expectKey('Sol7alt Do', 'C', 'major');
+  assert.equal(romans(g), 'V7alt I');
+  assert.equal(`${g.items[0].kind} ${g.items[0].fn}`, 'altered D');
+  assert.ok(g.items[0].target.resolves);
+  assert.match(kindText(g.items[0], g.key), /dominante alterada: una dominante con notas tensas añadidas \(♭9, ♯9, ♭5 o ♯5\) que suena aún más inestable y pide resolver; muy del jazz/);
+  assert.equal(g.cadences.find((c) => c.atEnd)?.id, 'perfect');
+  // Si7alt no es Sol+7: es la dominante alterada de Mi, que no va a su destino.
+  const b = expectKey('Si7alt Do', 'C', 'major');
+  assert.notEqual(b.items[0].roman, 'V+7');
+  assert.equal(`${b.items[0].kind} ${b.items[0].roman}`, 'altered V7alt/iii');
+  assert.ok(!b.items[0].target.resolves);
+  assert.match(kindText(b.items[0], b.key), /no va a su destino/);
+  assert.equal(expectKey('Re7alt Sol Do', 'C', 'major').items[0].roman, 'V7alt/V');
+  // Las otras alteraciones, igual.
+  assert.equal(expectKey('Sol7b9 Do', 'C', 'major').items[0].roman, 'V7♭9');
+  assert.equal(analyze('Mi7#9 Lam').items[0].kind, 'altered');
+  // En un blues, el I7 con ♯9 (el acorde de Hendrix) sigue siendo del blues.
+  assert.deepEqual(analyze('E7#9 A7 E7#9 A7').items.map((i) => i.kind), ['blues', 'blues', 'blues', 'blues']);
+  // La tríada aumentada sigue siendo simétrica: V+.
+  const aug = expectKey('Sol Sol+ Do', 'C', 'major');
+  assert.equal(`${aug.items[1].roman} ${aug.items[1].kind}`, 'V+ augmented');
+  setLatin(false);
+});
+
+// --- Acordes clásicos con nombre propio ---
+
+test('la sexta napolitana', async () => {
+  const { renderDetail, renderChords } = await import('../js/ui/render.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
+  const n6 = expectKey('Lam Sib/Re Mi7 Lam', 'A', 'minor');
+  assert.equal(romans(n6), 'i ♭II6 V7 i');
+  assert.equal(`${n6.items[1].kind} ${n6.items[1].fn}`, 'neapolitan S');
+  const detail = plain(renderDetail(n6.items[1], n6.key));
+  assert.match(detail, /✦ Algo especial\. Es la sexta napolitana: un acorde prestado muy expresivo, medio tono por encima de la tónica, que prepara la dominante con dramatismo\. Muy de Bach, Mozart y Beethoven\./);
+  assert.match(detail, /Con Rem en su lugar/);
+  assert.doesNotMatch(renderChords(n6.items), /Fuera de la tonalidad/);
+  // En estado fundamental, el napolitano.
+  const root = expectKey('Lam Sib Mi Lam', 'A', 'minor');
+  assert.equal(`${root.items[1].roman} ${root.items[1].kind}`, '♭II neapolitan');
+  assert.match(plain(renderDetail(root.items[1], root.key)), /Es el acorde napolitano/);
+  // También en mayor, y pasando por la tónica en 6/4.
+  assert.equal(romans(expectKey('Do Reb/Fa Sol7 Do', 'C', 'major')), 'I ♭II6 V7 I');
+  assert.equal(analyze('Lam Sib/Re Lam/Mi Mi7 Lam').items[1].kind, 'neapolitan');
+  // El ♭II del frigio, que va directo a la tónica, sigue siendo frigio.
+  const frigio = analyze('Mim Fa Mim Fa');
+  assert.equal(frigio.key.modal?.id, 'phrygian');
+  assert.ok(frigio.items.every((i) => i.kind !== 'neapolitan'));
+  setLatin(false);
+});
+
+test('el II mayor del pop', async () => {
+  const { kindText } = await import('../js/ui/texts.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  const r = expectKey('Do Re Fa Do', 'C', 'major');
+  assert.equal(romans(r), 'I II IV I');
+  assert.equal(r.items[1].kind, 'major-two');
+  assert.ok(r.items[1].special);
+  assert.match(kindText(r.items[1], r.key), /dominante secundaria que no va a su destino: pide ir a Sol, pero no llega, y se queda como un color brillante y luminoso\. Muy de los Beatles\./);
+  assert.ok(r.progressions.some((p) => p.id === 'major-two'));
+  // Siguen como ahora.
+  assert.equal(analyze('Do Re7 Sol', { forcedKey: C_MAJOR }).items[1].roman, 'V7/V');
+  assert.equal(analyze('Do Re Do Re').key.modal?.id, 'lydian');
+  setLatin(false);
+});
+
+test('un mayor que alterna con el menor una quinta por debajo: también su V–i', async () => {
+  const { keyName, setLatin } = await import('../js/core/names.js');
+  const { renderKey } = await import('../js/ui/render.js');
+  setLatin(true);
+  const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
+  const r = analyze('Mi Lam Mi Lam');
+  assert.equal(keyName(r.key), 'Mi mayor');
+  assert.equal(keyName(r.alternative), 'La menor');
+  const text = plain(renderKey(r));
+  assert.match(text, /un acorde así suele ser su dominante: por eso también se oye como el V–i de La menor/);
+  // Si se queda en Mi, el frigio dominante.
+  assert.match(text, /también encaja Mi frigio dominante, el sonido del flamenco/);
+  // Sin cambios.
+  const a = analyze('Lam Mi Lam Mi');
+  assert.equal(keyName(a.key), 'La menor');
+  assert.equal(a.alternative, null);
+  const c = analyze('Do Fam Do Fam');
+  assert.equal(keyName(c.key), 'Do mayor');
+  assert.equal(c.items[1].kind, 'borrowed');
+  setLatin(false);
+});
+
+// --- Escalas simétricas y colores especiales ---
+
+test('tonos enteros y escala disminuida: no hay tonalidad clara', async () => {
+  const { renderKey } = await import('../js/ui/render.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
+  for (const [text, id, words] of [
+    ['Do7 Re7 Mi7 Fa#7', 'whole-tone', /escala de tonos enteros, que no tiene ninguna nota que suene a casa[\s\S]*Suena a sueño o a flotar; muy de Debussy/],
+    ['Do+ Re+ Do+ Re+', 'whole-tone', /escala de tonos enteros/],
+    ['Do Mib Solb La', 'octatonic', /escala disminuida, que alterna tonos y semitonos[\s\S]*Suena tensa e inquietante; muy del jazz y de las bandas sonoras de suspense/],
+    ['Do7 Mib7 Fa#7 La7', 'octatonic', /escala disminuida/],
+  ]) {
+    const r = analyze(text);
+    assert.ok(r.unclear, text);
+    assert.equal(r.symmetricScale.id, id, text);
+    // Sin grados ni funciones.
+    assert.ok(r.items.every((i) => i.roman === '' && i.fn === 'N'), text);
+    const html = renderKey(r);
+    assert.match(html, /No hay una tonalidad clara/, text);
+    assert.match(plain(html), words, text);
+    assert.match(html, /data-action="play-symmetric">▶ Escuchar la escala/, text);
+  }
+  assert.deepEqual(analyze('Do7 Re7 Mi7 Fa#7').symmetricScale.scale, ['C', 'D', 'E', 'F#', 'G#', 'Bb']);
+  assert.deepEqual(analyze('Do Mib Solb La').symmetricScale.scale, ['C', 'Db', 'Eb', 'E', 'F#', 'G', 'A', 'Bb']);
+  // Siguen teniendo tonalidad.
+  for (const text of ['Do Re Mi Fa Sol', 'Do Mib Fa Do', 'Do Mib Do Mib', 'Do Re Mi']) assert.ok(!analyze(text).unclear, text);
+  // Un mismo aumentado con tres nombres: como antes, sin escala.
+  assert.equal(analyze('Do+ Mi+ Sol#+').symmetricScale, null);
+  setLatin(false);
+});
+
+test('mediantes cromáticas', async () => {
+  const { renderDetail } = await import('../js/ui/render.js');
+  const { renderProgressionCard } = await import('../js/ui/render.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
+  for (const text of ['Do Mi Lab Do', 'Do Lab Mi Do']) {
+    const r = expectKey(text, 'C', 'major');
+    assert.equal(r.mediants.length, 1, text);
+    assert.ok(r.mediants[0].chain, text);
+    const mi = r.items.find((i) => i.chord.root === 'E');
+    assert.equal(`${mi.kind} ${mi.special}`, 'mediant true', text);
+    assert.match(plain(renderDetail(mi, r.key)), /✦ Algo especial\. Es una mediante cromática/, text);
+    const card = plain(renderProgressionCard(r));
+    assert.match(card, /Mediantes cromáticas Saltos entre acordes a una tercera de distancia que no son de la misma tonalidad: suenan grandiosos y sorprendentes\. Es el sonido épico del cine \(John Williams, Hans Zimmer\)\./, text);
+    assert.match(card, /reparten la octava en tres partes iguales/, text);
+  }
+  assert.equal(romans(analyze('Do Mi Lab Do')), 'I III ♭VI I');
+  // Siguen como ahora.
+  const epic = analyze('Do Lab Sib Do');
+  assert.equal(epic.cadences.find((c) => c.atEnd)?.id, 'epic');
+  assert.deepEqual(epic.mediants, []);
+  const secondary = analyze('Do Mi7 Lam', { forcedKey: C_MAJOR });
+  assert.equal(secondary.items[1].roman, 'V7/vi');
+  assert.deepEqual(secondary.mediants, []);
   setLatin(false);
 });

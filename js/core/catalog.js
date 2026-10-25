@@ -100,6 +100,14 @@ export const PROGRESSIONS = [
     songs: ['Canon en Re (Pachelbel)', 'Basket Case (Green Day)', 'Go West (Pet Shop Boys)'],
   },
   {
+    id: 'major-two',
+    name: 'El II mayor del pop (I–II–IV–I)',
+    steps: ['I', 'II', 'IV', 'I'],
+    mode: 'major',
+    text: 'El segundo acorde, que en la tonalidad sería menor, se vuelve mayor y no va a la dominante, sino a la subdominante: suena luminoso, con un punto de sorpresa. Es un clásico del pop de los 60.',
+    songs: ['Eight Days a Week (The Beatles)'],
+  },
+  {
     id: 'mixolydian',
     name: 'Rock con ♭VII (I–♭VII–IV)',
     steps: ['I', '♭VII', 'IV'],

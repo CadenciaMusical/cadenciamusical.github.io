@@ -321,7 +321,7 @@ test('un bucle alrededor de un disminuido roza el locrio, pero se oye Do mayor',
   const { keyName } = await import('../js/core/names.js');
   const { renderKey } = await import('../js/ui/render.js');
   setLatin(true);
-  for (const [text, label] of [['Sidim Do Sidim Do', 'Si°'], ['Siø7 Do Siø7 Do', 'Sim7b5']]) {
+  for (const [text, label] of [['Sidim Do Sidim Do', 'Si°'], ['Siø7 Do Siø7 Do', 'Siø7']]) {
     const r = analyze(text);
     assert.equal(keyName(r.key), 'Do mayor', text);
     assert.equal(r.locrian.root, 'B', text);
@@ -360,4 +360,131 @@ test('en un modo, la ✦ solo en los acordes con una nota característica, nunca
   // Y así se ve en las tarjetas.
   const grid = renderChords(analyze('Do7 Re Do7 Re').items);
   assert.equal((grid.match(/class="star"/g) ?? []).length, 2);
+});
+
+// --- Modos inusuales ---
+
+test('un disminuido no rompe el frigio dominante', () => {
+  const r = analyze('Mi Fa Sol#° Mi');
+  assert.equal(modeName(r.modes.main), 'Mi frigio dominante');
+  assert.ok(r.modal);
+  assert.equal(r.items[2].fn, 'D');
+  // Como antes.
+  assert.equal(modeName(analyze('Mi Fa Sol#°7 Mi').modes.main), 'Mi frigio dominante');
+  assert.equal(modeName(analyze('Mi Fa Mi Fa').modes.main), 'Mi frigio dominante');
+  const vii = analyze('Lam Sol#° Lam');
+  assert.equal(`${vii.key.tonic} ${vii.key.mode}`, 'A minor');
+  assert.ok(!vii.modal);
+  assert.equal(vii.items[1].roman, 'vii°');
+});
+
+test('el lidio dominante, aunque el acorde de la tónica no lleve séptima', async () => {
+  const { keyName } = await import('../js/core/names.js');
+  const { renderKey } = await import('../js/ui/render.js');
+  for (const [text, key] of [['Do Sib Re Do', 'Do lidio dominante'], ['Re Do Mi Re', 'Re lidio dominante'], ['Do7 Re Do7 Re', 'Do lidio dominante']]) {
+    const r = analyze(text);
+    assert.equal(keyName(r.key), key, text);
+    assert.ok(r.modal, text);
+  }
+  // El ♭VII es del mixolidio, y el II mayor, del lidio: los dos son de la casa.
+  const r = analyze('Do Sib Re Do');
+  assert.deepEqual(r.items.map((i) => i.kind), ['diatonic', 'modal', 'modal', 'diatonic']);
+  assert.match(plainText(renderKey(r)), /Fa♯ en lugar de Fa, y Si♭ en lugar de Si/);
+  // Siguen como ahora.
+  assert.equal(keyName(analyze('Do Sib Fa Do').key), 'Do mixolidio');
+  assert.equal(keyName(analyze('Do Re Do Re').key), 'Do lidio');
+});
+
+test('la menor melódica: la sexta y la séptima mayores a la vez', async () => {
+  const { keyName } = await import('../js/core/names.js');
+  const { renderModes, renderKey, renderDetail } = await import('../js/ui/render.js');
+  const r = analyze('Lammaj7 Re7 Mi7 Lammaj7');
+  assert.equal(keyName(r.key), 'La menor melódica');
+  assert.ok(r.modal);
+  assert.deepEqual(r.modes.main.scale, ['A', 'B', 'C', 'D', 'E', 'F#', 'G#']);
+  const modes = renderModes(r);
+  // Fa♯ y Sol♯ marcadas, y el botón para compararla con La menor.
+  assert.deepEqual(modes.match(/<span class="char">[^<]+/g).map((s) => s.replace(/.*>/, '')), ['Fa♯', 'Sol♯']);
+  assert.match(modes, /▶ Oír la diferencia con La menor/);
+  assert.match(plainText(renderKey(r)), /es la escala menor melódica/);
+  // El Mi7 es el V7 de siempre: sin ✦.
+  assert.deepEqual(r.items.map((i) => Boolean(i.special)), [false, true, false, false]);
+  // Con el IV y el V mayores en tríadas, La menor con el cuarto dórico, y el texto la nombra.
+  for (const [text, tonic] of [['Lam Re Mi Lam', 'La'], ['Dom Fa Sol Dom', 'Do']]) {
+    const t = analyze(text);
+    assert.equal(keyName(t.key), `${tonic} menor`, text);
+    assert.match(plainText(renderDetail(t.items[1], t.key)), /es la escala menor melódica \([^)]*\), la «menor del jazz»/, text);
+  }
+  // Siguen como ahora.
+  assert.equal(keyName(analyze('Lam Re Lam Re').key), 'La dórico');
+  const harmonic = analyze('Lam Rem Mi7 Lam');
+  assert.equal(keyName(harmonic.key), 'La menor');
+  assert.ok(!harmonic.modal);
+});
+
+test('variantes raras: lidio aumentado, dórico ♯4 y doble armónica', async () => {
+  const { keyName } = await import('../js/core/names.js');
+  const { renderModes, renderKey } = await import('../js/ui/render.js');
+  const cases = [
+    ['Do+ Re Do+ Re', 'Do lidio aumentado', ['Fa♯', 'Sol♯'], /Brillante y misterioso, muy de bandas sonoras/],
+    ['Lam Si7 Lam Si7', 'La dórico ♯4', ['Re♯', 'Fa♯'], /Típico de la música klezmer y de Europa del Este/],
+    ['Domaj7 Reb Domaj7 Reb', 'Do doble armónica', ['Re♭', 'La♭'], /música árabe; dos saltos de tono y medio la hacen inconfundible/],
+  ];
+  for (const [text, key, marked, info] of cases) {
+    const r = analyze(text);
+    assert.equal(keyName(r.key), key, text);
+    assert.ok(r.modal, text);
+    const modes = renderModes(r);
+    assert.deepEqual(modes.match(/<span class="char">[^<]+/g).map((s) => s.replace(/.*>/, '')), marked, text);
+    assert.match(modes, /▶ Oír la diferencia con/, text);
+    assert.match(plainText(renderKey(r)), info, text);
+    // Ningún acorde «cromático» a secas.
+    assert.ok(r.items.every((i) => i.kind !== 'chromatic'), text);
+  }
+  assert.deepEqual(modeScale('lydian', 'C', 'lydian-augmented'), ['C', 'D', 'E', 'F#', 'G#', 'A', 'B']);
+  assert.deepEqual(modeScale('dorian', 'A', 'dorian-sharp4'), ['A', 'B', 'C', 'D#', 'E', 'F#', 'G']);
+  assert.deepEqual(modeScale('ionian', 'C', 'double-harmonic'), ['C', 'Db', 'E', 'F', 'G', 'Ab', 'B']);
+  // Siguen como ahora.
+  assert.equal(analyze('Lam Si7 Mi Lam').items[1].roman, 'V7/V');
+  assert.equal(keyName(analyze('Do Reb Do Reb').key), 'Do frigio dominante');
+  assert.equal(keyName(analyze('Do7 Re Do7 Re').key), 'Do lidio dominante');
+  assert.equal(keyName(analyze('Do Re Do Re').key), 'Do lidio');
+});
+
+test('cada variante se reconoce en las 12 tonalidades con su progresión típica', async () => {
+  const { keyName } = await import('../js/core/names.js');
+  const variants = [
+    ['phrygian', 'phrygian-dominant'], ['lydian', 'lydian-dominant'], ['dorian', 'melodic-minor'],
+    ['lydian', 'lydian-augmented'], ['dorian', 'dorian-sharp4'], ['ionian', 'double-harmonic'],
+  ];
+  for (const [mode, variant] of variants) {
+    for (let pc = 0; pc < 12; pc++) {
+      const chords = typicalProgression(mode, defaultTonic(pc, 'major'), variant);
+      const text = chords.map((c) => c.root + c.suffix).join(' ');
+      const r = analyze(text);
+      // La menor melódica en tríadas es La menor con el cuarto dórico (ver arriba).
+      if (variant === 'melodic-minor') {
+        assert.equal(`${r.key.pc} ${r.key.mode}`, `${pc} minor`, text);
+        continue;
+      }
+      assert.equal(`${r.key.pc} ${r.key.modal?.variant}`, `${pc} ${variant}`, `${text}: ${keyName(r.key)}`);
+    }
+  }
+});
+
+test('el ejemplo típico de las variantes las hace sonar', () => {
+  const play = (mode, variant) => typicalProgression(mode, 'C', variant).map((c) => c.root + c.suffix).join(' ');
+  assert.equal(play('phrygian', 'phrygian-dominant'), 'C Db C Db');
+  assert.equal(play('lydian', 'lydian-augmented'), 'Caug D Caug D');
+  assert.equal(play('dorian', 'dorian-sharp4'), 'Cm D7 Cm D7');
+  assert.equal(play('ionian', 'double-harmonic'), 'Cmaj7 Db Cmaj7 Db');
+});
+
+test('el glosario explica las variantes nuevas dentro de su modo', async () => {
+  const { glossaryEntry, termText, linkTerms } = await import('../js/ui/glossary.js');
+  assert.match(termText(glossaryEntry('modo-lydian')), /lidio aumentado/);
+  assert.match(termText(glossaryEntry('modo-dorian')), /dórico ♯4 o modo ucraniano/);
+  assert.match(termText(glossaryEntry('modo-phrygian')), /doble armónica/);
+  assert.match(termText(glossaryEntry('modo-aeolian')), /menor melódica/);
+  assert.match(linkTerms('Es la doble armónica.'), /data-term="modo-phrygian">doble armónica</);
 });

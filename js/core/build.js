@@ -20,7 +20,8 @@ export function tonicChord(key) {
 }
 
 // El acorde «de toda la vida» que ocupa el lugar de uno especial, para
-// compararlos de oído (D7 en Do → Dm; D♭7 → G7; Fm → F; C7 → C). Puede ser null.
+// compararlos de oído (D7 en Do → Dm; D♭7 → G7; Fm → F; C7 → C; G7alt → G7).
+// Puede ser null.
 export function normalVersion(item, key) {
   const mode = key.mode;
   const diatonicAt = (st) => DEGREES[mode].find((d) => d.st === st);
@@ -28,6 +29,8 @@ export function normalVersion(item, key) {
     case 'tritone':
       return chordOnDegree(key, (item.target.st + 7) % 12, 'M', '7');
     case 'secondary':
+    case 'major-two':
+    case 'mediant':
     case 'borrowed':
     case 'modal':
     case 'dorian':
@@ -38,7 +41,12 @@ export function normalVersion(item, key) {
     case 'dim7':
       return dim7Normal(item, key, diatonicAt);
     case 'augmented':
-      return chordOnDegree(key, (item.target.st + 7) % 12, 'M', item.chord.seventh === '7' ? '7' : '');
+      return chordOnDegree(key, (item.target.st + 7) % 12, 'M');
+    case 'altered':
+      return chordOnDegree(key, item.st, 'M', '7');
+    // El napolitano ocupa el lugar de la subdominante.
+    case 'neapolitan':
+      return chordOnDegree(key, 5, mode === 'minor' ? 'm' : 'M');
     case 'suspension':
       return chordOnDegree(key, item.st, item.resolvesTo.triad, item.resolvesTo.seventh ?? '');
     case 'color':

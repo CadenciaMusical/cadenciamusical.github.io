@@ -42,10 +42,14 @@ export const latinSuffix = (suffix) =>
     .replace(/^(dim|o)(?![a-z])/i, '°')
     .replace(/(?<!\()add(\d+)(?!\))/i, '(add$1)');
 
+// Los disminuidos, con su símbolo en los dos cifrados, igual en las tarjetas
+// que en los textos: B°, B°7, Bø7 (no Bdim ni Bm7b5).
+const DIMINISHED = { dim: '°', o: '°', dim7: '°7', o7: '°7', m7b5: 'ø7' };
+
 // Cifrado legible: 'Bbm7' → 'B♭m7'; en latino: 'Si♭m7'.
 export function chordLabel(chord, latin = latinByDefault) {
   const bass = chord.bass ? '/' + noteName(chord.bass, latin) : '';
-  const suffix = latin ? latinSuffix(chord.suffix) : chord.suffix;
+  const suffix = DIMINISHED[chord.suffix] ?? (latin ? latinSuffix(chord.suffix) : chord.suffix);
   return noteName(chord.root, latin) + suffix.replace(/#/g, '♯') + bass;
 }
 
@@ -75,7 +79,15 @@ export function chordName(chord) {
   return `${noteName(chord.root)} ${kind}${extra}`;
 }
 
-export const VARIANT_NAMES = { 'phrygian-dominant': 'frigio dominante', 'harmonic-minor': 'menor armónica', 'lydian-dominant': 'lidio dominante' };
+export const VARIANT_NAMES = {
+  'phrygian-dominant': 'frigio dominante',
+  'harmonic-minor': 'menor armónica',
+  'melodic-minor': 'menor melódica',
+  'lydian-dominant': 'lidio dominante',
+  'lydian-augmented': 'lidio aumentado',
+  'dorian-sharp4': 'dórico ♯4',
+  'double-harmonic': 'doble armónica',
+};
 
 // 'Do mayor' (o 'C mayor'). Si la progresión es modal, el modo: 'La dórico'.
 export function keyName(key) {

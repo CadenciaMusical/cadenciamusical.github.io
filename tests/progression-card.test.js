@@ -137,7 +137,7 @@ test('la tarjeta «Da vueltas» usa la casa que ha decidido el análisis', async
   const { keyName, setLatin } = await import('../js/core/names.js');
   const { loopText } = await import('../js/ui/texts.js');
   setLatin(true);
-  for (const [text, first] of [['Si° Do Si° Do', 'Si°'], ['Siø7 Do Siø7 Do', 'Sim7b5']]) {
+  for (const [text, first] of [['Si° Do Si° Do', 'Si°'], ['Siø7 Do Siø7 Do', 'Siø7']]) {
     const r = analyze(text);
     assert.equal(keyName(r.key), 'Do mayor', text);
     const t = loopText(r);
@@ -158,8 +158,10 @@ test('en un bucle, el último acorde no decide alternativas', async () => {
   const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
   const r = analyze('Do Fam Do Fam');
   assert.equal(keyName(r.key), 'Do mayor');
-  assert.equal(r.alternative, null);
-  assert.doesNotMatch(plain(renderKey(r)), /acaba en Fam|Fa menor/);
+  // Fa menor sale como alternativa porque Do es su V, no porque acabe en Fam.
+  assert.equal(keyName(r.alternative), 'Fa menor');
+  assert.doesNotMatch(plain(renderKey(r)), /acaba en Fam/);
+  assert.match(plain(renderKey(r)), /el último acorde no es un final/);
   // La relativa sí, por las notas que comparten, sin hablar del final.
   const dim = analyze('Si° Do Si° Do');
   assert.equal(keyName(dim.alternative), 'La menor');

@@ -44,7 +44,8 @@ function stepMatches(options, chord, key) {
   const st = mod12(chord.pc - key.pc);
   return options.some((o) => {
     if (o.st !== st) return false;
-    const triadOk = chord.triad === o.triad || ((chord.triad === 'sus' || chord.triad === '5') && o.triad !== 'dim');
+    // Una dominante alterada (G7alt) hace de V aunque su quinta suba.
+    const triadOk = chord.triad === o.triad || ((chord.triad === 'sus' || chord.triad === '5') && o.triad !== 'dim') || (chord.altered && o.triad === 'M');
     return triadOk && (!o.seventh || Boolean(chord.seventh));
   });
 }

@@ -260,6 +260,73 @@ export const GLOSSARY = [
     },
   },
   {
+    id: 'dominante-alterada',
+    term: 'Dominante alterada',
+    match: ['dominantes alteradas', 'dominante alterada'],
+    text: () => `Una dominante con notas tensas añadidas (♭9, ♯9, ♭5 o ♯5), como ${sym('G', '7alt')} o ${sym('G', '7♭9')} en ${K('C', 'major')}. Suena aún más inestable que la dominante normal y pide resolver con más fuerza. Muy del jazz.`,
+    example: (k, label) => {
+      const d = degrees(k);
+      const alt = chordOnDegree(k, 7, 'M', '7alt');
+      return { chords: [d.V7, d.I, alt, d.I], caption: `Primero con ${label(d.V7)} y después con ${label(alt)}: la llegada a casa es más tensa.` };
+    },
+  },
+  {
+    id: 'napolitana',
+    term: 'Sexta napolitana',
+    match: ['sexta napolitana', 'acorde napolitano', 'napolitano'],
+    text: () => `Un acorde mayor medio tono por encima de la tónica (el ♭II: ${sym('Bb')} en ${K('A', 'minor')}), casi siempre con la cuarta nota de la escala en el bajo (${sym('Bb')}/${noteName('D')}): por eso se llama «sexta». Prepara la dominante con dramatismo. Muy de Bach, Mozart y Beethoven.`,
+    example: (k, label) => {
+      const d = degrees(k);
+      const N = chordOnDegree(k, 1, 'M');
+      const N6 = parseChord(`${N.root}/${N.notes[1]}`);
+      return { chords: [d.I, N6, d.V7, d.I], caption: `${label(N6)} prepara ${label(d.V7)}, que vuelve a ${label(d.I)}.` };
+    },
+  },
+  {
+    id: 'mediantes',
+    term: 'Mediantes cromáticas',
+    match: ['mediantes cromáticas', 'mediante cromática'],
+    text: () => `Dos acordes del mismo tipo (dos mayores o dos menores) con las fundamentales a una tercera, que no son de la misma tonalidad y comparten como mucho una nota: ${sym('C')} y ${sym('E')}, o ${sym('C')} y ${sym('Ab')}. Suenan grandiosos y sorprendentes: es el sonido épico del cine.`,
+    example: (k, label) => {
+      const chords = [0, 4, 8, 0].map((st) => chordOnDegree(k, st, 'M'));
+      return { chords, caption: `${chords.map(label).join(', ')}: tres saltos de tercera mayor que vuelven al principio.` };
+    },
+  },
+  {
+    id: 'acorde-quinta',
+    term: 'Acorde de quinta',
+    match: ['acordes de quinta', 'acorde de quinta', 'power chords', 'power chord'],
+    text: () => `Un acorde con solo dos notas, la fundamental y la quinta (${sym('C', '5')}: ${noteName('C')} y ${noteName('G')}), sin tercera, así que no es ni mayor ni menor. Con distorsión suena potente: es la base de la guitarra del rock (en inglés, «power chord»).`,
+    example: (k, label) => {
+      const chords = [0, 5, 7, 0].map((st) => chordOnDegree(k, st, 'M', '5'));
+      return { chords, caption: `${chords.map(label).join(', ')}: el I–IV–V del rock, sin terceras.` };
+    },
+  },
+  {
+    id: 'pentatonica',
+    term: 'Escala pentatónica',
+    match: ['escala pentatónica', 'pentatónica'],
+    text: 'Una escala de solo cinco notas, sin los semitonos que crean tensión: por eso casi todo suena bien con ella. La pentatónica menor es la más usada en el rock y el blues; la mayor, en el country y el folk.',
+    example: (k) => {
+      const steps = k.mode === 'minor' ? [0, 3, 5, 7, 10, 12] : [0, 2, 4, 7, 9, 12];
+      return { notes: steps.map((st) => midiFrom(k, st)), caption: `La pentatónica ${k.mode === 'minor' ? 'menor' : 'mayor'} de ${noteName(k.tonic)}.` };
+    },
+  },
+  {
+    id: 'tonos-enteros',
+    term: 'Escala de tonos enteros',
+    match: ['escala de tonos enteros', 'tonos enteros'],
+    text: 'Una escala de seis notas, todas a un tono de distancia. Como todas están a la misma distancia, ninguna suena a casa: suena a sueño o a flotar. Muy de Debussy.',
+    example: (k) => ({ notes: [0, 2, 4, 6, 8, 10, 12].map((st) => midiFrom(k, st)), caption: `La escala de tonos enteros desde ${noteName(k.tonic)}.` }),
+  },
+  {
+    id: 'escala-disminuida',
+    term: 'Escala disminuida',
+    match: ['escala disminuida', 'octatónica'],
+    text: 'Una escala de ocho notas que alterna tonos y semitonos (también se llama octatónica). Se repite cada tres semitonos, así que ninguna nota suena a casa: suena tensa e inquietante. Muy del jazz y de las bandas sonoras de suspense.',
+    example: (k) => ({ notes: [0, 2, 3, 5, 6, 8, 9, 11, 12].map((st) => midiFrom(k, st)), caption: `La escala disminuida desde ${noteName(k.tonic)}, tono y semitono.` }),
+  },
+  {
     id: 'inversion',
     term: 'Inversión',
     match: ['inversiones', 'inversión', 'en el bajo'],
@@ -298,24 +365,39 @@ export const GLOSSARY = [
 
 // Variantes con nombre propio, explicadas dentro de su modo.
 const MODE_VARIANTS = {
-  phrygian: { match: 'frigio dominante', text: 'Si además el acorde de la tónica es mayor, se llama frigio dominante: el sonido del flamenco.' },
-  lydian: { match: 'lidio dominante', text: 'Si además la séptima nota baja medio tono, se llama lidio dominante: el acorde de casa lleva séptima, como una dominante que no tiene prisa por resolver, y suena a ensueño con un punto de blues.' },
-  aeolian: { match: 'menor armónica', text: 'Si la séptima nota sube medio tono para tirar hacia la tónica (la sensible), se llama menor armónica.' },
+  phrygian: [
+    { match: 'frigio dominante', text: 'Si además el acorde de la tónica es mayor, se llama frigio dominante: el sonido del flamenco.' },
+    { match: 'doble armónica', text: 'Y si al frigio dominante se le sube también la séptima nota, es la doble armónica (o bizantina): muy oriental, el sonido que se asocia a la música árabe.' },
+  ],
+  dorian: [
+    { match: 'dórico ♯4', text: 'Si además la cuarta nota sube medio tono, se llama dórico ♯4 o modo ucraniano: melancólico y exótico, típico de la música klezmer.' },
+  ],
+  lydian: [
+    { match: 'lidio dominante', text: 'Si además la séptima nota baja medio tono, se llama lidio dominante: el acorde de casa admite una séptima, como una dominante que no tiene prisa por resolver, y suena a ensueño con un punto de blues.' },
+    { match: 'lidio aumentado', text: 'Si lo que sube es la quinta, se llama lidio aumentado: el acorde de casa es aumentado, brillante y misterioso.' },
+  ],
+  aeolian: [
+    { match: 'menor armónica', text: 'Si la séptima nota sube medio tono para tirar hacia la tónica (la sensible), se llama menor armónica.' },
+    { match: 'menor melódica', text: 'Si suben a la vez la sexta y la séptima, se llama menor melódica: la «menor del jazz», más suave y luminosa.' },
+  ],
 };
 
 // Un término por cada modo, con su escala para escuchar.
-const MODE_TERMS = MODES.map((mode) => ({
-  id: `modo-${mode.id}`,
-  term: `Modo ${mode.name}`,
-  match: MODE_VARIANTS[mode.id] ? [MODE_VARIANTS[mode.id].match, mode.name] : [mode.name],
-  text: MODE_VARIANTS[mode.id] ? `${MODE_INFO[mode.id].text} ${MODE_VARIANTS[mode.id].text}` : MODE_INFO[mode.id].text,
-  example: (k) => {
-    const scale = modeScale(mode.id, k.tonic);
-    const start = 60 + k.pc;
-    const notes = [...scale.map((n) => start + Interval.semitones(Interval.distance(scale[0], n))), start + 12];
-    return { notes, caption: `La escala de ${noteName(k.tonic)} ${mode.name}: ${scale.map((n) => noteName(n)).join(' ')}.` };
-  },
-}));
+const MODE_TERMS = MODES.map((mode) => {
+  const variants = MODE_VARIANTS[mode.id] ?? [];
+  return {
+    id: `modo-${mode.id}`,
+    term: `Modo ${mode.name}`,
+    match: [...variants.map((v) => v.match), mode.name],
+    text: [MODE_INFO[mode.id].text, ...variants.map((v) => v.text)].join(' '),
+    example: (k) => {
+      const scale = modeScale(mode.id, k.tonic);
+      const start = 60 + k.pc;
+      const notes = [...scale.map((n) => start + Interval.semitones(Interval.distance(scale[0], n))), start + 12];
+      return { notes, caption: `La escala de ${noteName(k.tonic)} ${mode.name}: ${scale.map((n) => noteName(n)).join(' ')}.` };
+    },
+  };
+});
 GLOSSARY.push(...MODE_TERMS);
 
 const BY_ID = new Map(GLOSSARY.map((e) => [e.id, e]));

@@ -44,10 +44,12 @@ export function stepName(st, mode) {
 
 // Número romano completo: mayúsculas para mayor, minúsculas para menor y
 // disminuido, ° disminuido, ø semidisminuido, + aumentado, 7 si lleva séptima.
+// Un acorde de quinta no tiene tercera: «I5», ni mayor ni menor.
 export function romanFor(st, triad, seventh, mode) {
   let base = stepName(st, mode);
   // El vii° de la menor armónica se escribe sin alteración.
   if (mode === 'minor' && st === 11 && triad === 'dim') base = 'VII';
+  if (triad === '5' && !seventh) return base + '5';
   const lower = triad === 'm' || triad === 'dim';
   const numeral = lower ? base.toLowerCase() : base;
   if (seventh === 'm7b5') return numeral + 'ø7';

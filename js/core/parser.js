@@ -93,7 +93,10 @@ function describe(intervals) {
   if (has('6M') || has('13M')) tensions.push(seventh ? 'trecena' : 'sexta');
   if (intervals.some((i) => i.startsWith('9'))) tensions.push('novena');
   if (has('11P') || has('11A')) tensions.push('oncena');
-  return { triad, seventh, tensions };
+  // Dominante alterada: una dominante con la quinta o la novena alteradas
+  // (G7alt, G7♭9, G7♯9, G7♯5, G7♭5).
+  const altered = seventh === '7' && has('3M') && ['5A', '5d', '9m', '9A', '13m'].some(has);
+  return { triad, seventh, tensions, altered };
 }
 
 // Intenta leer un acorde. Devuelve { ok: true, ... } o { ok: false, input, suggestions }.

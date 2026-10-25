@@ -11,8 +11,8 @@ import { playChords, playChord, playNotes, stop } from './audio.js';
 import {
   escapeHtml, renderErrors, renderKey, renderProgressionCard, progressionRanges, progressionTurns, renderChords, renderDetail, renderGlossaryList, renderTerm, renderTranspose, renderModes,
 } from './ui/render.js';
-import { modeScale, typicalProgression } from './core/modes.js';
-import { Interval } from '../vendor/tonal.mjs';
+import { plainScale, typicalProgression } from './core/modes.js';
+import { Interval, Note } from '../vendor/tonal.mjs';
 import { glossaryEntry, DEFAULT_KEY } from './ui/glossary.js';
 
 const EXAMPLES = [
@@ -438,6 +438,14 @@ document.addEventListener('click', (e) => {
     case 'play-pedal':
       playNotes(r.pedal.midis, { step: 0.55 });
       break;
+    case 'play-symmetric': {
+      const { scale } = r.symmetricScale;
+      playNotes(scaleMidis(scale, Note.chroma(scale[0])), { step: 0.3 });
+      break;
+    }
+    case 'play-pentatonic':
+      playNotes(scaleMidis(r.pentatonic.scale, r.key.pc), { step: 0.35 });
+      break;
     case 'use-alt':
       state.forcedKey = r.alternative;
       run();
@@ -493,7 +501,7 @@ document.addEventListener('click', (e) => {
     case 'mode-compare': {
       // La escala mayor o menor de siempre, un silencio y la del modo.
       const m = r.modes.main;
-      const plain = modeScale(m.id === 'lydian' || m.id === 'mixolydian' ? 'ionian' : 'aeolian', m.tonic);
+      const plain = plainScale(m.id, m.tonic);
       playNotes([...scaleMidis(plain, m.pc), null, null, ...scaleMidis(m.scale, m.pc)], { step: 0.32 });
       break;
     }

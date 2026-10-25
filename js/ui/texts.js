@@ -4,7 +4,8 @@ import { Note } from '../../vendor/tonal.mjs';
 import { keyName, chordLabel, noteName, VARIANT_NAMES } from '../core/names.js';
 import { chordOnDegree, normalVersion } from '../core/build.js';
 import { parseChord } from '../core/parser.js';
-import { isTonicChord, isLoopLike } from '../core/key.js';
+import { modeById, modeScale, plainScale } from '../core/modes.js';
+import { isTonicChord, isLoopLike, fifthAlternation } from '../core/key.js';
 
 export const FUNCTIONS = {
   T: {
@@ -96,15 +97,25 @@ export const MODE_INFO = {
 // Cuando sobra una nota con nombre propio, el carácter cambia.
 export const VARIANT_INFO = {
   'harmonic-minor': 'Es la escala menor con la séptima nota subida medio tono: más tensa que la menor natural, con un aire clásico y algo oriental.',
+  'melodic-minor': 'Es la escala menor con la sexta y la séptima nota subidas medio tono: conserva el color menor del acorde de casa, pero suena más suave y luminosa, y la séptima tira hacia la tónica. Es la «menor del jazz».',
   'phrygian-dominant': 'Es el frigio con el acorde de la tónica en mayor: oscuro y luminoso a la vez, el sonido típico del flamenco.',
-  'lydian-dominant': 'Es el lidio con la séptima nota medio tono más baja: tiene la cuarta subida del lidio, que suena a ensueño, y la séptima baja del mixolidio, que suena a blues. Por eso el acorde de casa lleva séptima, como una dominante, pero no tiene prisa por ir a ningún sitio. Es muy de jazz y de bandas sonoras.',
+  'lydian-dominant': 'Es el lidio con la séptima nota medio tono más baja: tiene la cuarta subida del lidio, que suena a ensueño, y la séptima baja del mixolidio, que suena a blues. Por eso el acorde de casa admite una séptima, como una dominante, pero no tiene prisa por ir a ningún sitio. Es muy de jazz y de bandas sonoras.',
+  'lydian-augmented': 'Es el lidio con la quinta nota subida medio tono: el acorde de casa es aumentado, y por eso nunca acaba de asentarse. Brillante y misterioso, muy de bandas sonoras.',
+  'dorian-sharp4': 'Es el dórico con la cuarta nota subida medio tono (también se llama modo ucraniano): entre la tercera y la cuarta queda un salto de tono y medio que le da un aire melancólico y exótico. Típico de la música klezmer y de Europa del Este.',
+  'double-harmonic': 'Es la escala mayor con la segunda y la sexta nota bajadas medio tono (también se llama bizantina). Muy oriental: es el sonido que se asocia a la música árabe; dos saltos de tono y medio la hacen inconfundible.',
 };
+
+// Las variantes que son una escala, no un modo: «la escala menor melódica».
+const SCALE_VARIANTS = new Set(['harmonic-minor', 'melodic-minor', 'double-harmonic']);
 
 // El nombre del modo o de su variante: «frigio dominante», «dórico».
 const modeKind = (m) => VARIANT_NAMES[m.variant] ?? m.name;
 
-// Las variantes que cambian dos notas frente al mayor o el menor de siempre.
-export const twoChanges = (m) => m.variant === 'phrygian-dominant' || m.variant === 'lydian-dominant';
+// «el modo dórico», «la escala menor melódica».
+const modeKindPhrase = (m) => (SCALE_VARIANTS.has(m.variant) ? `la escala ${modeKind(m)}` : `el modo ${modeKind(m)}`);
+
+// ¿Cambia más de una nota frente al mayor o el menor de siempre?
+export const twoChanges = (m) => changedNotes(m).length > 1;
 
 export const MODES_TEXT =
   'Además de mayor y menor, hay siete modos. Todos usan las mismas notas, pero cada uno toma una distinta como casa, y eso cambia el carácter.';
@@ -113,7 +124,7 @@ export const MODES_TEXT =
 export const modeName = (m) => keyName({ tonic: m.tonic, modal: m });
 
 // La escala mayor o menor de siempre con la que se compara el modo.
-export const parallelKeyName = (m) => keyName({ tonic: m.tonic, mode: m.id === 'lydian' || m.id === 'mixolydian' ? 'major' : 'minor' });
+export const parallelKeyName = (m) => keyName({ tonic: m.tonic, mode: modeById(m.id).compare });
 
 // Primera explicación del modo, para quien no sabe qué es.
 export function modeIntroText(m) {
@@ -125,10 +136,10 @@ export function modeIntroText(m) {
 // ['Fa♯ en lugar de Fa']. En el frigio dominante, también la tercera.
 function changedNotes(m) {
   if (!m.charNote) return [];
-  const out = [`${noteName(m.charNote)} en lugar de ${noteName(m.insteadNote)}`];
-  if (m.variant === 'phrygian-dominant') out.push(`${noteName(m.scale[2])} en lugar de ${noteName(Note.transpose(m.tonic, '3m'))}`);
-  if (m.variant === 'lydian-dominant') out.push(`${noteName(m.scale[6])} en lugar de ${noteName(Note.transpose(m.tonic, '7M'))}`);
-  return out;
+  const plain = plainScale(m.id, m.tonic);
+  return m.scale
+    .map((n, i) => (Note.chroma(n) === Note.chroma(plain[i]) ? null : `${noteName(n)} en lugar de ${noteName(plain[i])}`))
+    .filter(Boolean);
 }
 
 // La nota que distingue el modo de la escala mayor o menor de siempre.
@@ -141,7 +152,7 @@ export function modeCharText(m) {
 }
 
 // Título de la tarjeta del modo cuando la tonalidad ya lo nombra: «Escucha el color dórico».
-export const modeListenTitle = (m) => `Escucha el color ${modeKind(m)}`;
+export const modeListenTitle = (m) => (SCALE_VARIANTS.has(m.variant) ? `Escucha el color de la ${modeKind(m)}` : `Escucha el color ${modeKind(m)}`);
 
 // Bajo el nombre de la tonalidad, cuando es un modo: cómo se relaciona con
 // el mayor o el menor de siempre. m: el modo principal (detectModes).
@@ -150,7 +161,7 @@ export function modalKeyText(m) {
   const changed = changedNotes(m);
   const two = changed.length === 2;
   const notes = two ? `${changed[0]}, y ${changed[1]}` : changed[0];
-  return `La casa es ${noteName(m.tonic)}, como en ${parallel}, pero con ${notes}. ${two ? 'Esos cambios le dan' : 'Ese cambio le da'} otro color: es el modo ${modeKind(m)}.`;
+  return `La casa es ${noteName(m.tonic)}, como en ${parallel}, pero con ${notes}. ${two ? 'Esos cambios le dan' : 'Ese cambio le da'} otro color: es ${modeKindPhrase(m)}.`;
 }
 
 // Las notas que no caben en el modo.
@@ -163,8 +174,24 @@ export function modeForeignText(m) {
   if (m.variant === 'phrygian-dominant') {
     return `El ${notes[0]} no es del frigio: convierte en mayor el acorde de la tónica. Es el frigio dominante, el sonido típico del flamenco.`;
   }
+  if (m.variant === 'lydian-dominant' && m.id === 'mixolydian') {
+    return `El ${notes[0]} no es del mixolidio: es la cuarta subida del lidio. Con ella, el mixolidio se convierte en lidio dominante, que suena a blues y a ensueño a la vez.`;
+  }
   if (m.variant === 'lydian-dominant') {
     return `El ${notes[0]} no es del lidio: le pone una séptima menor al acorde de la tónica (${noteName(m.tonic)}7). Es el lidio dominante, con un punto de blues.`;
+  }
+  if (m.variant === 'melodic-minor') {
+    const which = notes.length === 1 ? `El ${notes[0]} no es` : `El ${notes[0]} y el ${notes[1]} no son`;
+    return `${which} de la escala de siempre: con la sexta y la séptima subidas, la escala se llama menor melódica, la «menor del jazz».`;
+  }
+  if (m.variant === 'lydian-augmented') {
+    return `El ${notes[0]} no es del lidio: sube la quinta del acorde de la tónica y lo vuelve aumentado (${noteName(m.tonic)}+). Es el lidio aumentado, brillante y misterioso.`;
+  }
+  if (m.variant === 'dorian-sharp4') {
+    return `El ${notes[0]} no es del dórico: es su cuarta nota subida medio tono. Con ella, la escala se llama dórico ♯4 o modo ucraniano, muy de la música klezmer.`;
+  }
+  if (m.variant === 'double-harmonic') {
+    return `${listJoin(notes)} no son de la escala mayor: bajan la segunda y la sexta nota medio tono. Con esos dos cambios, la escala se llama doble armónica, el sonido que se asocia a la música árabe.`;
   }
   const list = notes.length === 1 ? `el ${notes[0]}` : `${notes.slice(0, -1).join(', ')} y ${notes[notes.length - 1]}`;
   return `Hay notas que no caben en este modo (${list}). Es normal: las canciones mezclan.`;
@@ -186,6 +213,21 @@ export function modeVsKeyText(m, key) {
 // pistas son el primer y el último acorde: las canciones suelen empezar y,
 // sobre todo, acabar en casa.
 export function alternativeText(key, alt, relative, chords) {
+  // Mi Lam Mi Lam: Mi mayor con el iv prestado, o el V–i de La menor.
+  const fifths = fifthAlternation(chords);
+  if (fifths && key.mode === 'major' && key.pc === fifths.dominant.pc && alt.mode === 'minor' && alt.pc === fifths.tonic.pc) {
+    const [V, i] = [chordLabel(fifths.dominant), chordLabel(fifths.tonic)];
+    const flamenco = keyName({ tonic: key.tonic, modal: { variant: 'phrygian-dominant' } });
+    const clues = isLoopLike(chords)
+      ? `${loopCluesText(key, alt, chords)} Escucha unas cuantas vueltas: la que te suene a casa, donde descansa cada vuelta, es la buena.`
+      : `${cluesText(key, alt, chords)} Escucha cómo suena terminando en cada una: la que te suene a final es la buena.`;
+    return `${V} es un acorde mayor que alterna con ${i}, el menor que está una quinta por debajo, y un acorde así suele ser su dominante: por eso también se oye como el V–i de ${keyName(alt)}, que va y vuelve. ${clues} Y si la casa es ${noteName(key.tonic)}, también encaja ${flamenco}, el sonido del flamenco, que tiene estos dos acordes.`;
+  }
+  // Sin terceras (Do5 Fa5 Sol5 Do5), la misma tónica vale en mayor y en menor.
+  if (key.pc === alt.pc && chords.every((c) => c.triad === '5' || c.triad === 'sus')) {
+    const third = (i) => noteName(Note.transpose(key.tonic, i));
+    return `Ninguno de estos acordes lleva tercera, que es la nota que decide entre mayor y menor, así que la progresión encaja igual de bien en ${keyName(key)} que en ${keyName(alt)}. Lo decide la melodía (o el resto de la canción): con ${third('3M')}, es ${keyName({ tonic: key.tonic, mode: 'major' })}; con ${third('3m')}, ${keyName({ tonic: key.tonic, mode: 'minor' })}.`;
+  }
   // Un modo frente al mayor o el menor con sus mismas notas (Re dórico y Do mayor).
   const mode = Boolean(key.modal) !== Boolean(alt.modal) && sameScale(key, alt) && (key.modal ? key : alt);
   const intro = relative
@@ -231,6 +273,14 @@ function loopCluesText(key, alt, chords) {
   const start = isTonicChord(first, key) ? key : isTonicChord(first, alt) ? alt : null;
   const ends = 'Es un bucle: el último acorde no es un final, porque vuelve a empezar, así que no sirve de pista.';
   return start ? `Empieza en ${chordLabel(first)}, la casa de ${keyName(start)}. ${ends}` : ends;
+}
+
+// Un riff de acordes de quinta sacado de una pentatónica (result.pentatonic).
+export function pentatonicText(p) {
+  const which = p.mode === 'minor'
+    ? `la escala pentatónica menor de ${noteName(p.tonic)}, la más usada en el rock y el blues`
+    : `la escala pentatónica mayor de ${noteName(p.tonic)}, muy usada en el rock, el country y el folk`;
+  return `Estos acordes salen de ${which}. Son acordes de quinta («5»): solo llevan la fundamental y la quinta, sin tercera, así que no son ni mayores ni menores y suenan potentes con distorsión.`;
 }
 
 // Un bucle que gira alrededor de un disminuido (result.locrian).
@@ -303,7 +353,11 @@ export function kindText(item, key) {
     case 'dorian': {
       const minorIV = chordOnDegree(key, 5, 'm');
       const sixth = noteName(Note.transpose(key.tonic, '6M'));
-      return `Es el «cuarto dórico». En ${name}, el acorde del cuarto grado suele ser menor (${label(minorIV)}), pero aquí es mayor: lleva ${sixth}, la sexta nota del modo dórico (y de la escala menor melódica). Le da a la tonalidad menor un toque más luminoso, sin perder su carácter.`;
+      const base = `Es el «cuarto dórico». En ${name}, el acorde del cuarto grado suele ser menor (${label(minorIV)}), pero aquí es mayor: lleva ${sixth}, la sexta nota del modo dórico (y de la escala menor melódica). Le da a la tonalidad menor un toque más luminoso, sin perder su carácter.`;
+      if (!item.melodic) return base;
+      const scale = modeScale('aeolian', key.tonic, 'melodic-minor').map((n) => noteName(n)).join(' ');
+      const seventh = noteName(Note.transpose(key.tonic, '7M'));
+      return `${base} Con el ${seventh} de ${label(item.melodic)}, la sexta y la séptima suben a la vez: es la escala menor melódica (${scale}), la «menor del jazz».`;
     }
     case 'borrowed': {
       const parallel = keyName({ tonic: key.tonic, mode: item.from });
@@ -323,6 +377,26 @@ export function kindText(item, key) {
     }
     case 'augmented':
       return augmentedText(item, key);
+    case 'altered':
+      return alteredText(item, key);
+    case 'mediant': {
+      const { with: other, shared } = item.mediant;
+      const kind = item.chord.triad === 'M' ? 'mayores' : 'menores';
+      const common = shared.length ? `solo comparten ${noteName(shared[0])}` : 'no comparten ninguna nota';
+      return `Es una mediante cromática: ${label(item.chord)} y ${label(other)} son los dos ${kind} y sus fundamentales están a una tercera, pero no son de la misma tonalidad (${common}). El salto suena grandioso y sorprendente: es el sonido épico del cine.`;
+    }
+    case 'major-two': {
+      const minor = chordOnDegree(key, 2, 'm');
+      const V = chordOnDegree(key, 7, 'M');
+      return `Es un II mayor: en ${name}, el acorde del segundo grado suele ser menor (${label(minor)}), pero aquí es mayor. Es como una dominante secundaria que no va a su destino: pide ir a ${label(V)}, pero no llega, y se queda como un color brillante y luminoso. Muy de los Beatles.`;
+    }
+    case 'neapolitan': {
+      const what = 'un acorde prestado muy expresivo, medio tono por encima de la tónica, que prepara la dominante con dramatismo. Muy de Bach, Mozart y Beethoven.';
+      const fourth = noteName(Note.transpose(key.tonic, '4P'));
+      return item.sixth
+        ? `Es la sexta napolitana: ${what} Lleva ${fourth}, la cuarta nota de la escala, en el bajo (está en primera inversión), y por eso se llama «sexta»: entre el bajo y la raíz del acorde hay una sexta.`
+        : `Es el acorde napolitano: ${what} Aquí está en estado fundamental; lo más habitual es oírlo con ${fourth}, la cuarta nota de la escala, en el bajo: es la «sexta napolitana».`;
+    }
     case 'symmetric':
       return `${sameAsText(item.chord)} Por eso, solo, no apunta a ninguna tonalidad: según el acorde que venga después, puede llevar a sitios distintos.`;
     default:
@@ -410,6 +484,36 @@ function augmentedText(item, key) {
   return `${renamed}${what} Esa nota sube otro medio tono hasta ${noteName(third)}, la tercera de ${label(target)}, y hace la llegada aún más tensa.`;
 }
 
+// Una dominante alterada (ver classifyAltered en core/classify.js).
+function alteredText(item, key) {
+  const label = (c) => chordLabel(c);
+  const plain = normalVersion(item, key);
+  // Las notas que la alejan de la dominante de siempre (el Re♯ y el La♯ de Sol7alt).
+  // Sol en lugar de Fa♯♯: se leen mejor.
+  const tense = item.chord.notes
+    .filter((n) => !plain.notes.some((m) => Note.chroma(m) === Note.chroma(n)))
+    .map((n) => (/##|bb|^(B#|E#|Cb|Fb)$/.test(n) ? Note.simplify(n) : n));
+  const target = chordOnDegree(key, item.target.st, item.target.triad);
+  const what = `Es una dominante alterada: una dominante con notas tensas añadidas (♭9, ♯9, ♭5 o ♯5) que suena aún más inestable y pide resolver; muy del jazz. Aquí es ${label(plain)} con ${listJoin(tense.map((n) => noteName(n)))}.`;
+  if (item.target.st === 0) {
+    return item.target.resolves
+      ? `${what} Es la dominante de ${keyName(key)}, y resuelve en ${label(target)} con más tensión que ${label(plain)}.`
+      : `${what} Es la dominante de ${keyName(key)}, pero aquí no va a ${label(target)}: la tensión se queda en el aire.`;
+  }
+  const whose = `Es la dominante de ${label(target)} (el ${item.target.roman}), y por eso se escribe ${item.roman}.`;
+  return item.target.resolves
+    ? `${what} ${whose} Justo después llega ${label(target)}, como esperaba el oído.`
+    : `${what} ${whose} Pero no va a su destino: en lugar de ${label(target)} llega otro acorde, y la tensión se resuelve por sorpresa.`;
+}
+
+// Acordes que salen de una escala simétrica (result.symmetricScale).
+export function symmetricScaleText(s) {
+  if (s.id === 'whole-tone') {
+    return 'No hay tonalidad clara: estos acordes salen de la escala de tonos enteros, que no tiene ninguna nota que suene a casa. Todas sus notas están a un tono de distancia, así que ninguna destaca sobre las demás. Suena a sueño o a flotar; muy de Debussy.';
+  }
+  return 'No hay tonalidad clara: estos acordes salen de la escala disminuida, que alterna tonos y semitonos. Sus fundamentales están a una tercera menor (tres semitonos) unas de otras y se reparten la octava en partes iguales, así que ninguna hace de casa. Suena tensa e inquietante; muy del jazz y de las bandas sonoras de suspense.';
+}
+
 // Cuando todos los acordes son simétricos (aumentados o °7), la tonalidad no
 // está clara. Si además son el mismo acorde con distintos nombres, se dice.
 export function unclearKeyText(chords) {
@@ -422,6 +526,14 @@ export function unclearKeyText(chords) {
     ? `${listJoin(labels)} son el mismo acorde ${kind} con distintos nombres: tienen las mismas notas y suenan igual. `
     : '';
   return `${same}Los acordes aumentados y los disminuidos con séptima son simétricos: sus notas están a la misma distancia, así que ninguna destaca como casa y cada uno tiene ${one ? count : 'varios'} nombres. Sin un acorde mayor o menor que la fije, no hay una tonalidad clara. Prueba a añadir uno y oirás hacia dónde van.`;
+}
+
+// Un tramo de mediantes cromáticas (result.mediants).
+export function mediantsText(run, chords) {
+  const base = 'Saltos entre acordes a una tercera de distancia que no son de la misma tonalidad: suenan grandiosos y sorprendentes. Es el sonido épico del cine (John Williams, Hans Zimmer).';
+  if (!run.chain) return base;
+  const path = chords.slice(run.start, run.end + 1).map((c) => chordLabel(c)).join(' → ');
+  return `${base} Aquí, ${path}: tres saltos iguales de tercera mayor que reparten la octava en tres partes iguales y vuelven al punto de partida.`;
 }
 
 // Una línea de bajo (ver bassLines en core/bass.js).
