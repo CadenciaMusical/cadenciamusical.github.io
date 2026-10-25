@@ -334,3 +334,23 @@ test('dominante aumentada: V+ y V+/x', async () => {
   assert.match(kindText(sym.items[1], sym.key), /igual que Sol♯\+ y Do\+/);
   setLatin(false);
 });
+
+// --- Alternativas de tonalidad con sentido ---
+
+test('la alternativa es la relativa, la paralela o la del primer o el último acorde', () => {
+  const alt = (text) => {
+    const r = analyze(text);
+    return r.alternative && `${r.alternative.tonic} ${r.alternative.mode}`;
+  };
+  // Fa mayor tiene sus notas, pero empieza y acaba en Do: no es una alternativa.
+  const r = expectKey('Do Sib Lab Sib Do', 'C', 'major');
+  assert.ok([null, 'C minor'].includes(alt('Do Sib Lab Sib Do')));
+  assert.equal(r.items[1].kind, 'borrowed');
+  // Sin rival con sentido, la confianza no es baja.
+  assert.notEqual(r.confidence, 'baja');
+  // Siguen las que tienen sentido.
+  assert.equal(alt('Am F C G'), 'C major');
+  assert.equal(alt('Em C G D'), 'G major');
+  assert.equal(alt('Dosus2 Fasus2'), 'C major');
+  assert.equal(alt('F G Am'), 'C major');
+});

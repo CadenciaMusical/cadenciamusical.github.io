@@ -57,9 +57,9 @@ test('la sugerencia sale en el cifrado de la página', () => {
 
 test('si ya acaba en la casa de una opción, no se ofrece «Terminar en» esa', () => {
   setLatin(true);
-  const html = renderKey(analyze('Sol#add13 La# Do'));
+  const html = renderKey(analyze('Dosus2 Fasus2'));
   setLatin(false);
-  assert.match(html, /Terminar en Fa/);
-  assert.doesNotMatch(html, /Terminar en Do/);
-  assert.match(html, /terminando en Fa y compáralo con cómo acaba ahora/);
+  assert.match(html, /Terminar en Do/);
+  assert.doesNotMatch(html, /Terminar en Fa/);
+  assert.match(html, /terminando en Do y compáralo con cómo acaba ahora/);
 });

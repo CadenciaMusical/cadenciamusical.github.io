@@ -118,10 +118,17 @@ export function detectKey(chords) {
   }
   // Ante un empate exacto, primero la mayor.
   ranking.sort((a, b) => b.score - a.score || (a.mode === 'major' ? -1 : 1));
-  const [best, second] = ranking;
+  const [best] = ranking;
+  // Solo compiten las que tienen sentido como otra forma de oírla: la
+  // relativa, la paralela (misma tónica, otro modo) o una cuya tónica sea
+  // el primer o el último acorde. Do Sib Lab Sib Do puntúa alto en Fa mayor
+  // (tiene sus notas), pero nadie la oye allí.
+  const ends = [chords[0].pc, chords[chords.length - 1].pc];
+  const rivals = ranking.slice(1).filter((k) => isRelative(best, k) || k.pc === best.pc || ends.includes(k.pc));
+  const second = rivals[0] ?? ranking[1];
   const margin = (best.score - second.score) / Math.max(Math.abs(best.score), 1);
   const confidence = margin >= 0.2 ? 'alta' : margin >= 0.08 ? 'media' : 'baja';
-  const close = ranking.slice(1).filter((k) => k.score >= best.score - Math.max(0.6, best.score * 0.12));
+  const close = rivals.filter((k) => k.score >= best.score - Math.max(0.6, best.score * 0.12));
   // La relativa usa las mismas notas, así que se le da más margen; salvo que
   // la progresión empiece y acabe en la tónica de la primera: eso despeja la duda.
   // En un bucle basta con empezar en ella.
