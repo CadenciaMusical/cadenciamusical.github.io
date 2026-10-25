@@ -1,7 +1,7 @@
 // Textos didácticos. Tono cercano, sin tecnicismos sin explicar.
 
 import { Note } from '../../vendor/tonal.mjs';
-import { keyName, chordLabel, noteName } from '../core/names.js';
+import { keyName, chordLabel, noteName, VARIANT_NAMES } from '../core/names.js';
 import { chordOnDegree, normalVersion } from '../core/build.js';
 import { parseChord } from '../core/parser.js';
 import { isTonicChord } from '../core/key.js';
@@ -97,7 +97,14 @@ export const MODE_INFO = {
 export const VARIANT_INFO = {
   'harmonic-minor': 'Es la escala menor con la séptima nota subida medio tono: más tensa que la menor natural, con un aire clásico y algo oriental.',
   'phrygian-dominant': 'Es el frigio con el acorde de la tónica en mayor: oscuro y luminoso a la vez, el sonido típico del flamenco.',
+  'lydian-dominant': 'Es el lidio con la séptima nota medio tono más baja: tiene la cuarta subida del lidio, que suena a ensueño, y la séptima baja del mixolidio, que suena a blues. Por eso el acorde de casa lleva séptima, como una dominante, pero no tiene prisa por ir a ningún sitio. Es muy de jazz y de bandas sonoras.',
 };
+
+// El nombre del modo o de su variante: «frigio dominante», «dórico».
+const modeKind = (m) => VARIANT_NAMES[m.variant] ?? m.name;
+
+// Las variantes que cambian dos notas frente al mayor o el menor de siempre.
+export const twoChanges = (m) => m.variant === 'phrygian-dominant' || m.variant === 'lydian-dominant';
 
 export const MODES_TEXT =
   'Además de mayor y menor, hay siete modos. Todos usan las mismas notas, pero cada uno toma una distinta como casa, y eso cambia el carácter.';
@@ -120,6 +127,7 @@ function changedNotes(m) {
   if (!m.charNote) return [];
   const out = [`${noteName(m.charNote)} en lugar de ${noteName(m.insteadNote)}`];
   if (m.variant === 'phrygian-dominant') out.push(`${noteName(m.scale[2])} en lugar de ${noteName(Note.transpose(m.tonic, '3m'))}`);
+  if (m.variant === 'lydian-dominant') out.push(`${noteName(m.scale[6])} en lugar de ${noteName(Note.transpose(m.tonic, '7M'))}`);
   return out;
 }
 
@@ -133,7 +141,7 @@ export function modeCharText(m) {
 }
 
 // Título de la tarjeta del modo cuando la tonalidad ya lo nombra: «Escucha el color dórico».
-export const modeListenTitle = (m) => `Escucha el color ${m.variant === 'phrygian-dominant' ? 'frigio dominante' : m.name}`;
+export const modeListenTitle = (m) => `Escucha el color ${modeKind(m)}`;
 
 // Bajo el nombre de la tonalidad, cuando es un modo: cómo se relaciona con
 // el mayor o el menor de siempre. m: el modo principal (detectModes).
@@ -142,7 +150,7 @@ export function modalKeyText(m) {
   const changed = changedNotes(m);
   const two = changed.length === 2;
   const notes = two ? `${changed[0]}, y ${changed[1]}` : changed[0];
-  return `La casa es ${noteName(m.tonic)}, como en ${parallel}, pero con ${notes}. ${two ? 'Esos cambios le dan' : 'Ese cambio le da'} otro color: es el modo ${m.variant === 'phrygian-dominant' ? 'frigio dominante' : m.name}.`;
+  return `La casa es ${noteName(m.tonic)}, como en ${parallel}, pero con ${notes}. ${two ? 'Esos cambios le dan' : 'Ese cambio le da'} otro color: es el modo ${modeKind(m)}.`;
 }
 
 // Las notas que no caben en el modo.
@@ -154,6 +162,9 @@ export function modeForeignText(m) {
   }
   if (m.variant === 'phrygian-dominant') {
     return `El ${notes[0]} no es del frigio: convierte en mayor el acorde de la tónica. Es el frigio dominante, el sonido típico del flamenco.`;
+  }
+  if (m.variant === 'lydian-dominant') {
+    return `El ${notes[0]} no es del lidio: le pone una séptima menor al acorde de la tónica (${noteName(m.tonic)}7). Es el lidio dominante, con un punto de blues.`;
   }
   const list = notes.length === 1 ? `el ${notes[0]}` : `${notes.slice(0, -1).join(', ')} y ${notes[notes.length - 1]}`;
   return `Hay notas que no caben en este modo (${list}). Es normal: las canciones mezclan.`;
@@ -237,6 +248,9 @@ export function kindText(item, key) {
       const char = key.modal.charNote;
       const has = char && item.chord.notes.some((n) => Note.chroma(n) === Note.chroma(char));
       if (has) return `No es de ${parallel}, pero sí de ${name}: lleva ${noteName(char)}, la nota que distingue el modo. Es el acorde que le da su color.`;
+      // Otra nota que no es de la escala de siempre (el Si♭ del Do7 en Do lidio dominante).
+      const outside = outsideNotes(item.chord, { tonic: key.tonic, mode: key.mode });
+      if (outside.length) return `No es de ${parallel}: lleva ${listJoin(outside.map((n) => noteName(n)))}, que no es de su escala. Pero sí es de ${name}, así que aquí suena en casa y le da su color.`;
       return `No es de ${parallel}, pero sí de ${name}, así que aquí suena en casa.`;
     }
     case 'suspension': {
@@ -256,8 +270,11 @@ export function kindText(item, key) {
       const color = item.from === 'minor' ? 'más oscuro, melancólico' : 'más luminoso';
       return `Es un préstamo modal: viene de ${parallel}, que tiene la misma tónica pero el otro modo. Aporta un color ${color}.`;
     }
-    case 'color':
-      return `El acorde es de ${name}, pero la nota que le añade (su séptima) no. Es un toque de color.`;
+    case 'color': {
+      const outside = outsideNotes(item.chord, key);
+      const which = outside.length ? ` (${listJoin(outside.map((n) => noteName(n)))})` : '';
+      return `El acorde es de ${name}, pero la nota que le añade, su séptima${which}, no. Es un toque de color.`;
+    }
     case 'blues':
       return 'En el blues, la tónica y la subdominante también llevan séptima (I7, IV7): es parte de su sonido característico.';
     case 'chromatic': {
@@ -271,6 +288,14 @@ export function kindText(item, key) {
     default:
       return '';
   }
+}
+
+// Las notas de un acorde que no son de la escala mayor o menor natural de la tonalidad.
+const SCALE_STEPS = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10] };
+
+function outsideNotes(chord, key) {
+  const scale = new Set(SCALE_STEPS[key.mode].map((st) => (Note.chroma(key.tonic) + st) % 12));
+  return chord.notes.filter((n) => !scale.has(Note.chroma(n)));
 }
 
 // Un disminuido con séptima (ver classifyDim7 en core/classify.js). Si se

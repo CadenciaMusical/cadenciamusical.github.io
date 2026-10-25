@@ -49,13 +49,20 @@ function triadOn(mode, degree) {
 const fitsCenter = (chord, triad) =>
   chord.triad === triad || ((chord.triad === 'sus' || chord.triad === '5') && triad !== 'dim');
 
-const WEIGHT = { first: 2, last: 1.5, each: 0.5, keyTonic: 2.5, keyNotes: 1 };
+// variant: la nota que sobra tiene nombre propio (ver variantOf). Entre el
+// F lidio con Mi♭ y el F mixolidio con Si (la misma escala), gana el que la nombra.
+const WEIGHT = { first: 2, last: 1.5, each: 0.5, keyTonic: 2.5, keyNotes: 1, variant: 1 };
 
-// Variantes con una nota alterada.
+// Variantes con una nota alterada. El lidio dominante es el lidio con la
+// séptima menor (Do Re Mi Fa♯ Sol La Si♭): el sonido de un Do7 que no resuelve.
 const VARIANTS = {
   'phrygian-dominant': { from: '3m', to: '3M' },
   'harmonic-minor': { from: '7m', to: '7M' },
+  'lydian-dominant': { from: '7M', to: '7m' },
 };
+
+// Las variantes que siguen siendo claramente modales, con su nota de fuera.
+const MODAL_VARIANTS = new Set(['phrygian-dominant', 'lydian-dominant']);
 
 // Las notas de la escala del modo desde una tónica concreta.
 export function modeScale(modeId, tonic, variant = null) {
@@ -82,12 +89,14 @@ export function modeDegrees(modeId, variant = null) {
   });
 }
 
-// Una progresión típica del modo, como acordes.
-export function typicalProgression(modeId, tonic) {
+// Una progresión típica del modo, como acordes. En el lidio dominante, la
+// tónica lleva su séptima menor (Do7 Re Do7 Re), que es la que lo distingue.
+export function typicalProgression(modeId, tonic, variant = null) {
   const mode = modeById(modeId);
-  const scale = modeScale(modeId, tonic);
+  const scale = modeScale(modeId, tonic, variant);
   const suffix = { M: '', m: 'm', dim: 'dim' };
-  return mode.typical.map((d) => parseChord(scale[d] + suffix[triadOn(mode, d)]));
+  const seventh = (d) => (variant === 'lydian-dominant' && d === 0 ? '7' : suffix[triadOn(mode, d)]);
+  return mode.typical.map((d) => parseChord(scale[d] + seventh(d)));
 }
 
 // Cómo escribir la tónica del modo: como la escribió el usuario si puede.
@@ -112,6 +121,7 @@ function variantOf(modeId, foreignSteps) {
   if (foreignSteps.length !== 1) return null;
   if (modeId === 'phrygian' && foreignSteps[0] === 4) return 'phrygian-dominant';
   if (modeId === 'aeolian' && foreignSteps[0] === 11) return 'harmonic-minor';
+  if (modeId === 'lydian' && foreignSteps[0] === 10) return 'lydian-dominant';
   return null;
 }
 
@@ -158,6 +168,7 @@ export function detectModes(chords, key = null) {
       if (isCenter(chords[chords.length - 1])) score += WEIGHT.last;
       if (key && key.pc === center) score += WEIGHT.keyTonic;
       if (set.parent === keyParent) score += WEIGHT.keyNotes;
+      if (variantOf(mode.id, set.outside.map(([pc]) => mod12(pc - center)))) score += WEIGHT.variant;
       candidates.push({ mode, set, center, score });
     }
   }
@@ -199,7 +210,7 @@ export function detectModes(chords, key = null) {
 // ¿Merece la pena hablar del modo? Solo si la progresión es claramente modal:
 //   - no es el mayor ni el menor de siempre (jónico, eólico, menor armónica);
 //   - se oye su nota característica (no solo en un V7/V) y no sobra ninguna nota (salvo la del
-//     frigio dominante, que es parte de ese sonido);
+//     frigio dominante o la del lidio dominante, que son parte de ese sonido);
 //   - hay al menos dos pistas de que su tónica es la casa: empezar en ella,
 //     acabar en ella, que coincida con la tonalidad o que suene en la mitad
 //     de los acordes o más. En un bucle, empezar en ella cuenta doble: es
@@ -217,7 +228,7 @@ export function isClearlyModal(m, chords, key) {
     c.triad === 'M' && c.seventh === '7' && c.pc === mod12(m.pc + 2) && chords[i + 1]?.pc === mod12(m.pc + 7);
   const colored = chords.filter((c, i) => c.notes.some((n) => Note.chroma(n) === charPc) && !resolving(c, i));
   if (colored.length === 0) return false;
-  if (m.foreign.length > 0 && m.variant !== 'phrygian-dominant') return false;
+  if (m.foreign.length > 0 && !MODAL_VARIANTS.has(m.variant)) return false;
   const home = (c) => c.pc === m.pc;
   const clues = [
     home(chords[0]),

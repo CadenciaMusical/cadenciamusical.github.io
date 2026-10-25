@@ -6,7 +6,7 @@ import { defaultTonic, isTonicChord } from '../core/key.js';
 import { convertNotation, transposeChord } from '../core/transpose.js';
 import {
   FUNCTIONS, KEY_TEXT, loopText, unclearKeyText, bassLineTitle, bassLineText, pedalText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
-  MODE_INFO, VARIANT_INFO, MODES_TEXT, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText, modeListenTitle,
+  MODE_INFO, VARIANT_INFO, MODES_TEXT, twoChanges, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText, modeListenTitle,
 } from './texts.js';
 import { GLOSSARY, linkTerms, termText } from './glossary.js';
 import { normalVersion } from '../core/build.js';
@@ -426,7 +426,7 @@ function plainModeName(m) {
 }
 
 // La escala del modo, con marcadas las notas que cambian frente al mayor o
-// el menor de siempre (dos en el frigio dominante).
+// el menor de siempre (dos en el frigio dominante y en el lidio dominante).
 function scaleNotes(m) {
   const plain = modeScale(m.id === 'lydian' || m.id === 'mixolydian' ? 'ionian' : 'aeolian', m.tonic);
   return `<p class="scale-notes">${m.scale.map((n, i) => `<span class="${Note.chroma(n) !== Note.chroma(plain[i]) ? 'char' : ''}">${noteName(n)}</span>`).join('')}</p>`;
@@ -453,7 +453,7 @@ export function renderModes(result) {
       <h2 class="key-name">${modeListenTitle(m)}</h2>
       ${scaleNotes(m)}
       ${listen}
-      <p class="hint">Suena primero la escala de ${parallel} y después la de ${modeName(m)}: ${m.variant === 'phrygian-dominant' ? 'las notas marcadas son las que cambian' : 'la nota marcada es la que cambia'}.</p>`;
+      <p class="hint">Suena primero la escala de ${parallel} y después la de ${modeName(m)}: ${twoChanges(m) ? 'las notas marcadas son las que cambian' : 'la nota marcada es la que cambia'}.</p>`;
   }
 
   const info = MODE_INFO[m.id];
@@ -486,7 +486,7 @@ export function renderModes(result) {
     ${scaleNotes(m)}
     ${char ? `<p><strong>${char}</strong>${heard}</p>` : ''}
     ${listen}
-    <p class="hint">Suena primero la escala de ${parallel} y después la de ${modeName(m)}: la nota marcada es la que cambia.</p>
+    <p class="hint">Suena primero la escala de ${parallel} y después la de ${modeName(m)}: ${twoChanges(m) ? 'las notas marcadas son las que cambian' : 'la nota marcada es la que cambia'}.</p>
     <details class="more" data-keep="mode">
       <summary>Más sobre el modo</summary>
       <p>${linkTerms(MODES_TEXT)}</p>

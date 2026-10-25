@@ -238,3 +238,53 @@ test('un V7/V no convierte la tonalidad en lidio; el IV7 del dórico sigue siend
   assert.equal(analyze('Do Re Do Re').key.modal.id, 'lydian');
   assert.equal(analyze('Lam Re7 Sol Lam').key.modal.id, 'dorian');
 });
+
+const plainText = (html) => html.replace(/<[^>]+>/g, '');
+
+test('lidio dominante: el lidio con la séptima menor', async () => {
+  const { keyName } = await import('../js/core/names.js');
+  const { renderKey, renderModes, renderDetail } = await import('../js/ui/render.js');
+  setLatin(true);
+  const romans = (r) => r.items.map((i) => i.roman).join(' ');
+  for (const [text, name] of [['Do7 Re Do7 Re', 'Do lidio dominante'], ['Fa7 Sol Fa7 Sol', 'Fa lidio dominante']]) {
+    const r = analyze(text);
+    assert.equal(keyName(r.key), name, text);
+    assert.equal(romans(r), 'I7 II I7 II', text);
+    assert.equal(r.alternative, null, text);
+  }
+  const r = analyze('Do7 Re Do7 Re');
+  assert.deepEqual(r.modes.main.scale, ['C', 'D', 'E', 'F#', 'G', 'A', 'Bb']);
+  assert.match(renderKey(r), /Fa♯ en lugar de Fa, y Si♭ en lugar de Si/);
+  assert.match(plainText(renderKey(r)), /séptima nota medio tono más baja/);
+  // La escala, con las dos notas que cambian marcadas, y los botones.
+  const modes = renderModes(r);
+  assert.match(modes, /Escucha el color lidio dominante/);
+  assert.match(modes, /<span class="char">Fa♯<\/span><span class="">Sol<\/span><span class="">La<\/span><span class="char">Si♭<\/span>/);
+  assert.match(modes, /data-action="mode-compare">▶ Oír la diferencia con Do mayor/);
+  assert.match(modes, /las notas marcadas son las que cambian/);
+  // El Do7 es de casa, pero no de Do mayor: su Si♭ se marca y se explica.
+  assert.equal(r.items[0].kind, 'modal');
+  assert.equal(r.items[0].fn, 'T');
+  assert.match(plainText(renderDetail(r.items[0], r.key)), /✦ Algo especial.*lleva Si♭, que no es de su escala/s);
+  // El ejemplo típico lleva la séptima en la tónica.
+  assert.deepEqual(typicalProgression('lydian', 'C', 'lydian-dominant').map((c) => c.root + c.suffix), ['C7', 'D', 'C7', 'D']);
+});
+
+test('el lidio de siempre sigue siendo lidio', async () => {
+  const { keyName } = await import('../js/core/names.js');
+  setLatin(true);
+  for (const text of ['Domaj7 Re7 Domaj7 Re7', 'Do Re Do Re']) assert.equal(keyName(analyze(text).key), 'Do lidio', text);
+});
+
+test('un acorde con séptima de fuera de la tonalidad nunca pasa por diatónico', async () => {
+  const { renderDetail } = await import('../js/ui/render.js');
+  setLatin(true);
+  // En Sol mayor, el Do7 lleva Si♭: es un toque de color, y se dice cuál.
+  const r = analyze('Sol Do7 Sol Do7 Re Sol');
+  assert.equal(r.items[1].kind, 'color');
+  assert.match(plainText(renderDetail(r.items[1], r.key)), /su séptima \(Si♭\), no/);
+  // En un modo, el I7 del mixolidio lleva la nota del modo.
+  const mixo = analyze('Re7 Do Sol Re7');
+  assert.equal(mixo.items[0].kind, 'modal');
+  assert.match(plainText(renderDetail(mixo.items[0], mixo.key)), /lleva Do, la nota que distingue el modo/);
+});

@@ -75,7 +75,7 @@ export function chordName(chord) {
   return `${noteName(chord.root)} ${kind}${extra}`;
 }
 
-const VARIANT_NAMES = { 'phrygian-dominant': 'frigio dominante', 'harmonic-minor': 'menor armónica' };
+export const VARIANT_NAMES = { 'phrygian-dominant': 'frigio dominante', 'harmonic-minor': 'menor armónica', 'lydian-dominant': 'lidio dominante' };
 
 // 'Do mayor' (o 'C mayor'). Si la progresión es modal, el modo: 'La dórico'.
 export function keyName(key) {

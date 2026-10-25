@@ -180,12 +180,16 @@ function classifyChord(chord, key, next, prev) {
 
   // En un modo (key.modal), sus acordes son de casa aunque no lo sean del
   // mayor o el menor de siempre: el IV mayor del dórico, el ♭II del frigio.
+  // Si la séptima no es del mayor o el menor (el I7 del lidio dominante), se
+  // marca igual: es del modo, no de la tonalidad de siempre.
   const own = key.modal?.degrees.find((d) => d.st === st && triadMatches(chord.triad, d.triad));
   if (own && (!chord.seventh || chord.seventh === own.seventh)) {
     const plain = findDegree(st, chord, key.mode);
-    if (plain) return { ...base, fn: plain.fn, kind: 'diatonic', fit: 1 };
+    if (plain && (!chord.seventh || plain.sev.includes(chord.seventh))) return { ...base, fn: plain.fn, kind: 'diatonic', fit: 1 };
+    if (plain) return { ...base, fn: plain.fn, kind: 'modal', fit: 1 };
     // La tónica es la casa, aunque sea mayor en un modo menor (frigio dominante).
-    if (st === 0) return { ...base, fn: 'T', kind: 'diatonic', fit: 1 };
+    if (st === 0 && !chord.seventh) return { ...base, fn: 'T', kind: 'diatonic', fit: 1 };
+    if (st === 0) return { ...base, fn: 'T', kind: 'modal', fit: 1 };
     const fn = findDegree(st, chord, PARALLEL[key.mode])?.fn ?? MODAL_FN[st] ?? 'S';
     return { ...base, fn, kind: 'modal', fit: 1 };
   }

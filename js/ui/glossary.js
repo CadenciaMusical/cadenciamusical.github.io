@@ -299,6 +299,7 @@ export const GLOSSARY = [
 // Variantes con nombre propio, explicadas dentro de su modo.
 const MODE_VARIANTS = {
   phrygian: { match: 'frigio dominante', text: 'Si además el acorde de la tónica es mayor, se llama frigio dominante: el sonido del flamenco.' },
+  lydian: { match: 'lidio dominante', text: 'Si además la séptima nota baja medio tono, se llama lidio dominante: el acorde de casa lleva séptima, como una dominante que no tiene prisa por resolver, y suena a ensueño con un punto de blues.' },
   aeolian: { match: 'menor armónica', text: 'Si la séptima nota sube medio tono para tirar hacia la tónica (la sensible), se llama menor armónica.' },
 };
 

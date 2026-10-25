@@ -498,7 +498,7 @@ document.addEventListener('click', (e) => {
       break;
     }
     case 'mode-typical':
-      playList(typicalProgression(r.modes.main.id, r.modes.main.tonic));
+      playList(typicalProgression(r.modes.main.id, r.modes.main.tonic, r.modes.main.variant));
       break;
   }
 });
