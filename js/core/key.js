@@ -12,10 +12,13 @@
 //     va y vuelve, como Em F G F) el último acorde no es un final: todo el
 //     peso va al primero;
 //   - un acorde que se mantiene varios compases seguidos (aunque cambie el
-//     bajo, como Am Am/G Am/F♯) también pesa más si es la tónica.
+//     bajo, como Am Am/G Am/F♯) también pesa más si es la tónica;
+//   - una nota pedal (el bajo se queda en la misma nota mientras los acordes
+//     cambian, como G C/G G F/G) decide la casa: suma mucho a su tonalidad.
 // La confianza depende de la distancia entre la primera y la segunda. Si hay
 // una duda razonable, la segunda se ofrece como alternativa (ver detectKey).
 
+import { Note } from '../../vendor/tonal.mjs';
 import { classify } from './classify.js';
 
 const mod12 = (n) => ((n % 12) + 12) % 12;
@@ -30,6 +33,7 @@ const BONUS = {
   blues: 3.0,
   loopFirst: 3.5,
   held: 0.6,
+  pedal: 2.5,
 };
 
 const TONIC_NAMES = {
@@ -52,6 +56,22 @@ function tonicName(pc, mode, chords) {
   if (sharps && !flats) return TONIC_NAMES.sharps[pc];
   if (flats && !sharps) return TONIC_NAMES.flats[pc];
   return TONIC_NAMES[mode][pc];
+}
+
+const bassPc = (c) => (c.bass ? Note.chroma(c.bass) : c.pc);
+
+// La nota pedal: si todos los acordes (o todos menos uno, a partir de cinco)
+// tienen la misma nota en el bajo y por encima cambian, su clase de altura.
+// Si no, null.
+export function pedalOf(chords) {
+  const n = chords.length;
+  if (n < 3) return null;
+  const counts = new Map();
+  for (const c of chords) counts.set(bassPc(c), (counts.get(bassPc(c)) ?? 0) + 1);
+  const [pc, count] = [...counts].sort((a, b) => b[1] - a[1])[0];
+  if (count < n - Math.floor(n / 5)) return null;
+  const above = new Set(chords.filter((c) => bassPc(c) === pc).map((c) => `${c.pc} ${c.triad}`));
+  return above.size >= 2 ? pc : null;
 }
 
 const sameChord = (a, b) => a.pc === b.pc && a.triad === b.triad && a.seventh === b.seventh && a.bass === b.bass;
@@ -127,6 +147,7 @@ export function scoreKey(chords, key) {
     if (isTonicChord(chords[0], key)) score += BONUS.first;
   }
   for (const run of heldRuns(chords)) if (isTonicChord(run.chord, key)) score += BONUS.held * run.extra;
+  if (pedalOf(chords) === key.pc) score += BONUS.pedal;
   if (chords.some((c) => isTonicChord(c, key))) score += BONUS.present;
   if (chords.some((c) => isDominantChord(c, key))) score += BONUS.dominant;
   else if (key.mode === 'minor' && !chords.some((c) => isLeadingToneChord(c, key))) score += BONUS.noLeadingTone;

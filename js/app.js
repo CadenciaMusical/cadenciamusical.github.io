@@ -435,6 +435,9 @@ document.addEventListener('click', (e) => {
     case 'play-bass':
       playNotes(r.bassLines[Number(btn.dataset.which)].midis, { step: 0.55 });
       break;
+    case 'play-pedal':
+      playNotes(r.pedal.midis, { step: 0.55 });
+      break;
     case 'use-alt':
       state.forcedKey = r.alternative;
       run();

@@ -11,7 +11,7 @@
 
 import { Interval, Note } from '../../vendor/tonal.mjs';
 import { parseChord } from './parser.js';
-import { isLoopLike, resolvesElsewhere } from './key.js';
+import { isLoopLike, pedalOf, resolvesElsewhere } from './key.js';
 
 const mod12 = (n) => ((n % 12) + 12) % 12;
 
@@ -204,7 +204,7 @@ export function detectModes(chords, key = null) {
 //     acabar en ella, que coincida con la tonalidad o que suene en la mitad
 //     de los acordes o más. En un bucle, empezar en ella cuenta doble: es
 //     adonde vuelve en cada vuelta (salvo que una dominante lleve a otro
-//     acorde, como el G → C de F G C G).
+//     acorde, como el G → C de F G C G). Una nota pedal en ella es otra pista.
 const PLAIN = new Set(['ionian', 'aeolian']);
 
 export function isClearlyModal(m, chords, key) {
@@ -224,6 +224,7 @@ export function isClearlyModal(m, chords, key) {
     home(chords[0]) && isLoopLike(chords) && !resolvesElsewhere(chords),
     home(chords[chords.length - 1]),
     key?.pc === m.pc,
+    pedalOf(chords) === m.pc,
     chords.filter(home).length >= chords.length / 2,
   ];
   return clues.filter(Boolean).length >= 2;

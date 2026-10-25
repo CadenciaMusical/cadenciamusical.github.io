@@ -376,6 +376,12 @@ export function bassLineText(line) {
   return `El bajo ${moves} nota a nota: ${notes}. ${why}`;
 }
 
+// La nota pedal (ver pedalLine en core/bass.js).
+export function pedalText(pedal) {
+  const note = noteName(pedal.note);
+  return `El bajo se queda en ${note} mientras los acordes cambian por encima. Se llama nota pedal, como la nota que se deja pisada con el pie en un órgano. El ${note} del bajo no se mueve y hace de ancla: por eso ${note} suena a casa, aunque los acordes de arriba se alejen. Cuando un acorde no encaja del todo con ella, se nota una tensión suave, que se relaja al volver al acorde de ${note}.`;
+}
+
 // Un acorde con barra (ver inversionOf en core/bass.js).
 export function inversionText(item) {
   const { chord, inversion } = item;

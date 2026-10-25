@@ -1,11 +1,11 @@
 // Punto de entrada del análisis: texto → acordes → tonalidad → grados y funciones.
 
 import { parseProgression } from './parser.js';
-import { detectKey, scoreKey, isRelative, loopPeriod } from './key.js';
+import { detectKey, scoreKey, isRelative, loopPeriod, pedalOf } from './key.js';
 import { classify, classifyAlone } from './classify.js';
 import { findMatches, relativeOf } from './matcher.js';
 import { detectModes, isClearlyModal, modeDegrees } from './modes.js';
-import { bassLines, inversionOf } from './bass.js';
+import { bassLines, inversionOf, pedalLine } from './bass.js';
 
 // forcedKey: { pc, mode, tonic } si el usuario ha elegido la tonalidad a mano.
 export function analyze(text, { forcedKey = null } = {}) {
@@ -16,7 +16,7 @@ export function analyze(text, { forcedKey = null } = {}) {
   const rests = [];
   parsed.reduce((n, c) => (c.rest ? (rests.push(n), n) : n + (c.ok ? 1 : 0)), 0);
   const detection = detectKey(chords);
-  if (!detection) return { parsed, chords, errors, key: null, items: [], progressions: [], cadences: [], modes: null, modal: false, loop: null, bassLines: [], rests };
+  if (!detection) return { parsed, chords, errors, key: null, items: [], progressions: [], cadences: [], modes: null, modal: false, loop: null, bassLines: [], pedal: null, rests };
 
   let { key, alternative, confidence } = detection;
   if (forcedKey) {
@@ -34,7 +34,7 @@ export function analyze(text, { forcedKey = null } = {}) {
       parsed, chords, errors, key, confidence: 'baja', forced: false, alternative: null, alternativeIsRelative: false,
       unclear: true,
       items: chords.map((chord) => ({ chord, ...classifyAlone() })),
-      progressions: [], cadences: [], modes: null, modal: false, loop: null, bassLines: [], rests,
+      progressions: [], cadences: [], modes: null, modal: false, loop: null, bassLines: [], pedal: null, rests,
     };
   }
 
@@ -80,6 +80,7 @@ export function analyze(text, { forcedKey = null } = {}) {
     modal,
     loop,
     bassLines: bassLines(chords, key),
+    pedal: pedalLine(chords, pedalOf(chords)),
     rests,
   };
 }

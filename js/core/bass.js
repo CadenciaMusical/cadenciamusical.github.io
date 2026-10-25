@@ -73,3 +73,11 @@ export function inversionOf(chord, next = null) {
   const connects = Boolean(next) && stepBetween(bassPc(chord), bassPc(next)) !== 0;
   return { type, connects };
 }
+
+// La nota pedal (ver pedalOf en core/key.js): { note, midis }, o null.
+//   note: como la escribió el usuario. midis: el bajo de cada acorde, entre Mi1 y Re♯2.
+export function pedalLine(chords, pc) {
+  if (pc === null) return null;
+  const note = chords.map(bassNote).find((n) => Note.chroma(n) === pc);
+  return { note, midis: chords.map((c) => 40 + mod12(bassPc(c) - 4)) };
+}

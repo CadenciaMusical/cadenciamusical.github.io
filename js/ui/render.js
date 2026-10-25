@@ -5,7 +5,7 @@ import { parseChord } from '../core/parser.js';
 import { defaultTonic, isTonicChord } from '../core/key.js';
 import { convertNotation, transposeChord } from '../core/transpose.js';
 import {
-  FUNCTIONS, KEY_TEXT, loopText, unclearKeyText, bassLineTitle, bassLineText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
+  FUNCTIONS, KEY_TEXT, loopText, unclearKeyText, bassLineTitle, bassLineText, pedalText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
   MODE_INFO, VARIANT_INFO, MODES_TEXT, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText, modeListenTitle,
 } from './texts.js';
 import { GLOSSARY, linkTerms, termText } from './glossary.js';
@@ -212,7 +212,8 @@ export function renderProgressionCard(result) {
   const cadence = finalCadence(result);
   const { loop } = result;
   const bass = result.bassLines ?? [];
-  if (!progressions.length && !cadence && !loop && !bass.length) return '';
+  const { pedal } = result;
+  if (!progressions.length && !cadence && !loop && !bass.length && !pedal) return '';
 
   const blocks = progressions.map(
     (m, i) => `
@@ -252,6 +253,18 @@ export function renderProgressionCard(result) {
         </div>
       </div>`);
   });
+  if (pedal) {
+    blocks.push(`
+      <div class="match">
+        <p class="eyebrow">El bajo</p>
+        <h2 class="match-name">Nota pedal</h2>
+        <p>${linkTerms(pedalText(pedal))}</p>
+        <div class="button-row">
+          <button type="button" class="btn secondary small" data-action="play-pedal">▶ Solo el bajo</button>
+          ${playRange({ start: 0, end: result.chords.length - 1 }, 'Con los acordes')}
+        </div>
+      </div>`);
+  }
   if (cadence) {
     blocks.push(`
       <div class="match">

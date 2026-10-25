@@ -437,3 +437,29 @@ test('los bucles de siempre no cambian', () => {
   const r = expectKey('Am F C G', 'A', 'minor');
   assert.equal(`${r.alternative.tonic} ${r.alternative.mode}`, 'C major');
 });
+
+test('nota pedal: el bajo que no se mueve decide la casa', async () => {
+  const { renderProgressionCard } = await import('../js/ui/render.js');
+  const { keyName, setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  for (const [text, name, roman, note] of [
+    ['Sol Do/Sol Sol Fa/Sol', 'Sol mixolidio', 'I IV I ♭VII', 'G'],
+    ['Re Do/Re Sol/Re Re', 'Re mixolidio', 'I ♭VII IV I', 'D'],
+    ['Do Fa/Do Sol/Do Do', 'Do mayor', 'I IV V I', 'C'],
+  ]) {
+    const r = analyze(text);
+    assert.equal(keyName(r.key), name, text);
+    assert.equal(romans(r), roman, text);
+    assert.equal(r.pedal.note, note, text);
+    assert.ok(r.pedal.midis.every((m) => m === r.pedal.midis[0]), text);
+    const html = renderProgressionCard(r);
+    assert.match(html, /<h2 class="match-name">Nota pedal<\/h2>/, text);
+    const tonic = name.split(' ')[0];
+    assert.match(html, new RegExp(`El bajo se queda en ${tonic} mientras los acordes cambian por encima`), text);
+    assert.match(html, /data-action="play-pedal">▶ Solo el bajo/, text);
+  }
+  // Un acorde que se mantiene no es una nota pedal: arriba no cambia nada.
+  assert.equal(analyze('Am Am Am F').pedal, null);
+  assert.equal(analyze('C G Am F').pedal, null);
+  setLatin(false);
+});
