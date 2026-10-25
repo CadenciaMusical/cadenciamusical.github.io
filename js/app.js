@@ -154,7 +154,7 @@ function keepOpen(container, html) {
 function markErrors() {
   const text = els.input.value;
   const spans = tokenSpans(text);
-  const bad = spans.filter((_, i) => state.parsed[i] && !state.parsed[i].ok);
+  const bad = spans.filter((_, i) => state.parsed[i] && !state.parsed[i].ok && !state.parsed[i].rest);
   els.input.setAttribute('aria-invalid', String(bad.length > 0));
   if (bad.length === 0) {
     els.marks.textContent = '';
@@ -185,7 +185,7 @@ const originalKeyName = () => (state.original ? keyName(state.original.key) : nu
 
 function renderGrid() {
   const r = state.result;
-  els.grid.innerHTML = renderChords(r.items, { selected: state.selected, marked: progressionRanges(r), turns: progressionTurns(r) });
+  els.grid.innerHTML = renderChords(r.items, { selected: state.selected, marked: progressionRanges(r), turns: progressionTurns(r), rests: r.rests });
   const progression = renderProgressionCard(r);
   els.progressionCard.hidden = !progression;
   els.progressionCard.innerHTML = progression;
@@ -259,7 +259,20 @@ function playList(chords, { highlightGrid = false, offset = 0 } = {}) {
 
 function playProgression() {
   if (state.playing) return stopPlayback();
-  playList(state.result.chords, { highlightGrid: true });
+  // Con un silencio (null) donde estaba cada «N.C.».
+  const { chords, rests } = state.result;
+  const list = [];
+  const index = [];
+  chords.forEach((c, i) => {
+    for (const r of rests) if (r === i) list.push(null), index.push(null);
+    list.push(c), index.push(i);
+  });
+  for (const r of rests) if (r === chords.length) list.push(null), index.push(null);
+  setPlaying(true);
+  playChords(list, {
+    onChord: (i) => highlight(index[i]),
+    onEnd: () => setPlaying(false),
+  });
 }
 
 // Las notas de la posición de guitarra que se está viendo, de grave a agudo.

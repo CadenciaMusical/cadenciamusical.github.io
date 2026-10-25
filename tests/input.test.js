@@ -63,3 +63,46 @@ test('si ya acaba en la casa de una opción, no se ofrece «Terminar en» esa', 
   assert.doesNotMatch(html, /Terminar en Fa/);
   assert.match(html, /terminando en Do y compáralo con cómo acaba ahora/);
 });
+
+test('separadores de cancionero: «-», «–» y «|»', () => {
+  for (const text of ['C - G - Am - F', 'Do – Sol – Lam – Fa', 'C | G | Am | F', 'C — G — Am — F']) {
+    const r = analyze(text);
+    assert.equal(r.errors.length, 0, text);
+    assert.equal(r.items.map((i) => i.roman).join(' '), 'I V vi IV', text);
+    assert.ok(r.progressions.some((m) => m.id === 'pop'), text);
+  }
+  // El guion de «C-» (menor) sigue siendo parte del acorde.
+  assert.equal(parseProgression('C- G')[0].triad, 'm');
+});
+
+test('«%» repite el acorde anterior', async () => {
+  const { transposeText, convertNotation } = await import('../js/core/transpose.js');
+  const r = analyze('C % F G');
+  assert.equal(r.errors.length, 0);
+  assert.equal(r.items.map((i) => i.roman).join(' '), 'I I IV V');
+  assert.equal(r.chords[1].root, 'C');
+  // Se queda como «%» al transportar o cambiar de cifrado.
+  assert.equal(transposeText('C % F G', { pc: 0, mode: 'major', tonic: 'C' }, { pc: 2, mode: 'major', tonic: 'D' }), 'D % G A');
+  assert.equal(convertNotation('C % F G', 'latin'), 'Do % Fa Sol');
+  // Sin acorde antes, se avisa.
+  setLatin(true);
+  const html = renderErrors(parseProgression('% C'));
+  setLatin(false);
+  assert.match(html, /repite el acorde anterior, pero aquí no hay ninguno antes/);
+});
+
+test('«N.C.» es un silencio: se muestra, pero no cuenta para el análisis', async () => {
+  const { renderChords } = await import('../js/ui/render.js');
+  const r = analyze('C N.C. G C');
+  assert.equal(r.errors.length, 0);
+  assert.equal(r.items.map((i) => i.roman).join(' '), 'I V I');
+  assert.deepEqual(r.rests, [1]);
+  assert.equal(renderErrors(r.parsed), '');
+  for (const text of ['C NC G C', 'C n.c. G C', 'C N.C G C']) assert.deepEqual(analyze(text).rests, [1], text);
+  // En la cuadrícula, entre Do y Sol, una tarjeta de silencio que no se toca.
+  const html = renderChords(r.items, { rests: r.rests });
+  assert.match(html, /data-index="0"[\s\S]*class="chord rest[\s\S]*Silencio[\s\S]*data-index="1"/);
+  assert.equal(html.match(/data-index=/g).length, 3);
+  // Al principio y al final también.
+  assert.deepEqual(analyze('N.C. C G C N.C.').rests, [0, 3]);
+});

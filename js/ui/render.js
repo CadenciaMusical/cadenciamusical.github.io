@@ -26,13 +26,14 @@ const fnKey = (fn) => fn ?? 'X';
 // se sugiere el más parecido, en el cifrado de la página; un toque lo cambia
 // (data-index: qué trozo). Sin nada parecido, se ofrece quitarlo.
 export function renderErrors(parsed) {
-  const bad = parsed.map((c, index) => ({ ...c, index })).filter((c) => !c.ok);
+  const bad = parsed.map((c, index) => ({ ...c, index })).filter((c) => !c.ok && !c.rest);
   if (bad.length === 0) return '';
   const notation = isLatin() ? 'latin' : 'american';
   const fix = (index, to, label) =>
     `<button type="button" class="chip suggestion" data-index="${index}" data-to="${escapeHtml(to)}">${escapeHtml(label)}</button>`;
   const items = bad.map((e) => {
     const [best] = e.suggestions;
+    if (e.input === '%') return `<p class="error"><strong>«%»</strong> repite el acorde anterior, pero aquí no hay ninguno antes. ${fix(e.index, '', 'Quitarlo')}</p>`;
     const tip = best
       ? `¿Querías decir ${fix(e.index, convertNotation(best, notation), convertNotation(best, notation))}?`
       : `No se parece a ningún acorde que conozca. ${fix(e.index, '', 'Quitarlo')} o escribe algo como ${isLatin() ? '«Lam» o «Sol7»' : '«Am» o «G7»'}.`;
@@ -126,7 +127,16 @@ function cardSymbol(label) {
 
 // marked: posiciones que forman una progresión conocida (ver progressionRanges).
 // turns: dónde empieza cada vuelta de una progresión repetida (ver progressionTurns).
-export function renderChords(items, { selected = null, marked = new Set(), turns = new Map() } = {}) {
+// rests: antes de qué acordes va un silencio (result.rests); se dibuja
+// como una tarjeta que no se puede tocar.
+const REST_CARD = `
+        <div class="chord rest fn-X" aria-label="Silencio, sin acorde">
+          <span class="symbol">N.C.</span>
+          <span class="badge">Silencio</span>
+        </div>`;
+
+export function renderChords(items, { selected = null, marked = new Set(), turns = new Map(), rests = [] } = {}) {
+  const restsAt = (i) => REST_CARD.repeat(rests.filter((r) => r === i).length);
   return items
     .map((item, i) => {
       const f = fnKey(item.fn);
@@ -141,7 +151,8 @@ export function renderChords(items, { selected = null, marked = new Set(), turns
           <span class="badge">${FUNCTIONS[f].name}</span>
         </button>`;
     })
-    .join('');
+    .map((html, i) => restsAt(i) + html)
+    .join('') + restsAt(items.length);
 }
 
 // --- Progresión conocida y cadencia final ---

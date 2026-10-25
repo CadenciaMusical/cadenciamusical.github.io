@@ -15,7 +15,8 @@ export function tokenize(text) {
   return text
     .split(/[\s,;|–—]+|-(?=[a-z])/i)
     .map((t) => t.trim())
-    .filter(Boolean);
+    // Un guion o una barra sueltos («C - G») también separan.
+    .filter((t) => t && !/^[-–—|]+$/.test(t));
 }
 
 // Cada trozo con su posición en el texto, para marcar uno en la casilla.
@@ -130,16 +131,35 @@ export function parseChord(input, { allCaps = false } = {}) {
   return { ok: false, input, suggestions: suggest(input) };
 }
 
+// Símbolos de cancionero: «N.C.» (sin acorde, un silencio) y «%» (otra vez
+// el acorde anterior).
+const NO_CHORD_RE = /^n\.?c\.?$/i;
+
+// Cada trozo, leído. «%» es una copia del acorde anterior (repeat: true);
+// «N.C.», { ok: false, rest: true }: no es un acorde, pero tampoco un error.
 export function parseProgression(text) {
   // Si todo está en mayúsculas (bloqueo de mayúsculas), «LAM» es La menor.
-  const allCaps = /[A-Z]/.test(text) && !/[a-z]/.test(text);
-  return tokenize(text).map((t) => parseChord(t, { allCaps }));
+  const allCaps = /[A-Z]/.test(text.replace(NO_CHORD_RE, '')) && !/[a-z]/.test(text);
+  const out = [];
+  let previous = null;
+  for (const t of tokenize(text)) {
+    if (NO_CHORD_RE.test(t)) {
+      out.push({ ok: false, rest: true, input: t });
+    } else if (t === '%') {
+      out.push(previous ? { ...previous, input: t, repeat: true } : { ok: false, input: t, suggestions: [] });
+    } else {
+      const chord = parseChord(t, { allCaps });
+      if (chord.ok) previous = chord;
+      out.push(chord);
+    }
+  }
+  return out;
 }
 
 // El cifrado en que está escrito todo lo reconocido: 'latin', 'american', o
 // null si se mezclan (o no hay acordes).
 export function writtenNotation(parsed) {
-  const used = new Set(parsed.filter((c) => c.ok).map((c) => c.notation));
+  const used = new Set(parsed.filter((c) => c.ok && !c.repeat).map((c) => c.notation));
   return used.size === 1 ? [...used][0] : null;
 }
 

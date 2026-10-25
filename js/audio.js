@@ -102,9 +102,13 @@ function voice(chord, previous) {
   return { bass, upper };
 }
 
+// null es un silencio.
 export function voiceProgression(chords) {
   const out = [];
-  for (const c of chords) out.push(voice(c, out[out.length - 1]));
+  let previous;
+  for (const c of chords) {
+    out.push(c ? (previous = voice(c, previous)) : null);
+  }
   return out;
 }
 
@@ -126,7 +130,7 @@ export function stop() {
   if (ctx && bus) newBus();
 }
 
-// Reproduce una lista de acordes. onChord(i) se llama cuando empieza cada uno;
+// Reproduce una lista de acordes (null, un silencio). onChord(i) se llama cuando empieza cada uno;
 // onEnd() al terminar. Devuelve la duración total en segundos.
 export function playChords(chords, { secondsPerChord = 1.3, onChord, onEnd } = {}) {
   ensureContext();
@@ -135,6 +139,7 @@ export function playChords(chords, { secondsPerChord = 1.3, onChord, onEnd } = {
   const voicings = voiceProgression(chords);
   const start = ctx.currentTime + 0.08;
   voicings.forEach((v, i) => {
+    if (!v) return;
     const t = start + i * secondsPerChord;
     const last = i === voicings.length - 1;
     scheduleChord(dest, v, t, last ? secondsPerChord * 1.6 : secondsPerChord * 0.95);

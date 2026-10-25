@@ -48,13 +48,14 @@ export function transposeChord(chord, from, to) {
 }
 
 // Cambia cada acorde de un texto con fn(acorde) y deja igual todo lo demás:
-// lo que no se reconoce como acorde y los separadores («|», comas…).
+// lo que no se reconoce como acorde, los separadores («|», comas…), «%» y «N.C.».
 function mapChords(text, fn) {
   const chords = parseProgression(text);
   let out = '';
   let pos = 0;
   tokenSpans(text).forEach(({ token, start, end }, i) => {
-    out += text.slice(pos, start) + (chords[i].ok ? fn(chords[i]) : token);
+    // «%» se queda como está: repite el anterior, ya cambiado.
+    out += text.slice(pos, start) + (chords[i].ok && !chords[i].repeat ? fn(chords[i]) : token);
     pos = end;
   });
   return out + text.slice(pos);

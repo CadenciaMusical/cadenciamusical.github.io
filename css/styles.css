@@ -441,6 +441,8 @@ details summary {
 /* Acorde especial (prestado, dominante secundaria…): una estrella en la esquina. */
 .chord .star { position: absolute; top: 4px; right: 8px; color: var(--fn); font-size: 0.85rem; line-height: 1; }
 .chord.selected { border-color: var(--fn); border-top-width: 6px; }
+/* «N.C.»: un silencio, sin acorde. */
+.chord.rest { border-style: dashed; cursor: default; color: var(--muted); }
 .chord.playing { transform: translateY(-3px); box-shadow: 0 0 0 3px var(--fn); }
 
 .fn-T { --fn: var(--fn-T); --fn-bg: var(--fn-T-bg); }

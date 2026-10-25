@@ -11,9 +11,12 @@ import { bassLines, inversionOf } from './bass.js';
 export function analyze(text, { forcedKey = null } = {}) {
   const parsed = parseProgression(text);
   const chords = parsed.filter((c) => c.ok);
-  const errors = parsed.filter((c) => !c.ok);
+  const errors = parsed.filter((c) => !c.ok && !c.rest);
+  // Dónde van los silencios («N.C.»): antes de qué acorde (su posición entre los acordes).
+  const rests = [];
+  parsed.reduce((n, c) => (c.rest ? (rests.push(n), n) : n + (c.ok ? 1 : 0)), 0);
   const detection = detectKey(chords);
-  if (!detection) return { parsed, chords, errors, key: null, items: [], progressions: [], cadences: [], modes: null, modal: false, loop: null, bassLines: [] };
+  if (!detection) return { parsed, chords, errors, key: null, items: [], progressions: [], cadences: [], modes: null, modal: false, loop: null, bassLines: [], rests };
 
   let { key, alternative, confidence } = detection;
   if (forcedKey) {
@@ -31,7 +34,7 @@ export function analyze(text, { forcedKey = null } = {}) {
       parsed, chords, errors, key, confidence: 'baja', forced: false, alternative: null, alternativeIsRelative: false,
       unclear: true,
       items: chords.map((chord) => ({ chord, ...classifyAlone() })),
-      progressions: [], cadences: [], modes: null, modal: false, loop: null, bassLines: [],
+      progressions: [], cadences: [], modes: null, modal: false, loop: null, bassLines: [], rests,
     };
   }
 
@@ -77,6 +80,7 @@ export function analyze(text, { forcedKey = null } = {}) {
     modal,
     loop,
     bassLines: bassLines(chords, key),
+    rests,
   };
 }
 
