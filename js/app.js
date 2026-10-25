@@ -419,6 +419,9 @@ document.addEventListener('click', (e) => {
       playList(r.chords.slice(start, end + 1), { highlightGrid: true, offset: start });
       break;
     }
+    case 'play-bass':
+      playNotes(r.bassLines[Number(btn.dataset.which)].midis, { step: 0.55 });
+      break;
     case 'use-alt':
       state.forcedKey = r.alternative;
       run();

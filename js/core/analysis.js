@@ -5,6 +5,7 @@ import { detectKey, scoreKey, isRelative, loopPeriod } from './key.js';
 import { classify, classifyAlone } from './classify.js';
 import { findMatches, relativeOf } from './matcher.js';
 import { detectModes, isClearlyModal, modeDegrees } from './modes.js';
+import { bassLines, inversionOf } from './bass.js';
 
 // forcedKey: { pc, mode, tonic } si el usuario ha elegido la tonalidad a mano.
 export function analyze(text, { forcedKey = null } = {}) {
@@ -12,7 +13,7 @@ export function analyze(text, { forcedKey = null } = {}) {
   const chords = parsed.filter((c) => c.ok);
   const errors = parsed.filter((c) => !c.ok);
   const detection = detectKey(chords);
-  if (!detection) return { parsed, chords, errors, key: null, items: [], progressions: [], cadences: [], modes: null, modal: false, loop: null };
+  if (!detection) return { parsed, chords, errors, key: null, items: [], progressions: [], cadences: [], modes: null, modal: false, loop: null, bassLines: [] };
 
   let { key, alternative, confidence } = detection;
   if (forcedKey) {
@@ -30,7 +31,7 @@ export function analyze(text, { forcedKey = null } = {}) {
       parsed, chords, errors, key, confidence: 'baja', forced: false, alternative: null, alternativeIsRelative: false,
       unclear: true,
       items: chords.map((chord) => ({ chord, ...classifyAlone() })),
-      progressions: [], cadences: [], modes: null, modal: false, loop: null,
+      progressions: [], cadences: [], modes: null, modal: false, loop: null, bassLines: [],
     };
   }
 
@@ -47,6 +48,9 @@ export function analyze(text, { forcedKey = null } = {}) {
   }
 
   const items = chords.map((chord, i) => ({ chord, ...classify(chord, key, chords[i + 1] ?? null, chords[i - 1] ?? null) }));
+  items.forEach((item, i) => {
+    item.inversion = inversionOf(item.chord, chords[i + 1] ?? null);
+  });
   // Una cadena de °7 en paralelo (F°7 G°7 Cmaj7) va hasta el primer acorde que no lo es.
   items.forEach((item, i) => {
     if (item.passing?.parallel) item.passing.until = chords.slice(i + 1).find((c) => c.seventh !== 'dim7') ?? null;
@@ -72,6 +76,7 @@ export function analyze(text, { forcedKey = null } = {}) {
     modes,
     modal,
     loop,
+    bassLines: bassLines(chords, key),
   };
 }
 

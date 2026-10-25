@@ -17,6 +17,7 @@ const ASSETS = [
   'js/app.js',
   'js/audio.js',
   'js/core/analysis.js',
+  'js/core/bass.js',
   'js/core/build.js',
   'js/core/catalog.js',
   'js/core/classify.js',

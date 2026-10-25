@@ -260,6 +260,18 @@ export const GLOSSARY = [
     },
   },
   {
+    id: 'inversion',
+    term: 'Inversión',
+    match: ['inversiones', 'inversión', 'en el bajo'],
+    text: () => `Un acorde con otra de sus notas en el bajo, en lugar de su raíz. Se escribe con una barra: ${sym('C')}/${noteName('E')} es ${sym('C')} con ${noteName('E')} abajo. Suena al mismo acorde, pero más ligero, y sirve para que el bajo vaya por pasos cortos de un acorde al siguiente.`,
+    example: (k, label) => {
+      const I = tonicChord(k);
+      const bass = (c, i) => parseChord(`${c.root}${c.suffix}/${c.notes[i]}`);
+      const chords = [I, bass(I, 1), bass(I, 2)];
+      return { chords, caption: `${chords.map(label).join(', ')}: el mismo acorde con la raíz, la tercera y la quinta en el bajo.` };
+    },
+  },
+  {
     id: 'transportar',
     term: 'Transportar',
     match: ['transportar', 'transportada', 'transportado'],

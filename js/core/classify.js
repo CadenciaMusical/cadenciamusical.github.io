@@ -1,7 +1,7 @@
 // Qué papel tiene un acorde dentro de una tonalidad concreta.
 
 import { Note } from '../../vendor/tonal.mjs';
-import { DEGREES, PARALLEL, romanFor } from './theory.js';
+import { DEGREES, PARALLEL, romanFor, stepBetween } from './theory.js';
 
 const mod12 = (n) => ((n % 12) + 12) % 12;
 
@@ -24,14 +24,6 @@ const targetDegree = (st, mode) => DEGREES[mode].find((d) => d.st === st && d.tr
 const MODAL_FN = { 1: 'D' };
 
 const isDominantShape = (c) => (c.triad === 'M' && (!c.seventh || c.seventh === '7')) || (c.triad === 'sus' && c.seventh === '7');
-
-// Distancia con signo si dos raíces van por grado conjunto (±1 o ±2 semitonos); si no, 0.
-function stepBetween(from, to) {
-  const d = mod12(to - from);
-  if (d === 1 || d === 2) return d;
-  if (d === 10 || d === 11) return d - 12;
-  return 0;
-}
 
 // El °7 tiene sus cuatro notas a la misma distancia (tres semitonos), así
 // que cualquiera puede hacer de raíz: F°7 = A♭°7 = B°7 = D°7. Se prueba

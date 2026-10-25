@@ -116,3 +116,18 @@ test('el cuarto dórico lleva ✦ y se explica', async () => {
   assert.match(renderDetail(r.items[1], r.key), /Con Rem en su lugar/);
   setLatin(false);
 });
+
+test('la tarjeta del bajo, con botón para oír solo el bajo', async () => {
+  const { renderDetail } = await import('../js/ui/render.js');
+  setLatin(true);
+  const r = analyze('Do Sol/Si Lam Lam/Sol Fa Do/Mi Rem7 Sol');
+  const html = renderProgressionCard(r);
+  assert.match(html, /La del pop/);
+  assert.match(html.replace(/<[^>]+>/g, ''), /El bajo baja nota a nota: Do – Si – La – Sol – Fa – Mi – Re\./);
+  assert.match(html, /data-action="play-bass" data-which="0">▶ Solo el bajo/);
+  assert.match(renderProgressionCard(analyze('Lam Lam/Sol Lam/Fa# Fa')), /Bajo cromático descendente/);
+  // En el detalle de un acorde con barra, la inversión.
+  assert.match(renderDetail(r.items[1], r.key), /Sol con Si <button[^>]*>en el bajo<\/button>: suena a Sol, pero más ligero/);
+  assert.doesNotMatch(renderDetail(r.items[0], r.key), /en el bajo:/);
+  setLatin(false);
+});

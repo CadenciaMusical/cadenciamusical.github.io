@@ -354,3 +354,41 @@ test('la alternativa es la relativa, la paralela o la del primer o el último ac
   assert.equal(alt('Dosus2 Fasus2'), 'C major');
   assert.equal(alt('F G Am'), 'C major');
 });
+
+// --- El bajo ---
+
+test('líneas de bajo por grados conjuntos', () => {
+  const pop = analyze('Do Sol/Si Lam Lam/Sol Fa Do/Mi Rem7 Sol');
+  assert.ok(pop.progressions.some((m) => m.id === 'pop'));
+  assert.equal(pop.bassLines.length, 1);
+  const [down] = pop.bassLines;
+  assert.deepEqual([down.start, down.end, down.dir, down.chromatic], [0, 6, 'down', false]);
+  assert.deepEqual(down.notes, ['C', 'B', 'A', 'G', 'F', 'E', 'D']);
+  assert.deepEqual(down.midis.map((m, i, all) => m - (all[i - 1] ?? m)), [0, -1, -2, -2, -2, -1, -2]);
+
+  const [lament] = analyze('Lam Lam/Sol Lam/Fa# Fa').bassLines;
+  assert.deepEqual([lament.dir, lament.chromatic], ['down', true]);
+  assert.deepEqual(lament.notes, ['A', 'G', 'F#', 'F']);
+
+  // Sin barras también: la andaluza baja La – Sol – Fa – Mi.
+  assert.deepEqual(analyze('Am G F E').bassLines[0].notes, ['A', 'G', 'F', 'E']);
+  assert.equal(analyze('C D E F G').bassLines[0].dir, 'up');
+  // Menos de cuatro acordes, o sin grados conjuntos: nada.
+  assert.equal(analyze('C G/B Am').bassLines.length, 0);
+  assert.equal(analyze('C G Am F').bassLines.length, 0);
+});
+
+test('las inversiones, en lenguaje llano', async () => {
+  const { inversionText } = await import('../js/ui/texts.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  const r = analyze('Do Sol/Si Lam Lam/Sol Fa Do/Mi Rem7 Sol');
+  assert.equal(inversionText(r.items[1]), 'Sol con Si en el bajo: suena a Sol, pero más ligero, y conecta mejor con el acorde siguiente. Es la primera inversión: la tercera del acorde va abajo.');
+  assert.equal(r.items[0].inversion, null);
+  assert.equal(r.items[3].inversion.type, 'other');
+  const types = (text) => analyze(text).items.map((i) => i.inversion?.type ?? '-').join(' ');
+  assert.equal(types('Do Do/Sol Sol7 Do'), '- fifth - -');
+  assert.equal(types('Do7/Sib Fa/La'), 'seventh third');
+  assert.match(inversionText(analyze('Do Do/Sol Sol7 Do').items[1]), /segunda inversión/);
+  setLatin(false);
+});

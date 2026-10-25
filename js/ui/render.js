@@ -5,7 +5,7 @@ import { parseChord } from '../core/parser.js';
 import { defaultTonic, isTonicChord } from '../core/key.js';
 import { convertNotation, transposeChord } from '../core/transpose.js';
 import {
-  FUNCTIONS, KEY_TEXT, loopText, unclearKeyText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
+  FUNCTIONS, KEY_TEXT, loopText, unclearKeyText, bassLineTitle, bassLineText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
   MODE_INFO, VARIANT_INFO, MODES_TEXT, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText, modeListenTitle,
 } from './texts.js';
 import { GLOSSARY, linkTerms, termText } from './glossary.js';
@@ -200,7 +200,8 @@ export function renderProgressionCard(result) {
   const progressions = shownProgressions(result);
   const cadence = finalCadence(result);
   const { loop } = result;
-  if (!progressions.length && !cadence && !loop) return '';
+  const bass = result.bassLines ?? [];
+  if (!progressions.length && !cadence && !loop && !bass.length) return '';
 
   const blocks = progressions.map(
     (m, i) => `
@@ -224,6 +225,22 @@ export function renderProgressionCard(result) {
         ${playRange(cycle, `Escuchar una vuelta (${chordsIn(result, cycle, ' → ')})`)}
       </div>`);
   }
+  bass.forEach((line, i) => {
+    const where = line.start === 0 && line.end === result.chords.length - 1
+      ? 'En toda la progresión.'
+      : `En los acordes ${line.start + 1} a ${line.end + 1}.`;
+    blocks.push(`
+      <div class="match">
+        <p class="eyebrow">El bajo</p>
+        <h2 class="match-name">${bassLineTitle(line)}</h2>
+        <p>${linkTerms(bassLineText(line))}</p>
+        <p class="muted">${where}</p>
+        <div class="button-row">
+          <button type="button" class="btn secondary small" data-action="play-bass" data-which="${i}">▶ Solo el bajo</button>
+          ${playRange(line, 'Con los acordes')}
+        </div>
+      </div>`);
+  });
   if (cadence) {
     blocks.push(`
       <div class="match">
@@ -306,6 +323,7 @@ export function renderDetail(item, key, { instrument = 'piano', position = 0 } =
     ${listenButtons(item.chord, instrument, position)}
     <p><span class="badge fn-${f}">${fn.name} · ${fn.short}</span></p>
     <p>${linkTerms(fn.text)}</p>
+    ${item.inversion ? `<p>${linkTerms(inversionText(item))}</p>` : ''}
     ${extra ? `<div class="special"><p><strong>✦ Algo especial.</strong> ${linkTerms(extra)}</p>${compare}</div>` : ''}
     ${item.roman ? `<details class="explain">
       <summary>¿Qué significa «${item.roman}»?</summary>

@@ -61,3 +61,11 @@ export function romanFor(st, triad, seventh, mode) {
   if (triad === 'sus') out += 'sus';
   return out;
 }
+
+// Distancia con signo si dos notas van por grado conjunto (±1 o ±2 semitonos); si no, 0.
+export function stepBetween(from, to) {
+  const d = (((to - from) % 12) + 12) % 12;
+  if (d === 1 || d === 2) return d;
+  if (d === 10 || d === 11) return d - 12;
+  return 0;
+}

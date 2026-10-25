@@ -358,3 +358,39 @@ export function unclearKeyText(chords) {
     : '';
   return `${same}Los acordes aumentados y los disminuidos con séptima son simétricos: sus notas están a la misma distancia, así que ninguna destaca como casa y cada uno tiene ${one ? count : 'varios'} nombres. Sin un acorde mayor o menor que la fije, no hay una tonalidad clara. Prueba a añadir uno y oirás hacia dónde van.`;
 }
+
+// Una línea de bajo (ver bassLines en core/bass.js).
+export function bassLineTitle(line) {
+  const dir = line.dir === 'down' ? 'descendente' : 'ascendente';
+  return line.chromatic ? `Bajo cromático ${dir}` : `Bajo ${dir}`;
+}
+
+export function bassLineText(line) {
+  const moves = line.dir === 'down' ? 'baja' : 'sube';
+  const notes = line.notes.map((n) => noteName(n)).join(' – ');
+  const why = line.chromatic
+    ? line.dir === 'down'
+      ? 'Algunos pasos son de medio tono y usan notas de fuera de la escala (es un bajo cromático): suena melancólico, como un lamento, y es muy típico de las baladas.'
+      : 'Algunos pasos son de medio tono y usan notas de fuera de la escala (es un bajo cromático): la tensión va creciendo con cada paso.'
+    : `Cada acorde se apoya en la nota ${line.dir === 'down' ? 'de debajo' : 'de encima'} de la escala, y eso le da a la progresión un sentido de camino, como ${line.dir === 'down' ? 'bajar' : 'subir'} una escalera peldaño a peldaño.`;
+  return `El bajo ${moves} nota a nota: ${notes}. ${why}`;
+}
+
+// Un acorde con barra (ver inversionOf en core/bass.js).
+export function inversionText(item) {
+  const { chord, inversion } = item;
+  if (!inversion) return '';
+  const plain = chordLabel({ ...chord, bass: null });
+  const bass = noteName(chord.bass);
+  const connects = inversion.connects ? ', y conecta mejor con el acorde siguiente' : '';
+  switch (inversion.type) {
+    case 'third':
+      return `${plain} con ${bass} en el bajo: suena a ${plain}, pero más ligero${connects}. Es la primera inversión: la tercera del acorde va abajo.`;
+    case 'fifth':
+      return `${plain} con ${bass} en el bajo: suena a ${plain}, pero menos asentado, como de paso${connects}. Es la segunda inversión: la quinta del acorde va abajo.`;
+    case 'seventh':
+      return `${plain} con ${bass} en el bajo: suena a ${plain}, pero con ganas de moverse, porque la séptima en el bajo pide bajar${connects}. Es la tercera inversión.`;
+    default:
+      return `${plain} con ${bass} en el bajo: el ${bass} no es una nota de ${plain}. Lo pone el bajo, que sigue su propio camino mientras arriba suena ${plain}${connects}.`;
+  }
+}
