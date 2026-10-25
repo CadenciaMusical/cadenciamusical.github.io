@@ -196,6 +196,20 @@ export const CADENCES = [
     text: 'El final flamenco: el acorde que está medio tono por encima de la tónica (el ♭II) baja hasta ella, y el bajo se desliza solo medio tono. Suena a final, como la cadencia perfecta, pero oscuro y con aire español en lugar de rotundo.',
   },
   {
+    id: 'epic',
+    name: 'Final épico',
+    steps: ['♭VI', '♭VII', 'I'],
+    mode: 'major',
+    text: 'El final de bandas sonoras y videojuegos: dos acordes prestados de la tonalidad menor (♭VI y ♭VII) suben por tonos hasta la tónica. Suena a victoria, a héroe que llega a casa.',
+  },
+  {
+    id: 'aeolian',
+    name: 'Cadencia eólica',
+    steps: ['VI', 'VII', 'i'],
+    mode: 'minor',
+    text: 'Muy del rock: en lugar de llegar a casa desde la dominante (V), se sube por tonos desde el VI y el VII. Es un final firme pero sin la tensión de la sensible, con un aire más épico y menos clásico.',
+  },
+  {
     id: 'half',
     name: 'Semicadencia',
     steps: ['V'],
