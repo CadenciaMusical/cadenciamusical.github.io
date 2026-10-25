@@ -11,6 +11,7 @@
 
 import { Interval, Note } from '../../vendor/tonal.mjs';
 import { parseChord } from './parser.js';
+import { isLoopLike, resolvesElsewhere } from './key.js';
 
 const mod12 = (n) => ((n % 12) + 12) % 12;
 
@@ -201,7 +202,9 @@ export function detectModes(chords, key = null) {
 //     frigio dominante, que es parte de ese sonido);
 //   - hay al menos dos pistas de que su tónica es la casa: empezar en ella,
 //     acabar en ella, que coincida con la tonalidad o que suene en la mitad
-//     de los acordes o más.
+//     de los acordes o más. En un bucle, empezar en ella cuenta doble: es
+//     adonde vuelve en cada vuelta (salvo que una dominante lleve a otro
+//     acorde, como el G → C de F G C G).
 const PLAIN = new Set(['ionian', 'aeolian']);
 
 export function isClearlyModal(m, chords, key) {
@@ -218,6 +221,7 @@ export function isClearlyModal(m, chords, key) {
   const home = (c) => c.pc === m.pc;
   const clues = [
     home(chords[0]),
+    home(chords[0]) && isLoopLike(chords) && !resolvesElsewhere(chords),
     home(chords[chords.length - 1]),
     key?.pc === m.pc,
     chords.filter(home).length >= chords.length / 2,

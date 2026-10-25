@@ -392,3 +392,48 @@ test('las inversiones, en lenguaje llano', async () => {
   assert.match(inversionText(analyze('Do Do/Sol Sol7 Do').items[1]), /segunda inversión/);
   setLatin(false);
 });
+
+test('en un bucle, la casa es el primer acorde', async () => {
+  const { keyName, setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  // Em F G F va y vuelve a Em: Mi frigio, no Do mayor.
+  const frigio = analyze('Mim Fa Sol Fa');
+  assert.equal(keyName(frigio.key), 'Mi frigio');
+  assert.equal(romans(frigio), 'i ♭II III ♭II');
+  // Do Fam Do Fam: Do con el iv prestado, no Fa menor con Do como V.
+  const prestado = analyze('Do Fam Do Fam');
+  assert.equal(keyName(prestado.key), 'Do mayor');
+  assert.equal(romans(prestado), 'I iv I iv');
+  assert.equal(prestado.items[1].kind, 'borrowed');
+  assert.equal(keyName(prestado.alternative), 'Fa menor');
+  setLatin(false);
+});
+
+test('un acorde que se mantiene, aunque cambie el bajo, pesa más', async () => {
+  const { renderProgressionCard } = await import('../js/ui/render.js');
+  const { keyName, setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  const r = analyze('Lam Lam/Sol Lam/Fa# Fa');
+  assert.equal(keyName(r.key), 'La menor');
+  assert.equal(romans(r), 'i i i VI');
+  assert.match(renderProgressionCard(r), /Bajo cromático descendente/);
+  setLatin(false);
+});
+
+test('si gana otra tonalidad, la del primer acorde de un bucle sale como alternativa', () => {
+  // IV–V–I–V dos veces: el Sol → Do decide Do mayor, pero empieza en Fa.
+  const r = expectKey('F G C G F G C G', 'C', 'major');
+  assert.equal(romans(r), 'IV V I V IV V I V');
+  assert.equal(`${r.alternative.tonic} ${r.alternative.mode}`, 'F major');
+  // Con una dominante que lleva a otro acorde, empezar no basta para ser la casa.
+  expectKey('F G C G', 'C', 'major');
+  expectKey('Dm G C G', 'C', 'major');
+});
+
+test('los bucles de siempre no cambian', () => {
+  expectKey('Lam Sol Fa Sol', 'A', 'minor');
+  expectKey('Fa Sol Mim Lam', 'A', 'minor');
+  expectKey('C G Am F', 'C', 'major');
+  const r = expectKey('Am F C G', 'A', 'minor');
+  assert.equal(`${r.alternative.tonic} ${r.alternative.mode}`, 'C major');
+});

@@ -8,8 +8,11 @@
 //   - una menor sin sensible (sin V mayor ni vii°) resta un poco: sin ella,
 //     Am F C G suena más a Do mayor que a La menor;
 //   - un blues (I7, IV7, V7) suma mucho a su tonalidad mayor;
-//   - en un bucle (un patrón que se repite entero, como Am Em Am Em) el
-//     último acorde no es un final: todo el peso va al primero.
+//   - en un bucle (un patrón que se repite entero, como Am Em Am Em, o que
+//     va y vuelve, como Em F G F) el último acorde no es un final: todo el
+//     peso va al primero;
+//   - un acorde que se mantiene varios compases seguidos (aunque cambie el
+//     bajo, como Am Am/G Am/F♯) también pesa más si es la tónica.
 // La confianza depende de la distancia entre la primera y la segunda. Si hay
 // una duda razonable, la segunda se ofrece como alternativa (ver detectKey).
 
@@ -25,7 +28,8 @@ const BONUS = {
   cadence: 0.6,
   noLeadingTone: -0.3,
   blues: 3.0,
-  loopFirst: 2.8,
+  loopFirst: 3.5,
+  held: 0.6,
 };
 
 const TONIC_NAMES = {
@@ -62,6 +66,40 @@ export function loopPeriod(chords) {
   return null;
 }
 
+// Una dominante que resuelve una quinta abajo en otro acorde que no es el
+// primero (G → C en F G C G): esa llegada dice más de la casa que empezar.
+export function resolvesElsewhere(chords) {
+  return chords.some((c, i) => {
+    const next = chords[i + 1];
+    return next && c.triad === 'M' && (!c.seventh || c.seventh === '7') && mod12(c.pc - next.pc) === 7
+      && (next.triad === 'M' || next.triad === 'm') && next.pc !== chords[0].pc;
+  });
+}
+
+// ¿Da vueltas? Un patrón que se repite entero (Am Em Am Em) o que va y
+// vuelve hacia el primer acorde: tras él, los demás son simétricos
+// (Em | F G F, Am | G F G). Al repetirse, vuelve a empezar por el primero.
+export function isLoopLike(chords) {
+  if (loopPeriod(chords)) return true;
+  const rest = chords.slice(1);
+  return rest.length >= 3 && rest.every((c, i) => sameChord(c, rest[rest.length - 1 - i])) && !sameChord(rest[0], chords[0]) && !resolvesElsewhere(chords);
+}
+
+// El mismo acorde seguido, aunque cambie el bajo (Am Am/G Am/F♯).
+const sameHarmony = (a, b) => a.pc === b.pc && a.triad === b.triad;
+
+// Cuántos acordes de más dura cada acorde que se mantiene: [{ chord, extra }].
+function heldRuns(chords) {
+  const runs = [];
+  for (let i = 0; i < chords.length; ) {
+    let j = i;
+    while (j + 1 < chords.length && sameHarmony(chords[j + 1], chords[i])) j++;
+    if (j > i) runs.push({ chord: chords[i], extra: j - i });
+    i = j + 1;
+  }
+  return runs;
+}
+
 // Un sus o un acorde de quinta no tiene tercera: sobre la tónica, vale igual
 // en mayor que en menor, así que no inclina la balanza hacia ninguno.
 export const isTonicChord = (chord, key) =>
@@ -82,12 +120,13 @@ export function scoreKey(chords, key) {
   chords.forEach((c, i) => {
     score += classify(c, key, chords[i + 1] ?? null, chords[i - 1] ?? null).fit;
   });
-  if (loopPeriod(chords)) {
+  if (isLoopLike(chords)) {
     if (isTonicChord(chords[0], key)) score += BONUS.loopFirst;
   } else {
     if (isTonicChord(chords[chords.length - 1], key)) score += BONUS.last;
     if (isTonicChord(chords[0], key)) score += BONUS.first;
   }
+  for (const run of heldRuns(chords)) if (isTonicChord(run.chord, key)) score += BONUS.held * run.extra;
   if (chords.some((c) => isTonicChord(c, key))) score += BONUS.present;
   if (chords.some((c) => isDominantChord(c, key))) score += BONUS.dominant;
   else if (key.mode === 'minor' && !chords.some((c) => isLeadingToneChord(c, key))) score += BONUS.noLeadingTone;
@@ -132,10 +171,17 @@ export function detectKey(chords) {
   // La relativa usa las mismas notas, así que se le da más margen; salvo que
   // la progresión empiece y acabe en la tónica de la primera: eso despeja la duda.
   // En un bucle basta con empezar en ella.
-  const clear = isTonicChord(chords[0], best) && (loopPeriod(chords) || isTonicChord(chords[chords.length - 1], best));
+  const loop = isLoopLike(chords);
+  const clear = isTonicChord(chords[0], best) && (loop || isTonicChord(chords[chords.length - 1], best));
   const relative = ranking.find((k) => isRelative(best, k));
   const relativeClose = !clear && relative.score >= best.score - Math.max(1.0, best.score * 0.12);
   // Si la relativa está entre las cercanas, es la duda más interesante de explicar.
-  const alternative = relativeClose ? relative : (close[0] ?? null);
+  let alternative = relativeClose ? relative : (close[0] ?? null);
+  // En un bucle, o si el primer acorde se mantiene, el primer acorde suena a
+  // casa: si aun así gana otra, la suya se ofrece como alternativa.
+  const heldStart = chords.length > 1 && sameHarmony(chords[0], chords[1]);
+  if ((loop || heldStart) && !isTonicChord(chords[0], best)) {
+    alternative = ranking.find((k) => k !== best && isTonicChord(chords[0], k) && k.mode === (chords[0].triad === 'm' ? 'minor' : 'major')) ?? alternative;
+  }
   return { key: best, confidence, alternative, ranking };
 }
