@@ -1,7 +1,7 @@
 // Punto de entrada del análisis: texto → acordes → tonalidad → grados y funciones.
 
 import { parseProgression } from './parser.js';
-import { detectKey, scoreKey, isRelative, isTonicChord, loopPeriod, pedalOf } from './key.js';
+import { detectKey, scoreKey, isRelative, isTonicChord, isLoopLike, loopPeriod, pedalOf } from './key.js';
 import { classify, classifyAlone } from './classify.js';
 import { findMatches, relativeOf } from './matcher.js';
 import { detectModes, isClearlyModal, modeDegrees } from './modes.js';
@@ -86,8 +86,18 @@ export function analyze(text, { forcedKey = null } = {}) {
     loop,
     bassLines: bassLines(chords, key),
     pedal: pedalLine(chords, pedalOf(chords)),
+    locrian: rozaLocrian(chords, key),
     rests,
   };
+}
+
+// Un bucle que empieza y gira en torno a un disminuido o semidisminuido (B°
+// C B° C) roza el locrio, pero su casa no suena a reposo: se oye la tonalidad
+// de siempre. Devuelve ese acorde, para avisarlo, o null.
+function rozaLocrian(chords, key) {
+  const [first] = chords;
+  if (first.triad !== 'dim' || first.seventh === 'dim7' || key.modal || !isLoopLike(chords)) return null;
+  return first;
 }
 
 export const isSymmetric = (c) => (c.triad === 'aug' && (!c.seventh || c.seventh === '7')) || c.seventh === 'dim7';

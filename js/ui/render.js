@@ -5,7 +5,7 @@ import { parseChord } from '../core/parser.js';
 import { defaultTonic, isTonicChord } from '../core/key.js';
 import { convertNotation, transposeChord } from '../core/transpose.js';
 import {
-  FUNCTIONS, KEY_TEXT, loopText, unclearKeyText, bassLineTitle, bassLineText, pedalText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
+  FUNCTIONS, KEY_TEXT, loopText, locrianText, unclearKeyText, bassLineTitle, bassLineText, pedalText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
   MODE_INFO, VARIANT_INFO, MODES_TEXT, twoChanges, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText, modeListenTitle,
 } from './texts.js';
 import { GLOSSARY, linkTerms, termText } from './glossary.js';
@@ -90,6 +90,8 @@ export function renderKey(result, { transposedFrom = null } = {}) {
       ${forced && alternative ? `<div class="alternative"><p><strong>¿O ${keyName(alternative)}?</strong> ${altText}</p>${altButtons}</div>` : ''}
     </details>`;
 
+  const locrian = result.locrian ? `<p class="muted">${linkTerms(locrianText(result.locrian, key))}</p>` : '';
+
   // Duda razonable en la tonalidad detectada: las dos opciones, a la vista.
   if (alternative && !forced && !transposedFrom) {
     return `
@@ -106,6 +108,7 @@ export function renderKey(result, { transposedFrom = null } = {}) {
       </div>
       <p>${altText}</p>
       ${altButtons}
+      ${locrian}
       ${more}`;
   }
 
@@ -115,6 +118,7 @@ export function renderKey(result, { transposedFrom = null } = {}) {
     <p class="eyebrow">Tonalidad</p>
     <h2 class="key-name">${keyName(key)}</h2>
     ${modal}
+    ${locrian}
     ${more}`;
 }
 

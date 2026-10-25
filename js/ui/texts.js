@@ -88,7 +88,7 @@ export const MODE_INFO = {
     songs: ['All Along the Watchtower (Bob Dylan)'],
   },
   locrian: {
-    text: 'Es como la escala menor, pero con la segunda y la quinta nota más bajas: su acorde de casa nunca acaba de sonar a reposo. Tenso y extraño, es el modo menos usado.',
+    text: 'Es como la escala menor, pero con la segunda y la quinta nota más bajas. Su acorde de casa es disminuido: inestable, siempre quiere ir a otro sitio y nunca acaba de sonar a reposo. Por eso, tenso y extraño, es el modo que menos se usa.',
     songs: [],
   },
 };
@@ -219,6 +219,11 @@ function cluesText(key, alt, chords) {
   if (!startText) return `${endText[0].toUpperCase()}${endText.slice(1)}.`;
   const joiner = start === end ? ' y también ' : ', pero ';
   return `${startText}${joiner}${endText}.`;
+}
+
+// Un bucle que gira alrededor de un disminuido (result.locrian).
+export function locrianText(chord, key) {
+  return `Si giras alrededor de ${chordLabel(chord)}, estás rozando el modo locrio: casi nadie lo usa porque su casa es un acorde disminuido, que no suena a reposo. Por eso tu oído (y Cadencia) prefiere oír ${keyName(key)}.`;
 }
 
 // Una progresión en bucle (result.loop): no tiene final, vuelve al principio.

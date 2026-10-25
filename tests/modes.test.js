@@ -314,3 +314,27 @@ test('alternativa modal: si empieza en el centro de un modo con las mismas notas
   // Si empieza o acaba en su tónica, no hace falta otra: ii–V–I.
   assert.equal(analyze('Dm7 G7 Cmaj7').alternative, null);
 });
+
+test('un bucle alrededor de un disminuido roza el locrio, pero se oye Do mayor', async () => {
+  const { keyName } = await import('../js/core/names.js');
+  const { renderKey } = await import('../js/ui/render.js');
+  setLatin(true);
+  for (const [text, label] of [['Sidim Do Sidim Do', 'Si°'], ['Siø7 Do Siø7 Do', 'Sim7b5']]) {
+    const r = analyze(text);
+    assert.equal(keyName(r.key), 'Do mayor', text);
+    assert.equal(r.locrian.root, 'B', text);
+    assert.match(plainText(renderKey(r)), new RegExp(`Si giras alrededor de ${label}, estás rozando el modo locrio: casi nadie lo usa porque su casa es un acorde disminuido, que no suena a reposo. Por eso tu oído \\(y Cadencia\\) prefiere oír Do mayor.`), text);
+  }
+  // La escala de Do, de paso por Si°: no gira alrededor de él.
+  const scale = analyze('Do Rem Mim Fa Sol Lam Sidim Do');
+  assert.equal(keyName(scale.key), 'Do mayor');
+  assert.equal(scale.locrian, null);
+  assert.doesNotMatch(renderKey(scale), /locrio/);
+});
+
+test('el locrio, en el glosario de modos, explica por qué casi no se usa', async () => {
+  const { glossaryEntry, termText } = await import('../js/ui/glossary.js');
+  const entry = glossaryEntry('modo-locrian');
+  assert.equal(entry.term, 'Modo locrio');
+  assert.match(termText(entry), /acorde de casa es disminuido/);
+});
