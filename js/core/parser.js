@@ -55,6 +55,10 @@ function normalizeSuffix(raw) {
     .replace(/(\d)-(\d)/g, '$1b$2')
     .replace(/^m7M$|^m(maj|ma|M)7$/, 'mMaj7')
     .replace(/^7M/, 'maj7')
+    // En los cancioneros, «C4» y «C2» son suspendidos (sin tercera), y
+    // «C7(4)», un 7sus4. Tonal leería «4» como un acorde por cuartas y «2»
+    // como un add9.
+    .replace(/^(7|9|11|13)?([24])$/, (_, ext = '', n) => `${ext}sus${n}`)
     .replace(/^M$/, '');
   return s;
 }
