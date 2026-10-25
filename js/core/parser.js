@@ -103,6 +103,23 @@ function describe(intervals) {
   return { triad, seventh, tensions, altered };
 }
 
+// Las dominantes alteradas, escritas como en el jazz: la ♯5 como ♭13
+// (Sol7alt: Mi♭, no Re♯) y las notas tensas sin dobles alteraciones ni Si♯,
+// Mi♯, Do♭ o Fa♭ (Si7alt: Sol y Re, no Fa𝄪 y Do𝄪).
+const CHORD_TONES = new Set(['1P', '3M', '5P', '7m']);
+const awkward = (n) => /##|bb/.test(n.slice(1)) || /^(B#|E#|Cb|Fb)$/.test(n);
+
+function jazzSpelling(root, notes, intervals) {
+  return notes.map((n, i) => {
+    if (CHORD_TONES.has(intervals[i])) return n;
+    if (intervals[i] === '5A') {
+      const flat13 = Note.transpose(root, '6m');
+      if (!awkward(flat13)) return flat13;
+    }
+    return awkward(n) ? Note.simplify(n) : n;
+  });
+}
+
 // Intenta leer un acorde. Devuelve { ok: true, ... } o { ok: false, input, suggestions }.
 export function parseChord(input, { allCaps = false } = {}) {
   // «C/E» lleva bajo; «C6/9» no.
@@ -120,6 +137,7 @@ export function parseChord(input, { allCaps = false } = {}) {
         bass = readNote(bassText);
         if (!bass) continue;
       }
+      const kind = describe(data.intervals);
       return {
         ok: true,
         input,
@@ -130,8 +148,8 @@ export function parseChord(input, { allCaps = false } = {}) {
         notation: o.notation,
         rawSuffix: rest,
         pc: Note.chroma(root),
-        notes: data.notes,
-        ...describe(data.intervals),
+        notes: kind.altered ? jazzSpelling(root, data.notes, data.intervals) : data.notes,
+        ...kind,
       };
     }
   }

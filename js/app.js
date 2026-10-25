@@ -446,6 +446,18 @@ document.addEventListener('click', (e) => {
     case 'play-pentatonic':
       playNotes(scaleMidis(r.pentatonic.scale, r.key.pc), { step: 0.35 });
       break;
+    case 'play-melodic':
+      playNotes(scaleMidis(r.melodic.scale, r.key.pc), { step: 0.35 });
+      break;
+    case 'play-swapped': {
+      // Un tramo con uno de sus acordes cambiado por el «normal».
+      const start = Number(btn.dataset.start);
+      const i = Number(btn.dataset.index);
+      const chords = r.chords.slice(start, Number(btn.dataset.end) + 1);
+      chords[i - start] = normalVersion(r.items[i], r.key);
+      playList(chords, { highlightGrid: true, offset: start });
+      break;
+    }
     case 'use-alt':
       state.forcedKey = r.alternative;
       run();

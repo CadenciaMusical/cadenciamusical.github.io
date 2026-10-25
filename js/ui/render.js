@@ -5,7 +5,7 @@ import { parseChord } from '../core/parser.js';
 import { defaultTonic, isTonicChord } from '../core/key.js';
 import { convertNotation, transposeChord } from '../core/transpose.js';
 import {
-  FUNCTIONS, KEY_TEXT, loopText, locrianText, pentatonicText, symmetricScaleText, mediantsText, unclearKeyText, bassLineTitle, bassLineText, pedalText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, kindText,
+  FUNCTIONS, KEY_TEXT, loopText, locrianText, pentatonicText, melodicMinorText, neapolitanText, symmetricScaleText, mediantsText, unclearKeyText, bassLineTitle, bassLineText, pedalText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, alternativeNoteText, kindText,
   MODE_INFO, VARIANT_INFO, MODES_TEXT, twoChanges, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText, modeListenTitle,
 } from './texts.js';
 import { GLOSSARY, linkTerms, termText } from './glossary.js';
@@ -73,6 +73,7 @@ export function renderKey(result, { transposedFrom = null } = {}) {
   }
 
   const altText = alternative && linkTerms(alternativeText(key, alternative, alternativeIsRelative, result.chords));
+  const altNote = alternative && alternativeNoteText(key, alternative, result.chords);
   // Si ya acaba en la casa de una de las dos, terminar en ella sería repetir el último acorde.
   const last = result.chords[result.chords.length - 1];
   const endOn = (which, k) => isTonicChord(last, k)
@@ -105,6 +106,12 @@ export function renderKey(result, { transposedFrom = null } = {}) {
       <button type="button" class="btn secondary small" data-action="play-pentatonic">▶ Escuchar la pentatónica</button>`
     : '';
 
+  const melodic = result.melodic
+    ? `
+      <p>${linkTerms(melodicMinorText(result.melodic))}</p>
+      <button type="button" class="btn secondary small" data-action="play-melodic">▶ Escuchar la escala</button>`
+    : '';
+
   // Duda razonable en la tonalidad detectada: las dos opciones, a la vista.
   if (alternative && !forced && !transposedFrom) {
     return `
@@ -120,9 +127,11 @@ export function renderKey(result, { transposedFrom = null } = {}) {
         </div>
       </div>
       <p>${altText}</p>
+      ${altNote ? `<p class="muted">${linkTerms(altNote)}</p>` : ''}
       ${altButtons}
       ${locrian}
       ${pentatonic}
+      ${melodic}
       ${more}`;
   }
 
@@ -134,6 +143,7 @@ export function renderKey(result, { transposedFrom = null } = {}) {
     ${modal}
     ${locrian}
     ${pentatonic}
+    ${melodic}
     ${more}`;
 }
 
@@ -191,8 +201,13 @@ export function progressionRanges(result) {
     if (m.whole && m.times === 1) continue;
     for (let i = m.start; i <= m.end; i++) marked.add(i);
   }
+  // El napolitano tiene su propia tarjeta: se marca dónde está.
+  neapolitans(result).forEach((i) => marked.add(i));
   return marked;
 }
+
+// Las posiciones de los napolitanos (y sextas napolitanas).
+const neapolitans = (result) => result.items.flatMap((item, i) => (item.kind === 'neapolitan' ? [i] : []));
 
 // Primer acorde de cada vuelta, a partir de la segunda, de las progresiones
 // que se repiten: Map(posición → número de vuelta).
@@ -233,7 +248,8 @@ export function renderProgressionCard(result) {
   const bass = result.bassLines ?? [];
   const { pedal } = result;
   const mediants = result.mediants ?? [];
-  if (!progressions.length && !cadence && !loop && !bass.length && !pedal && !mediants.length) return '';
+  const [neapolitan] = neapolitans(result);
+  if (!progressions.length && !cadence && !loop && !bass.length && !pedal && !mediants.length && neapolitan === undefined) return '';
 
   const blocks = progressions.map(
     (m, i) => `
@@ -254,6 +270,25 @@ export function renderProgressionCard(result) {
         <h2 class="match-name">Mediantes cromáticas</h2>
         <p>${linkTerms(mediantsText(run, result.chords))}</p>
         ${playRange(run, `Escuchar los saltos (${chordsIn(result, run, ' → ')})`)}
+      </div>`);
+  }
+  if (neapolitan !== undefined) {
+    // Se oye con el acorde de antes y los dos de después: hasta la dominante
+    // o su llegada (Lam Sib/Re Mi7 Lam).
+    const item = result.items[neapolitan];
+    const normal = normalVersion(item, result.key);
+    const span = { start: Math.max(0, neapolitan - 1), end: Math.min(result.chords.length - 1, neapolitan + 2) };
+    const degree = result.key.mode === 'minor' ? 'iv' : 'IV';
+    blocks.push(`
+      <div class="match">
+        <p class="eyebrow">✦ Algo especial</p>
+        <h2 class="match-name">${item.sixth ? 'Sexta napolitana' : 'Acorde napolitano'}</h2>
+        <p>${linkTerms(neapolitanText(item, result.key, normal))}</p>
+        <p class="muted">Es el acorde ${neapolitan + 1}, marcado abajo.</p>
+        <div class="button-row">
+          ${playRange(span, 'Así suena')}
+          <button type="button" class="btn secondary small" data-action="play-swapped" data-start="${span.start}" data-end="${span.end}" data-index="${neapolitan}">▶ Con el ${degree} (${chordLabel(normal)}) en su lugar</button>
+        </div>
       </div>`);
   }
   if (loop) {

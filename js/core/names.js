@@ -71,8 +71,10 @@ const SEVENTH_NAMES = {
   mMaj7: 'menor con séptima mayor',
 };
 
-// 'Am7' → 'La menor con séptima' (o 'A menor con séptima').
+// 'Am7' → 'La menor con séptima' (o 'A menor con séptima'). Las dominantes
+// alteradas (G7alt, G7♭9, G7♯5…), por su nombre: 'Sol dominante alterada'.
 export function chordName(chord) {
+  if (chord.altered) return `${noteName(chord.root)} dominante alterada`;
   const kind = chord.seventh ? SEVENTH_NAMES[chord.seventh] : TRIAD_NAMES[chord.triad];
   const joiner = chord.seventh ? ' y ' : ' con ';
   const extra = chord.tensions.length ? joiner + chord.tensions.join(' y ') : '';

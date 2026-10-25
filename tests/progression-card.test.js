@@ -161,7 +161,7 @@ test('en un bucle, el último acorde no decide alternativas', async () => {
   // Fa menor sale como alternativa porque Do es su V, no porque acabe en Fam.
   assert.equal(keyName(r.alternative), 'Fa menor');
   assert.doesNotMatch(plain(renderKey(r)), /acaba en Fam/);
-  assert.match(plain(renderKey(r)), /el último acorde no es un final/);
+  assert.match(plain(renderKey(r)), /Escucha unas vueltas: donde descanse tu oído, ahí está la casa\./);
   // La relativa sí, por las notas que comparten, sin hablar del final.
   const dim = analyze('Si° Do Si° Do');
   assert.equal(keyName(dim.alternative), 'La menor');

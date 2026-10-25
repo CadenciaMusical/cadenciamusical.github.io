@@ -4,7 +4,7 @@ import { parseProgression } from './parser.js';
 import { detectKey, scoreKey, isRelative, isTonicChord, isLoopLike, loopPeriod, pedalOf, pentatonicOf, fifthAlternation } from './key.js';
 import { classify, classifyAlone } from './classify.js';
 import { findMatches, relativeOf } from './matcher.js';
-import { detectModes, isClearlyModal, modeById, modeDegrees } from './modes.js';
+import { detectModes, isClearlyModal, modeById, modeDegrees, modeScale } from './modes.js';
 import { bassLines, inversionOf, pedalLine } from './bass.js';
 import { Note } from '../../vendor/tonal.mjs';
 
@@ -104,6 +104,7 @@ export function analyze(text, { forcedKey = null } = {}) {
     pedal: pedalLine(chords, pedalOf(chords)),
     locrian: rozaLocrian(chords, key),
     pentatonic: pentatonicScale(chords, key),
+    melodic: melodicMinor(chords, key),
     mediants,
     rests,
   };
@@ -155,6 +156,17 @@ function pentatonicScale(chords, key) {
     return /##|bb/.test(n.slice(1)) ? Note.simplify(n) : n;
   });
   return { mode: key.mode, tonic: key.tonic, scale };
+}
+
+// En menor, la sexta y la séptima nota subidas a la vez (el Fa♯ del Re y el
+// Sol♯ del Mi en Lam Re Mi Lam): la escala menor melódica. La tonalidad sigue
+// siendo la menor de siempre; solo se avisa. { sixth, seventh, scale } o null.
+function melodicMinor(chords, key) {
+  if (key.modal || key.mode !== 'minor') return null;
+  const has = (st) => chords.some((c) => c.notes.some((n) => mod12(Note.chroma(n) - key.pc) === st));
+  if (!has(9) || !has(11)) return null;
+  const scale = modeScale('aeolian', key.tonic, 'melodic-minor');
+  return { sixth: scale[5], seventh: scale[6], scale };
 }
 
 // Un bucle que empieza y gira en torno a un disminuido o semidisminuido (B°

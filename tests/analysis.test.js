@@ -575,7 +575,7 @@ test('un mayor que alterna con el menor una quinta por debajo: también su V–i
   assert.equal(keyName(r.key), 'Mi mayor');
   assert.equal(keyName(r.alternative), 'La menor');
   const text = plain(renderKey(r));
-  assert.match(text, /un acorde así suele ser su dominante: por eso también se oye como el V–i de La menor/);
+  assert.match(text, /Pero Mi también puede ser la dominante de La menor: un acorde mayor que va y vuelve al menor que tiene una quinta por debajo\./);
   // Si se queda en Mi, el frigio dominante.
   assert.match(text, /también encaja Mi frigio dominante, el sonido del flamenco/);
   // Sin cambios.
@@ -645,5 +645,121 @@ test('mediantes cromáticas', async () => {
   const secondary = analyze('Do Mi7 Lam', { forcedKey: C_MAJOR });
   assert.equal(secondary.items[1].roman, 'V7/vi');
   assert.deepEqual(secondary.mediants, []);
+  setLatin(false);
+});
+
+// --- Retoques de pulido ---
+
+test('dominantes alteradas: notas sin dobles alteraciones y el mismo nombre en todas partes', async () => {
+  const { renderDetail } = await import('../js/ui/render.js');
+  const { kindText } = await import('../js/ui/texts.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  const plain = (html) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  for (const [text, notes, tense] of [
+    ['Si7alt Do', 'B D# G A D', ['Sol', 'Re']],
+    ['Sol7alt Do', 'G B Eb F A#', ['Mi♭', 'La♯']],
+  ]) {
+    const item = analyze(text).items[0];
+    const { key } = analyze(text);
+    // La ♯5 como ♭13 y la ♯9 con su nombre más sencillo.
+    assert.equal(item.chord.notes.join(' '), notes, text);
+    assert.ok(item.chord.notes.every((n) => !/##|bb/.test(n.slice(1))), text);
+    for (const instrument of ['piano', 'guitar']) {
+      const detail = plain(renderDetail(item, key, { instrument }));
+      assert.doesNotMatch(detail, /♯♯|♭♭|𝄪|𝄫/, `${text} (${instrument})`);
+      assert.match(detail, /(Si|Sol) dominante alterada · notas/, text);
+      assert.doesNotMatch(detail, /séptima y novena/, text);
+      // Las notas que nombra el texto son las del subtítulo.
+      const shown = detail.match(/notas ((?:\S+ · )+\S+)/)[1].split(' · ');
+      for (const n of tense) assert.ok(shown.includes(n), `${text}: ${n} en ${shown}`);
+    }
+    assert.match(kindText(item, key), new RegExp(`con ${tense[0]} y ${tense[1]}\\.`), text);
+  }
+  // Las demás alteraciones, igual.
+  for (const symbol of ['Si7#9', 'Si7#5', 'Fa#7alt', 'Reb7alt', 'La7#9']) {
+    const c = analyze(`${symbol} Do`).items[0].chord;
+    assert.ok(c.notes.every((n) => !/##|bb/.test(n.slice(1))), `${symbol}: ${c.notes}`);
+  }
+  setLatin(false);
+});
+
+test('«hay dos opciones»: frases cortas, una idea por frase', async () => {
+  const { renderKey } = await import('../js/ui/render.js');
+  const { alternativeText } = await import('../js/ui/texts.js');
+  const { keyName, setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  const sentences = (t) => t.split(/(?<=\.)\s+/).filter(Boolean);
+  for (const [text, home, other] of [['Do Fam Do Fam', 'Do', 'Fa menor'], ['Mi Lam Mi Lam', 'Mi', 'La menor']]) {
+    const r = analyze(text);
+    const t = alternativeText(r.key, r.alternative, r.alternativeIsRelative, r.chords);
+    assert.ok(sentences(t).length <= 3, `${text}: ${t}`);
+    assert.equal(t, `${home} suena a casa porque la progresión empieza ahí. Pero ${home} también puede ser la dominante de ${other}: un acorde mayor que va y vuelve al menor que tiene una quinta por debajo. Escucha unas vueltas: donde descanse tu oído, ahí está la casa.`);
+    // El frigio dominante, aparte y en pequeño.
+    assert.doesNotMatch(t, /frigio/);
+    assert.match(renderKey(r), new RegExp(`<p class="muted">Si la casa es ${home}, también encaja`));
+  }
+  // Siguen como ahora.
+  const pop = analyze('Am F C G');
+  assert.equal(alternativeText(pop.key, pop.alternative, pop.alternativeIsRelative, pop.chords), 'Usan las mismas notas (son tonalidades relativas), así que los acordes no bastan para decidir. Empieza en Lam, la casa de La menor, pero acaba en Sol, que no es la casa de ninguna de las dos. Escucha cómo suena terminando en cada una: la que te suene a final es la buena.');
+  const dorian = analyze('Lam Re Lam Re');
+  assert.equal(keyName(dorian.key), 'La dórico');
+  assert.equal(dorian.alternative, null);
+  setLatin(false);
+});
+
+test('el napolitano tiene su tarjeta bajo la tonalidad', async () => {
+  const { renderProgressionCard, progressionRanges } = await import('../js/ui/render.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  const plain = (html) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  for (const [text, title, iv] of [
+    ['Lam Sib/Re Mi7 Lam', 'Sexta napolitana', 'iv (Rem)'],
+    ['Lam Sib Mi Lam', 'Acorde napolitano', 'iv (Rem)'],
+    ['Do Reb/Fa Sol7 Do', 'Sexta napolitana', 'IV (Fa)'],
+  ]) {
+    const r = analyze(text);
+    const html = renderProgressionCard(r);
+    const card = plain(html);
+    assert.match(card, new RegExp(`✦ Algo especial ${title} `), text);
+    assert.match(card, /prepara la dominante con dramatismo/, text);
+    assert.match(card, /▶ Así suena/, text);
+    assert.match(card, new RegExp(`▶ Con el ${iv.replace(/[()]/g, '\\$&')} en su lugar`), text);
+    assert.match(html, /data-action="play-swapped" data-start="0" data-end="3" data-index="1"/, text);
+    // Marcado en las tarjetas de los acordes.
+    assert.ok(progressionRanges(r).has(1), text);
+  }
+  // El ♭II del frigio no es un napolitano.
+  const frigio = analyze('Mim Fa Mim Fa');
+  assert.doesNotMatch(plain(renderProgressionCard(frigio)), /napolitan/);
+  assert.equal(progressionRanges(frigio).size, 0);
+  setLatin(false);
+});
+
+test('la menor melódica, a la vista en la tarjeta de tonalidad', async () => {
+  const { renderKey } = await import('../js/ui/render.js');
+  const { keyName, setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
+  for (const [text, name, notes] of [['Lam Re Mi Lam', 'La menor', 'Fa♯ y Sol♯'], ['Dom Fa Sol Dom', 'Do menor', 'La y Si']]) {
+    const r = analyze(text);
+    // El análisis no cambia.
+    assert.equal(keyName(r.key), name, text);
+    assert.ok(!r.key.modal, text);
+    const html = renderKey(r);
+    assert.match(plain(html), new RegExp(`Con ${notes} a la vez, usa la escala menor melódica\\.`), text);
+    assert.match(html, /data-term="modo-aeolian">menor melódica</, text);
+    assert.match(html, /data-action="play-melodic">▶ Escuchar la escala/, text);
+  }
+  assert.deepEqual(analyze('Lam Re Mi Lam').melodic.scale, ['A', 'B', 'C', 'D', 'E', 'F#', 'G#']);
+  // Como título, si es la escala de la progresión.
+  const jazz = analyze('Lammaj7 Re7 Mi7 Lammaj7');
+  assert.equal(keyName(jazz.key), 'La menor melódica');
+  assert.doesNotMatch(renderKey(jazz), /play-melodic/);
+  // Sin la sexta o sin la séptima subidas, nada.
+  for (const text of ['Lam Rem Mi7 Lam', 'Lam Re Lam Re']) {
+    assert.equal(analyze(text).melodic, null, text);
+    assert.doesNotMatch(renderKey(analyze(text)), /play-melodic/, text);
+  }
   setLatin(false);
 });

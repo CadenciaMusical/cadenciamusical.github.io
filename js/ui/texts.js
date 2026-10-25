@@ -213,15 +213,20 @@ export function modeVsKeyText(m, key) {
 // pistas son el primer y el último acorde: las canciones suelen empezar y,
 // sobre todo, acabar en casa.
 export function alternativeText(key, alt, relative, chords) {
-  // Mi Lam Mi Lam: Mi mayor con el iv prestado, o el V–i de La menor.
-  const fifths = fifthAlternation(chords);
-  if (fifths && key.mode === 'major' && key.pc === fifths.dominant.pc && alt.mode === 'minor' && alt.pc === fifths.tonic.pc) {
-    const [V, i] = [chordLabel(fifths.dominant), chordLabel(fifths.tonic)];
-    const flamenco = keyName({ tonic: key.tonic, modal: { variant: 'phrygian-dominant' } });
-    const clues = isLoopLike(chords)
-      ? `${loopCluesText(key, alt, chords)} Escucha unas cuantas vueltas: la que te suene a casa, donde descansa cada vuelta, es la buena.`
-      : `${cluesText(key, alt, chords)} Escucha cómo suena terminando en cada una: la que te suene a final es la buena.`;
-    return `${V} es un acorde mayor que alterna con ${i}, el menor que está una quinta por debajo, y un acorde así suele ser su dominante: por eso también se oye como el V–i de ${keyName(alt)}, que va y vuelve. ${clues} Y si la casa es ${noteName(key.tonic)}, también encaja ${flamenco}, el sonido del flamenco, que tiene estos dos acordes.`;
+  // Mi Lam Mi Lam: Mi mayor con el iv prestado, o el V–i de La menor. Una
+  // idea por frase: por qué suena a casa, qué más puede ser y cómo decidir.
+  if (isFifthAlternation(key, alt, chords)) {
+    const V = chordLabel(chords.find((c) => c.pc === key.pc));
+    const loop = isLoopLike(chords);
+    const first = isTonicChord(chords[0], key);
+    const last = !loop && isTonicChord(chords[chords.length - 1], key);
+    const where = first && last ? 'empieza y acaba ahí' : first ? 'empieza ahí' : last ? 'acaba ahí' : null;
+    const home = where ? `${V} suena a casa porque la progresión ${where}.` : `${V} puede sonar a casa.`;
+    const other = `Pero ${V} también puede ser la dominante de ${keyName(alt)}: un acorde mayor que va y vuelve al menor que tiene una quinta por debajo.`;
+    const listen = loop
+      ? 'Escucha unas vueltas: donde descanse tu oído, ahí está la casa.'
+      : 'Escucha cómo suena terminando en cada una: donde descanse tu oído, ahí está la casa.';
+    return `${home} ${other} ${listen}`;
   }
   // Sin terceras (Do5 Fa5 Sol5 Do5), la misma tónica vale en mayor y en menor.
   if (key.pc === alt.pc && chords.every((c) => c.triad === '5' || c.triad === 'sus')) {
@@ -233,11 +238,11 @@ export function alternativeText(key, alt, relative, chords) {
   const intro = relative
     ? 'Usan las mismas notas (son tonalidades relativas), así que los acordes no bastan para decidir.'
     : mode
-      ? `Usan las mismas notas, pero ${keyName(mode)} toma ${noteName(mode.tonic)} como casa: es un modo, una escala con las notas de siempre y otro centro. Los acordes no bastan para decidir.`
+      ? `Usan las mismas notas, pero ${keyName(mode)} toma ${noteName(mode.tonic)} como casa: es un modo, las notas de siempre con otro centro.`
       : 'Comparten casi todos los acordes, así que cuesta decidir.';
   // En un bucle no hay final: ni el último acorde es pista ni se puede «acabar».
   if (isLoopLike(chords)) {
-    return `${intro} ${loopCluesText(key, alt, chords)} Escucha unas cuantas vueltas: la que te suene a casa, donde descansa cada vuelta, es la buena.`;
+    return `${intro} ${loopCluesText(key, alt, chords)} Escucha unas vueltas: donde descanse tu oído, ahí está la casa.`;
   }
   const last = chords[chords.length - 1];
   const ending = isTonicChord(last, key) ? key : isTonicChord(last, alt) ? alt : null;
@@ -245,6 +250,20 @@ export function alternativeText(key, alt, relative, chords) {
     ? `Escucha cómo suena terminando en ${noteName((ending === key ? alt : key).tonic)} y compáralo con cómo acaba ahora: la que te suene a final es la buena.`
     : 'Escucha cómo suena terminando en cada una: la que te suene a final es la buena.';
   return `${intro} ${cluesText(key, alt, chords)} ${listen}`;
+}
+
+// ¿Duda entre un mayor y el menor una quinta por debajo, con los que alterna?
+function isFifthAlternation(key, alt, chords) {
+  const fifths = fifthAlternation(chords);
+  return Boolean(fifths) && key.mode === 'major' && key.pc === fifths.dominant.pc && alt.mode === 'minor' && alt.pc === fifths.tonic.pc;
+}
+
+// Una nota aparte, más pequeña, bajo las dos opciones: si la casa es el
+// mayor de Mi Lam Mi Lam, también encaja el frigio dominante. Si no, ''.
+export function alternativeNoteText(key, alt, chords) {
+  if (!isFifthAlternation(key, alt, chords)) return '';
+  const flamenco = keyName({ tonic: key.tonic, modal: { variant: 'phrygian-dominant' } });
+  return `Si la casa es ${noteName(key.tonic)}, también encaja ${flamenco}, el sonido del flamenco, que tiene estos dos acordes.`;
 }
 
 // Las notas de la escala de una tonalidad o de un modo, como clases de altura.
@@ -268,11 +287,13 @@ function cluesText(key, alt, chords) {
 }
 
 // En un bucle solo el primer acorde es pista: el último no es un final.
+// Una sola frase.
 function loopCluesText(key, alt, chords) {
   const first = chords[0];
   const start = isTonicChord(first, key) ? key : isTonicChord(first, alt) ? alt : null;
-  const ends = 'Es un bucle: el último acorde no es un final, porque vuelve a empezar, así que no sirve de pista.';
-  return start ? `Empieza en ${chordLabel(first)}, la casa de ${keyName(start)}. ${ends}` : ends;
+  return start
+    ? `Empieza en ${chordLabel(first)}, la casa de ${keyName(start)}, y como es un bucle, el último acorde no es un final.`
+    : 'Es un bucle: el último acorde no es un final, así que no sirve de pista.';
 }
 
 // Un riff de acordes de quinta sacado de una pentatónica (result.pentatonic).
@@ -281,6 +302,20 @@ export function pentatonicText(p) {
     ? `la escala pentatónica menor de ${noteName(p.tonic)}, la más usada en el rock y el blues`
     : `la escala pentatónica mayor de ${noteName(p.tonic)}, muy usada en el rock, el country y el folk`;
   return `Estos acordes salen de ${which}. Son acordes de quinta («5»): solo llevan la fundamental y la quinta, sin tercera, así que no son ni mayores ni menores y suenan potentes con distorsión.`;
+}
+
+// En menor, con la sexta y la séptima subidas a la vez (result.melodic).
+export function melodicMinorText(m) {
+  return `Con ${noteName(m.sixth)} y ${noteName(m.seventh)} a la vez, usa la escala menor melódica.`;
+}
+
+// La tarjeta del napolitano, bajo la tonalidad. item: el acorde (kind
+// 'neapolitan'); normal: el iv o el IV, cuyo lugar ocupa.
+export function neapolitanText(item, key, normal) {
+  const what = item.sixth
+    ? `${chordLabel(item.chord)} es la sexta napolitana: un acorde mayor medio tono por encima de la tónica, con ${noteName(Note.transpose(key.tonic, '4P'))} en el bajo.`
+    : `${chordLabel(item.chord)} es el acorde napolitano: un acorde mayor medio tono por encima de la tónica.`;
+  return `${what} Ocupa el lugar de ${chordLabel(normal)} y prepara la dominante con dramatismo. Muy de Bach, Mozart y Beethoven.`;
 }
 
 // Un bucle que gira alrededor de un disminuido (result.locrian).
@@ -488,11 +523,9 @@ function augmentedText(item, key) {
 function alteredText(item, key) {
   const label = (c) => chordLabel(c);
   const plain = normalVersion(item, key);
-  // Las notas que la alejan de la dominante de siempre (el Re♯ y el La♯ de Sol7alt).
-  // Sol en lugar de Fa♯♯: se leen mejor.
-  const tense = item.chord.notes
-    .filter((n) => !plain.notes.some((m) => Note.chroma(m) === Note.chroma(n)))
-    .map((n) => (/##|bb|^(B#|E#|Cb|Fb)$/.test(n) ? Note.simplify(n) : n));
+  // Las notas que la alejan de la dominante de siempre (el Mi♭ y el La♯ de
+  // Sol7alt), con los nombres del acorde (ver jazzSpelling en core/parser.js).
+  const tense = item.chord.notes.filter((n) => !plain.notes.some((m) => Note.chroma(m) === Note.chroma(n)));
   const target = chordOnDegree(key, item.target.st, item.target.triad);
   const what = `Es una dominante alterada: una dominante con notas tensas añadidas (♭9, ♯9, ♭5 o ♯5) que suena aún más inestable y pide resolver; muy del jazz. Aquí es ${label(plain)} con ${listJoin(tense.map((n) => noteName(n)))}.`;
   if (item.target.st === 0) {
