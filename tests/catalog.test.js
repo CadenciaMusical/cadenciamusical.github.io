@@ -186,3 +186,13 @@ test('blues menor de 12 compases, con y sin séptimas', () => {
   // El mayor sigue siendo el mayor.
   assert.equal(find(analyze('C7 F7 C7 C7 F7 F7 C7 C7 G7 F7 C7 G7'), 'minor-blues'), undefined);
 });
+
+test('el final épico y la cadencia eólica', () => {
+  const ending = (text) => analyze(text).cadences.find((c) => c.atEnd)?.id;
+  assert.equal(ending('Do Lab Sib Do'), 'epic');
+  // El de Super Mario: ♭VI–♭VII–I en Mi mayor.
+  assert.equal(ending('C D E'), 'epic');
+  for (const text of ['Sib Do Rem', 'Mim Do Re Mim', 'Am F G Am']) assert.equal(ending(text), 'aeolian', text);
+  // Con la dominante, sigue siendo la perfecta.
+  assert.equal(ending('Am F E Am'), 'perfect');
+});

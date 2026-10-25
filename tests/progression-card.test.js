@@ -6,7 +6,7 @@ import { setLatin } from '../js/core/names.js';
 
 test('sin progresión ni cadencia final conocidas, no hay tarjeta', () => {
   assert.equal(renderProgressionCard(analyze('C Em')), '');
-  assert.equal(renderProgressionCard(analyze('C D E')), '');
+  assert.equal(renderProgressionCard(analyze('Am Bb C')), '');
 });
 
 test('la tarjeta nombra la progresión y la cadencia final, con botón para oírlas', () => {
