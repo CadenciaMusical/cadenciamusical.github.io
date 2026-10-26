@@ -106,3 +106,15 @@ test('«N.C.» es un silencio: se muestra, pero no cuenta para el análisis', as
   // Al principio y al final también.
   assert.deepEqual(analyze('N.C. C G C N.C.').rests, [0, 3]);
 });
+
+test('analizar con la casilla vacía: un aviso breve con un ejemplo', async () => {
+  const { renderEmptyInput } = await import('../js/ui/render.js');
+  setLatin(true);
+  assert.match(renderEmptyInput().replace(/<[^>]+>/g, ''), /Escribe al menos un acorde, por ejemplo: Lam Fa Do Sol/);
+  setLatin(false);
+  assert.match(renderEmptyInput().replace(/<[^>]+>/g, ''), /por ejemplo: Am F C G/);
+  // Vacía, solo separadores o solo silencios: no hay ningún acorde.
+  for (const text of ['', '  ', ', |', 'N.C.']) {
+    assert.ok(!parseProgression(text).some((c) => !c.rest), JSON.stringify(text));
+  }
+});

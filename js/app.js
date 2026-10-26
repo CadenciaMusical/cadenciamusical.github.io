@@ -9,7 +9,7 @@ import { defaultTonic } from './core/key.js';
 import { convertNotation, transposeText } from './core/transpose.js';
 import { playChords, playChord, playNotes, stop } from './audio.js';
 import {
-  escapeHtml, renderErrors, renderKey, renderProgressionCard, progressionRanges, progressionTurns, renderChords, renderDetail, renderGlossaryList, renderTerm, renderTranspose, renderModes,
+  escapeHtml, renderEmptyInput, renderErrors, renderKey, renderProgressionCard, progressionRanges, progressionTurns, renderChords, renderDetail, renderGlossaryList, renderTerm, renderTranspose, renderModes,
 } from './ui/render.js';
 import { plainScale, typicalProgression } from './core/modes.js';
 import { Interval, Note } from '../vendor/tonal.mjs';
@@ -327,6 +327,12 @@ els.form.addEventListener('submit', (e) => {
   state.forcedKey = null;
   state.original = null;
   run();
+  // Sin ningún acorde (vacía, o solo comas o «N.C.»), no pasa nada: se avisa
+  // y se vuelve a la casilla.
+  if (!state.parsed.some((c) => !c.rest)) {
+    els.errors.innerHTML = renderEmptyInput();
+    els.input.focus();
+  }
 });
 
 els.examples.innerHTML = EXAMPLES.map(
@@ -374,6 +380,8 @@ els.errors.addEventListener('click', (e) => {
 
 // Al escribir, la marca ya no está en su sitio: se quita hasta analizar otra vez.
 els.input.addEventListener('input', () => {
+  // El aviso de casilla vacía sobra en cuanto se escribe.
+  els.errors.querySelector('.empty-input')?.remove();
   els.marks.textContent = '';
   els.input.removeAttribute('aria-invalid');
   fitInput();

@@ -272,6 +272,7 @@ main {
 .chip:hover { border-color: var(--accent); }
 .chip.suggestion { background: var(--surface); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
 
+.nowrap { white-space: nowrap; }
 .error {
   margin-top: 12px;
   padding: 12px;

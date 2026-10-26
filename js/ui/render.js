@@ -43,6 +43,12 @@ export function renderErrors(parsed) {
   return `${items.join('')}<p class="hint">Corrige ${what} y analizo la progresión.</p>`;
 }
 
+// Al analizar sin haber escrito ningún acorde: un aviso breve con un ejemplo,
+// en el cifrado de la página.
+export function renderEmptyInput() {
+  return `<p class="error empty-input">Escribe al menos un acorde, por ejemplo: <span class="nowrap">${isLatin() ? 'Lam Fa Do Sol' : 'Am F C G'}</span></p>`;
+}
+
 const CONFIDENCE_LEVEL = { alta: 3, media: 2, baja: 1 };
 
 // transposedFrom: el nombre de la tonalidad original si se ha transportado.
