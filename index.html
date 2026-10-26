@@ -88,7 +88,10 @@
     <details class="card glossary">
       <summary>Glosario</summary>
       <p class="hint">Las palabras subrayadas de toda la app también se pueden tocar.</p>
-      <div id="glossary-list" class="chips"></div>
+      <label for="glossary-search" class="visually-hidden">Buscar en el glosario</label>
+      <input id="glossary-search" type="search" class="search" placeholder="Buscar un término…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+      <p id="glossary-count" class="visually-hidden" aria-live="polite"></p>
+      <div id="glossary-list"></div>
     </details>
   </main>
 

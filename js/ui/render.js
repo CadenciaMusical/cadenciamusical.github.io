@@ -8,7 +8,7 @@ import {
   FUNCTIONS, KEY_TEXT, sectionsText, modulationText, loopText, locrianText, pentatonicText, melodicMinorText, neapolitanText, picardyText, symmetricScaleText, mediantsText, unclearKeyText, bassLineTitle, bassLineText, pedalText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, alternativeNoteText, kindText,
   MODE_INFO, VARIANT_INFO, MODES_TEXT, twoChanges, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText, modeListenTitle,
 } from './texts.js';
-import { GLOSSARY, linkTerms, termText } from './glossary.js';
+import { GLOSSARY, GROUPS, linkTerms, searchGlossary, termText } from './glossary.js';
 import { normalVersion } from '../core/build.js';
 import { guitarVoicings } from '../core/fretboard.js';
 import { renderPiano } from './piano.js';
@@ -495,8 +495,18 @@ export function renderDetail(item, key, { instrument = 'piano', position = 0 } =
     </details>` : ''}`;
 }
 
-export function renderGlossaryList() {
-  return GLOSSARY.map((e) => `<button type="button" class="chip" data-term="${e.id}">${e.term}</button>`).join('');
+// La lista del glosario, por grupos, con los términos que encajan con lo
+// buscado (ver searchGlossary). Sin ninguno, un aviso.
+export function renderGlossaryList(query = '') {
+  const found = searchGlossary(query);
+  if (found.length === 0) return `<p class="hint">Ningún término con «${escapeHtml(query.trim())}». Prueba con otra palabra.</p>`;
+  return GROUPS.map((g) => {
+    const terms = found.filter((e) => e.group === g.id);
+    if (terms.length === 0) return '';
+    return `
+      <h3 class="subhead">${g.name}</h3>
+      <div class="chips">${terms.map((e) => `<button type="button" class="chip" data-term="${e.id}">${e.term}</button>`).join('')}</div>`;
+  }).join('');
 }
 
 // Contenido de la ventana de un término. example: lo que devuelve entry.example().

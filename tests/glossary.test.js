@@ -101,3 +101,43 @@ test('el glosario explica los cuatro nombres de un disminuido con séptima', () 
 test('el glosario explica los tres nombres de un acorde aumentado', () => {
   assert.match(linkTerms('cada acorde aumentado tiene tres nombres'), /data-term="aumentado"/);
 });
+
+test('cada término está en uno de los grupos', async () => {
+  const { GROUPS } = await import('../js/ui/glossary.js');
+  const ids = GROUPS.map((g) => g.id);
+  assert.deepEqual(GROUPS.map((g) => g.name), ['Básicos', 'Acordes', 'Escalas y modos', 'Recursos y progresiones']);
+  for (const e of GLOSSARY) assert.ok(ids.includes(e.group), `${e.id}: sin grupo`);
+});
+
+test('el buscador filtra sin distinguir mayúsculas ni acentos', async () => {
+  const { searchGlossary } = await import('../js/ui/glossary.js');
+  const ids = (q) => searchGlossary(q).map((e) => e.id);
+  assert.equal(searchGlossary('').length, GLOSSARY.length);
+  assert.deepEqual(ids('tonica'), ['tonica']);
+  // Primero las palabras que empiezan así; dentro de una palabra, solo si no hay otras.
+  assert.deepEqual(ids('ton'), ['tonalidad', 'tonica', 'relativa', 'modulacion', 'semitono', 'tonos-enteros']);
+  assert.ok(ids('tatonica').includes('pentatonica'));
+  assert.ok(ids('dominante sec').includes('dominante-secundaria'));
+  assert.ok(ids('TÓNICA').includes('tonica'));
+  assert.ok(ids('septima').includes('septima'));
+  assert.ok(ids('modulacion').includes('modulacion'));
+  // Por las palabras que lo enlazan («prestado» → préstamo modal).
+  assert.ok(ids('prestado').includes('prestamo'));
+  // Si el nombre no encaja, por la definición: el flamenco es el modo frigio.
+  assert.ok(ids('flamenco').includes('modo-phrygian'));
+  assert.deepEqual(ids('zzz'), []);
+});
+
+test('la lista sale por grupos y dice si no hay nada', async () => {
+  const { renderGlossaryList } = await import('../js/ui/render.js');
+  const all = renderGlossaryList();
+  const order = ['Básicos', 'Acordes', 'Escalas y modos', 'Recursos y progresiones'].map((g) => all.indexOf(`>${g}<`));
+  assert.ok(order.every((i, n) => i >= 0 && (n === 0 || i > order[n - 1])));
+  const one = renderGlossaryList('picardía');
+  assert.match(one, /Recursos y progresiones/);
+  assert.doesNotMatch(one, /Básicos/);
+  assert.match(one, /data-term="picardia"/);
+  assert.match(renderGlossaryList('zzz'), /Ningún término con «zzz»/);
+  // Lo escrito no se cuela como HTML.
+  assert.doesNotMatch(renderGlossaryList('<b>'), /<b>/);
+});

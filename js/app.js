@@ -13,7 +13,7 @@ import {
 } from './ui/render.js';
 import { plainScale, typicalProgression } from './core/modes.js';
 import { Interval, Note } from '../vendor/tonal.mjs';
-import { glossaryEntry, DEFAULT_KEY } from './ui/glossary.js';
+import { glossaryEntry, searchGlossary, DEFAULT_KEY } from './ui/glossary.js';
 
 const EXAMPLES = [
   { label: 'La del pop', chords: 'C G Am F' },
@@ -47,6 +47,8 @@ const els = {
   updateToast: $('#update-toast'),
   updateBtn: $('#update-btn'),
   glossaryList: $('#glossary-list'),
+  glossarySearch: $('#glossary-search'),
+  glossaryCount: $('#glossary-count'),
   termDialog: $('#term-dialog'),
   detailSheet: $('#detail-sheet'),
   detailBody: $('#detail-body'),
@@ -658,6 +660,14 @@ function swipeToClose(dialog) {
 }
 
 els.glossaryList.innerHTML = renderGlossaryList();
+// El buscador filtra mientras se escribe. Al lector de pantalla se le dice
+// cuántos términos quedan, no la lista entera cada vez.
+els.glossarySearch.addEventListener('input', () => {
+  const query = els.glossarySearch.value;
+  els.glossaryList.innerHTML = renderGlossaryList(query);
+  const n = searchGlossary(query).length;
+  els.glossaryCount.textContent = !query.trim() ? '' : n === 1 ? '1 término' : `${n} términos`;
+});
 
 const savedTheme = load('cadencia-theme');
 if (savedTheme === 'dark' || savedTheme === 'light') setTheme(savedTheme);

@@ -34,6 +34,7 @@ const sym = (root, suffix = '') => noteName(root) + suffix;
 const dim7 = (root) => chordLabel(parseChord(root + 'dim7'));
 const aug = (root) => chordLabel(parseChord(root + 'aug'));
 
+// group: en qué grupo de la lista sale (ver GROUPS).
 // text: una cadena, o una función si nombra notas (para seguir el cifrado).
 // fn: en tónica, subdominante y dominante, su papel (FUNCTIONS en texts.js),
 //   que se muestra junto a la definición; after, una nota que va detrás.
@@ -42,6 +43,7 @@ const aug = (root) => chordLabel(parseChord(root + 'aug'));
 export const GLOSSARY = [
   {
     id: 'tonalidad',
+    group: 'basics',
     term: 'Tonalidad',
     match: ['tonalidades', 'tonalidad'],
     text: () => `El «barrio» de una canción: una nota hace de casa (la tónica) y hay un grupo de acordes que suenan bien a su alrededor. Se nombra por su tónica y su modo: ${K('C', 'major')}, ${K('A', 'minor')}…`,
@@ -52,6 +54,7 @@ export const GLOSSARY = [
   },
   {
     id: 'tonica',
+    group: 'basics',
     term: 'Tónica',
     match: ['tónica'],
     fn: 'T',
@@ -63,6 +66,7 @@ export const GLOSSARY = [
   },
   {
     id: 'dominante',
+    group: 'basics',
     term: 'Dominante',
     match: ['dominante'],
     fn: 'D',
@@ -75,6 +79,7 @@ export const GLOSSARY = [
   },
   {
     id: 'subdominante',
+    group: 'basics',
     term: 'Subdominante',
     match: ['subdominante'],
     fn: 'S',
@@ -86,6 +91,7 @@ export const GLOSSARY = [
   },
   {
     id: 'grado',
+    group: 'basics',
     term: 'Grado',
     match: ['números romanos', 'grados', 'grado'],
     text: 'El lugar que ocupa un acorde dentro de la tonalidad, contando desde la tónica, que es el I. Se escribe con números romanos: en mayúsculas si el acorde es mayor (IV) y en minúsculas si es menor (vi).',
@@ -99,6 +105,7 @@ export const GLOSSARY = [
   },
   {
     id: 'modo',
+    group: 'scales',
     term: 'Modo mayor y menor',
     match: ['modo'],
     text: 'Una tonalidad puede ser mayor (suena luminosa, alegre) o menor (más oscura, melancólica): lo que cambia es la tercera nota del acorde de tónica. Son los dos modos más usados, pero hay siete: jónico, dórico, frigio, lidio, mixolidio, eólico y locrio.',
@@ -110,6 +117,7 @@ export const GLOSSARY = [
   },
   {
     id: 'relativa',
+    group: 'basics',
     term: 'Tonalidad relativa',
     match: ['tonalidades relativas', 'tonalidad relativa', 'relativas', 'relativa'],
     text: () => `Cada tonalidad mayor tiene una menor «relativa» que usa exactamente las mismas notas, como ${K('C', 'major')} y ${K('A', 'minor')}. Lo que cambia es qué acorde suena a casa.`,
@@ -121,6 +129,7 @@ export const GLOSSARY = [
   },
   {
     id: 'modulacion',
+    group: 'resources',
     term: 'Cambio de tonalidad (modulación)',
     match: ['cambios de tonalidad', 'cambio de tonalidad', 'modulaciones', 'modulación'],
     text: 'Cuando la casa se muda a mitad de la música: a partir de un momento, los acordes dejan de encajar en la tonalidad del principio y una cadencia asienta la nueva. Los grados se cuentan entonces desde la nueva tónica.',
@@ -136,6 +145,7 @@ export const GLOSSARY = [
   },
   {
     id: 'cadencia',
+    group: 'basics',
     term: 'Cadencia',
     match: ['cadencias', 'cadencia'],
     text: 'La forma en que se cierra una frase musical, como la puntuación al escribir: hay finales que suenan a punto final, otros a coma y otros a sorpresa.',
@@ -146,6 +156,7 @@ export const GLOSSARY = [
   },
   {
     id: 'progresion',
+    group: 'basics',
     term: 'Progresión',
     match: ['progresiones', 'progresión'],
     text: 'Una serie de acordes que se encadenan. Muchas canciones comparten las mismas progresiones: por eso algunas «suenan parecidas».',
@@ -156,6 +167,7 @@ export const GLOSSARY = [
   },
   {
     id: 'septima',
+    group: 'chords',
     term: 'Séptima',
     match: ['séptimas', 'séptima'],
     text: 'Una cuarta nota que se añade a un acorde, siete notas por encima de su raíz. Le da más color o más tensión.',
@@ -166,6 +178,7 @@ export const GLOSSARY = [
   },
   {
     id: 'semitono',
+    group: 'basics',
     term: 'Semitono',
     match: ['semitonos', 'semitono', 'medio tono'],
     text: 'La distancia más pequeña entre dos notas: de una tecla del piano a la de al lado (contando las negras), o de un traste de la guitarra al siguiente. Dos semitonos forman un tono.',
@@ -173,6 +186,7 @@ export const GLOSSARY = [
   },
   {
     id: 'tritono',
+    group: 'basics',
     term: 'Tritono',
     match: ['tritono'],
     text: 'Una distancia de tres tonos (seis semitonos). Es el intervalo más inestable: está dentro de cada acorde de dominante con séptima, y es lo que hace que «pida» resolver.',
@@ -187,6 +201,7 @@ export const GLOSSARY = [
   },
   {
     id: 'sensible',
+    group: 'basics',
     term: 'Sensible',
     match: ['sensible'],
     text: () => `La nota que está medio tono por debajo de la tónica (${noteName('B')} en ${K('C', 'major')}). Tira con fuerza hacia ella: por eso el acorde de dominante, que la contiene, pide volver a casa.`,
@@ -194,6 +209,7 @@ export const GLOSSARY = [
   },
   {
     id: 'resolver',
+    group: 'basics',
     term: 'Resolver',
     match: ['resuelve', 'resolver', 'resolución'],
     text: 'Pasar de un acorde con tensión a otro estable. Cuando la dominante va a la tónica, se dice que «resuelve».',
@@ -204,6 +220,7 @@ export const GLOSSARY = [
   },
   {
     id: 'dominante-secundaria',
+    group: 'resources',
     term: 'Dominante secundaria',
     match: ['dominantes secundarias', 'dominante secundaria'],
     text: () => `Un acorde que hace de dominante de otro grado que no es la tónica. En ${K('C', 'major')}, ${sym('D', '7')} es la dominante de ${sym('G')}: se escribe V7/V y se lee «quinto del quinto».`,
@@ -215,6 +232,7 @@ export const GLOSSARY = [
   },
   {
     id: 'prestamo',
+    group: 'resources',
     term: 'Préstamo modal',
     match: ['préstamo modal', 'préstamo', 'prestado', 'prestados'],
     text: () => `Un acorde tomado de la tonalidad «paralela», que tiene la misma tónica pero el otro modo. En ${K('C', 'major')}, ${sym('F', 'm')} viene de ${K('C', 'minor')} y le da un toque melancólico.`,
@@ -227,6 +245,7 @@ export const GLOSSARY = [
   },
   {
     id: 'sustituto-tritonal',
+    group: 'resources',
     term: 'Sustituto tritonal',
     match: ['sustitutos tritonales', 'sustituto tritonal'],
     text: () => `Un acorde con séptima que ocupa el lugar de la dominante y cuya raíz está a un tritono de ella (${sym('Db', '7')} en lugar de ${sym('G', '7')}, en ${noteName('C')}). Comparten las dos notas que crean la tensión, así que funcionan igual, pero el bajo baja medio tono hasta la tónica. Muy típico del jazz.`,
@@ -238,6 +257,7 @@ export const GLOSSARY = [
   },
   {
     id: 'sexta-aumentada',
+    group: 'resources',
     term: 'Sexta aumentada',
     match: ['sextas aumentadas', 'sexta aumentada alemana', 'sexta aumentada'],
     text: 'El nombre clásico de un acorde con séptima sobre el sexto grado bajado (♭VI) que va a la dominante. Su séptima se escribe como una nota medio tono por debajo de la dominante y sube hasta ella, mientras el bajo baja medio tono. Suena igual que un sustituto tritonal del jazz: dos nombres para el mismo sonido.',
@@ -251,6 +271,7 @@ export const GLOSSARY = [
   },
   {
     id: 'disminuido',
+    group: 'chords',
     term: 'Acorde disminuido',
     match: ['disminuidos', 'disminuido'],
     text: 'Un acorde de sonido tenso e inestable. Casi nunca se queda quieto: suele aparecer de paso, camino de otro acorde que está medio tono por encima.',
@@ -261,6 +282,7 @@ export const GLOSSARY = [
   },
   {
     id: 'disminuido-septima',
+    group: 'chords',
     term: 'Disminuido con séptima',
     match: ['disminuidos con séptima', 'disminuido con séptima', 'cuatro nombres'],
     text: () => `Un acorde disminuido con una nota más. Sus cuatro notas están a la misma distancia (tres semitonos), así que es simétrico: ${dim7('B')}, ${dim7('D')}, ${dim7('F')} y ${dim7('Ab')} tienen las mismas notas y suenan exactamente igual. Cada uno tiene cuatro nombres, y por eso el mismo acorde puede llevar a sitios distintos: se le llama por el nombre que explica adónde va.`,
@@ -277,6 +299,7 @@ export const GLOSSARY = [
   },
   {
     id: 'aumentado',
+    group: 'chords',
     term: 'Acorde aumentado',
     match: ['acordes aumentados', 'acorde aumentado', 'aumentados', 'aumentado', 'tres nombres'],
     text: () => `Un acorde mayor con la quinta subida medio tono: suena tenso, misterioso. Sus tres notas están a la misma distancia (cuatro semitonos), así que es simétrico: ${aug('C')}, ${aug('E')} y ${aug('G#')} tienen las mismas notas y suenan exactamente igual. Cada uno tiene tres nombres. Suele ir de paso: sobre la dominante, empuja con más fuerza hacia la tónica.`,
@@ -289,6 +312,7 @@ export const GLOSSARY = [
   },
   {
     id: 'dominante-alterada',
+    group: 'chords',
     term: 'Dominante alterada',
     match: ['dominantes alteradas', 'dominante alterada'],
     text: () => `Una dominante con notas tensas añadidas (♭9, ♯9, ♭5 o ♯5), como ${sym('G', '7alt')} o ${sym('G', '7♭9')} en ${K('C', 'major')}. Suena aún más inestable que la dominante normal y pide resolver con más fuerza. Muy del jazz.`,
@@ -300,6 +324,7 @@ export const GLOSSARY = [
   },
   {
     id: 'napolitana',
+    group: 'resources',
     term: 'Sexta napolitana',
     match: ['sexta napolitana', 'acorde napolitano', 'napolitano'],
     text: () => `Un acorde mayor medio tono por encima de la tónica (el ♭II: ${sym('Bb')} en ${K('A', 'minor')}), casi siempre con la cuarta nota de la escala en el bajo (${sym('Bb')}/${noteName('D')}): por eso se llama «sexta». Prepara la dominante con dramatismo. Muy de Bach, Mozart y Beethoven.`,
@@ -312,6 +337,7 @@ export const GLOSSARY = [
   },
   {
     id: 'picardia',
+    group: 'resources',
     term: 'Tercera de picardía',
     match: ['terceras de picardía', 'tercera de picardía'],
     text: 'Un final en mayor en una obra en menor: el último acorde es el de la tónica, pero mayor, porque su tercera sube medio tono. La tristeza se ilumina en el último momento. Muy de Bach.',
@@ -326,6 +352,7 @@ export const GLOSSARY = [
   },
   {
     id: 'mediantes',
+    group: 'resources',
     term: 'Mediantes cromáticas',
     match: ['mediantes cromáticas', 'mediante cromática'],
     text: () => `Dos acordes del mismo tipo (dos mayores o dos menores) con las fundamentales a una tercera, que no son de la misma tonalidad y comparten como mucho una nota: ${sym('C')} y ${sym('E')}, o ${sym('C')} y ${sym('Ab')}. Suenan grandiosos y sorprendentes: es el sonido épico del cine.`,
@@ -336,6 +363,7 @@ export const GLOSSARY = [
   },
   {
     id: 'acorde-quinta',
+    group: 'chords',
     term: 'Acorde de quinta',
     match: ['acordes de quinta', 'acorde de quinta', 'power chords', 'power chord'],
     text: () => `Un acorde con solo dos notas, la fundamental y la quinta (${sym('C', '5')}: ${noteName('C')} y ${noteName('G')}), sin tercera, así que no es ni mayor ni menor. Con distorsión suena potente: es la base de la guitarra del rock (en inglés, «power chord»).`,
@@ -346,6 +374,7 @@ export const GLOSSARY = [
   },
   {
     id: 'pentatonica',
+    group: 'scales',
     term: 'Escala pentatónica',
     match: ['escala pentatónica', 'pentatónica'],
     text: 'Una escala de solo cinco notas, sin los semitonos que crean tensión: por eso casi todo suena bien con ella. La pentatónica menor es la más usada en el rock y el blues; la mayor, en el country y el folk.',
@@ -356,6 +385,7 @@ export const GLOSSARY = [
   },
   {
     id: 'tonos-enteros',
+    group: 'scales',
     term: 'Escala de tonos enteros',
     match: ['escala de tonos enteros', 'tonos enteros'],
     text: 'Una escala de seis notas, todas a un tono de distancia. Como todas están a la misma distancia, ninguna suena a casa: suena a sueño o a flotar. Muy de Debussy.',
@@ -363,6 +393,7 @@ export const GLOSSARY = [
   },
   {
     id: 'escala-disminuida',
+    group: 'scales',
     term: 'Escala disminuida',
     match: ['escala disminuida', 'octatónica'],
     text: 'Una escala de ocho notas que alterna tonos y semitonos (también se llama octatónica). Se repite cada tres semitonos, así que ninguna nota suena a casa: suena tensa e inquietante. Muy del jazz y de las bandas sonoras de suspense.',
@@ -370,6 +401,7 @@ export const GLOSSARY = [
   },
   {
     id: 'inversion',
+    group: 'chords',
     term: 'Inversión',
     match: ['inversiones', 'inversión', 'en el bajo'],
     text: () => `Un acorde con otra de sus notas en el bajo, en lugar de su raíz. Se escribe con una barra: ${sym('C')}/${noteName('E')} es ${sym('C')} con ${noteName('E')} abajo. Suena al mismo acorde, pero más ligero, y sirve para que el bajo vaya por pasos cortos de un acorde al siguiente.`,
@@ -382,6 +414,7 @@ export const GLOSSARY = [
   },
   {
     id: 'transportar',
+    group: 'basics',
     term: 'Transportar',
     match: ['transportar', 'transportada', 'transportado'],
     text: 'Cambiar todos los acordes a otra tonalidad sin cambiar las distancias entre ellos. La música suena igual, solo que más aguda o más grave.',
@@ -395,6 +428,7 @@ export const GLOSSARY = [
   },
   {
     id: 'cifrado',
+    group: 'basics',
     term: 'Cifrado',
     match: ['cifrado'],
     text: 'La forma de escribir los acordes. El americano usa letras (C D E F G A B) y el latino, sílabas (Do Re Mi Fa Sol La Si). Una «m» indica que es menor y un «7», que lleva séptima.',
@@ -429,6 +463,7 @@ const MODE_TERMS = MODES.map((mode) => {
   const variants = MODE_VARIANTS[mode.id] ?? [];
   return {
     id: `modo-${mode.id}`,
+    group: 'scales',
     term: `Modo ${mode.name}`,
     match: [...variants.map((v) => v.match), mode.name],
     text: [MODE_INFO[mode.id].text, ...variants.map((v) => v.text)].join(' '),
@@ -441,6 +476,38 @@ const MODE_TERMS = MODES.map((mode) => {
   };
 });
 GLOSSARY.push(...MODE_TERMS);
+
+// Los grupos de la lista del glosario, en orden.
+export const GROUPS = [
+  { id: 'basics', name: 'Básicos' },
+  { id: 'chords', name: 'Acordes' },
+  { id: 'scales', name: 'Escalas y modos' },
+  { id: 'resources', name: 'Recursos y progresiones' },
+];
+
+// Para buscar sin distinguir mayúsculas ni acentos: «Tónica» → «tonica».
+export const fold = (s) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+
+// Los términos que encajan con lo buscado, de más a menos exigente: alguna
+// palabra de su nombre (o de las que lo enlazan) empieza por lo escrito
+// («ton» → Tonalidad, Tónica, Tonos enteros, no Pentatónica); si ninguno, lo
+// tiene en cualquier parte del nombre; y si tampoco, en la definición
+// («flamenco» → modo frigio). Sin nada escrito, todos.
+export function searchGlossary(query) {
+  const q = fold(query.trim()).replace(/\s+/g, ' ');
+  if (!q) return GLOSSARY;
+  const names = (e) => [e.term, ...e.match].map(fold);
+  const tests = [
+    (e) => names(e).some((n) => n.startsWith(q) || n.split(/[\s()]+/).some((w) => w.startsWith(q)) || n.includes(` ${q}`)),
+    (e) => names(e).some((n) => n.includes(q)),
+    (e) => fold(termText(e)).includes(q),
+  ];
+  for (const t of tests) {
+    const found = GLOSSARY.filter(t);
+    if (found.length) return found;
+  }
+  return [];
+}
 
 const BY_ID = new Map(GLOSSARY.map((e) => [e.id, e]));
 const BY_WORD = new Map(GLOSSARY.flatMap((e) => e.match.map((w) => [w, e])));
