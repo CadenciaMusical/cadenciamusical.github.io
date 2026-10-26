@@ -1,7 +1,7 @@
 // Une la interfaz con el análisis y el sonido.
 
 import { analyze } from './core/analysis.js';
-import { tokenSpans, writtenNotation } from './core/parser.js';
+import { shortenWords, tokenSpans, writtenNotation } from './core/parser.js';
 import { tonicChord, normalVersion } from './core/build.js';
 import { chordLabel, isLatin, keyName, setLatin } from './core/names.js';
 import { guitarVoicings } from './core/fretboard.js';
@@ -105,6 +105,9 @@ function loadFromUrl() {
 
 function run() {
   stopPlayback();
+  // «La menor» → «Lam»: en la casilla, para que se aprenda el cifrado.
+  const short = shortenWords(els.input.value);
+  if (short !== els.input.value) els.input.value = short;
   const text = els.input.value.trim();
   state.selected = null;
   if (!text) {

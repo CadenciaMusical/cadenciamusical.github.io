@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseChord, parseProgression, tokenize } from '../js/core/parser.js';
+import { parseChord, parseProgression, shortenWords, tokenize } from '../js/core/parser.js';
+import { transposeText } from '../js/core/transpose.js';
 
 const symbol = (c) => c.root + c.suffix + (c.bass ? '/' + c.bass : '');
 
@@ -98,4 +99,36 @@ test('sugerencias: a igual distancia, primero la que solo añade letras', () => 
 
 test('el triángulo, sin ninguna minúscula en el texto', () => {
   assert.ok(parseProgression('CΔ7 FΔ7').every((c) => c.ok && c.seventh === 'maj7'));
+});
+
+test('acordes escritos con palabras, como habla un principiante', () => {
+  const read = (text) => parseProgression(text).map((c) => (c.ok ? symbol(c) : `✗${c.input}`)).join(' ');
+  for (const [input, short, chords] of [
+    ['La menor, Fa, Do, Sol', 'Lam, Fa, Do, Sol', 'Am F C G'],
+    ['Re mayor Sol mayor La séptima', 'Re Sol La7', 'D G A7'],
+    ['Si disminuido Do', 'Si° Do', 'Bdim C'],
+    ['Do séptima mayor', 'Domaj7', 'Cmaj7'],
+    // Sin distinguir mayúsculas ni acentos.
+    ['la MENOR re menor mi septima', 'Lam Rem Mi7', 'Am Dm E7'],
+    ['DO MAYOR SOL SÉPTIMA', 'Do Sol7', 'C G7'],
+    ['Mi menor con séptima', 'Mim7', 'Em7'],
+    ['Do aumentado Fa', 'Do+ Fa', 'C+ F'],
+    ['Si disminuido séptima Do', 'Si°7 Do', 'Bdim7 C'],
+    ['Fa sostenido menor Si bemol', 'Fa#m Sib', 'F#m Bb'],
+    ['A menor F C G', 'Am F C G', 'Am F C G'],
+  ]) {
+    assert.equal(shortenWords(input), short, input);
+    assert.equal(read(input), chords, input);
+  }
+  // Solo detrás de una nota: lo demás se queda igual.
+  assert.equal(shortenWords('Am F C G'), 'Am F C G');
+  assert.equal(shortenWords('menor Do'), 'menor Do');
+});
+
+test('transportar un texto con palabras lo pasa a cifrado', () => {
+  assert.equal(transposeText('La menor Fa Do Sol', { tonic: 'A' }, { tonic: 'B' }), 'Sim Sol Re La');
+});
+
+test('«Do aumentado» es un acorde aumentado', () => {
+  assert.equal(parseProgression('Do aumentado')[0].triad, 'aug');
 });

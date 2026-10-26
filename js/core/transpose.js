@@ -3,7 +3,7 @@
 // También, reescribir el texto en el otro cifrado (americano ↔ latino).
 
 import { Chord, Interval, Note } from '../../vendor/tonal.mjs';
-import { parseChord, parseProgression, tokenSpans } from './parser.js';
+import { parseChord, parseProgression, shortenWords, tokenSpans } from './parser.js';
 import { latinSuffix } from './names.js';
 
 const LATIN = { C: 'Do', D: 'Re', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si' };
@@ -50,6 +50,7 @@ export function transposeChord(chord, from, to) {
 // Cambia cada acorde de un texto con fn(acorde) y deja igual todo lo demás:
 // lo que no se reconoce como acorde, los separadores («|», comas…), «%» y «N.C.».
 function mapChords(text, fn) {
+  text = shortenWords(text);
   const chords = parseProgression(text);
   let out = '';
   let pos = 0;

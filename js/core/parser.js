@@ -9,6 +9,36 @@ const LATIN_ROOTS = { do: 'C', re: 'D', mi: 'E', fa: 'F', sol: 'G', la: 'A', si:
 const LATIN_RE = /^(sol|do|re|mi|fa|la|si)([#♯b♭]?)(.*)$/i;
 const AMERICAN_RE = /^([a-g])([#♯b♭]?)(.*)$/i;
 
+// Quien empieza escribe los acordes con palabras: «La menor», «Re mayor»,
+// «Sol séptima», «Si disminuido», «Fa sostenido menor». Como los espacios
+// separan acordes, se convierten antes a su cifrado («Lam», «Re», «Sol7»,
+// «Si°», «Fa#m»), sin distinguir mayúsculas ni acentos, siempre detrás de
+// una nota. Lo demás queda igual.
+const SPOKEN_RE = new RegExp(
+  '(^|[\\s,;|–—])' // separador antes de la nota
+  + '(sol|do|re|mi|fa|la|si|[a-g])([#♯b♭]?)' // la nota, con su alteración pegada
+  + '(\\s+(?:sostenido|bemol))?' // o escrita con palabras
+  + '(\\s+(?:menor|mayor|disminuid[oa]|aumentad[oa]))?' // el tipo de acorde
+  + '(\\s+(?:con\\s+)?s[eé]ptima(?:\\s+mayor)?)?' // la séptima
+  + '(?=$|[\\s,;|–—])',
+  'gi',
+);
+
+const QUALITY = { menor: 'm', mayor: '', disminuido: '°', disminuida: '°', aumentado: '+', aumentada: '+' };
+
+export function shortenWords(text) {
+  return text.replace(SPOKEN_RE, (all, sep, note, acc, accWord, quality, seventh) => {
+    if (!accWord && !quality && !seventh) return all;
+    const root = note[0].toUpperCase() + note.slice(1).toLowerCase() + acc + (accWord ? (/sostenido/i.test(accWord) ? '#' : 'b') : '');
+    const q = quality ? QUALITY[quality.trim().toLowerCase()] : '';
+    if (!seventh) return sep + root + q;
+    const major7 = /mayor$/i.test(seventh.trim());
+    // Con séptima: Lam7, Domaj7, Si°7, Lam(maj7).
+    const suffix = { m: major7 ? 'm(maj7)' : 'm7', '°': '°7', '+': major7 ? '+maj7' : '+7', '': major7 ? 'maj7' : '7' }[q];
+    return sep + root + suffix;
+  });
+}
+
 // Separa por espacios, comas, barras de compás y guiones entre acordes
 // («C-G-Am»), pero no el guion de «C-» (menor) ni el de «m7-5».
 export function tokenize(text) {
@@ -167,7 +197,7 @@ export function parseProgression(text) {
   const allCaps = /[A-Z]/.test(text.replace(NO_CHORD_RE, '')) && !/[a-z]/.test(text);
   const out = [];
   let previous = null;
-  for (const t of tokenize(text)) {
+  for (const t of tokenize(shortenWords(text))) {
     if (NO_CHORD_RE.test(t)) {
       out.push({ ok: false, rest: true, input: t });
     } else if (t === '%') {
