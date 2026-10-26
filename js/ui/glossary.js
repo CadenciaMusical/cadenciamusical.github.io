@@ -298,6 +298,20 @@ export const GLOSSARY = [
     },
   },
   {
+    id: 'picardia',
+    term: 'Tercera de picardía',
+    match: ['terceras de picardía', 'tercera de picardía'],
+    text: 'Un final en mayor en una obra en menor: el último acorde es el de la tónica, pero mayor, porque su tercera sube medio tono. La tristeza se ilumina en el último momento. Muy de Bach.',
+    example: (k, label) => {
+      const minor = { ...k, mode: 'minor' };
+      const i = chordOnDegree(minor, 0, 'm');
+      const iv = chordOnDegree(minor, 5, 'm');
+      const V7 = chordOnDegree(minor, 7, 'M', '7');
+      const I = chordOnDegree(minor, 0, 'M');
+      return { chords: [i, iv, V7, i, iv, V7, I], caption: `Primero acaba en ${label(i)}, en menor; después, en ${label(I)}, con la tercera de picardía.` };
+    },
+  },
+  {
     id: 'mediantes',
     term: 'Mediantes cromáticas',
     match: ['mediantes cromáticas', 'mediante cromática'],

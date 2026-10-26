@@ -32,6 +32,7 @@ export function normalVersion(item, key) {
     case 'secondary':
     case 'major-two':
     case 'mediant':
+    case 'picardy':
     case 'borrowed':
     case 'modal':
     case 'dorian':

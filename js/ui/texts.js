@@ -328,6 +328,13 @@ export function modulationText(from, to) {
   }
 }
 
+// La tercera de picardía (item.kind 'picardy'): el último acorde, mayor, en
+// una obra en menor.
+export function picardyText(item, key) {
+  const third = noteName(Note.transpose(key.tonic, '3M'));
+  return `Un final en mayor en una obra en menor: la tristeza se ilumina en el último momento. Muy de Bach. ${chordLabel(item.chord)} es el acorde de la tónica, pero mayor: su tercera, ${third}, sube medio tono. Se llama tercera de picardía.`;
+}
+
 // Un riff de acordes de quinta sacado de una pentatónica (result.pentatonic).
 export function pentatonicText(p) {
   const which = p.mode === 'minor'
@@ -430,6 +437,8 @@ export function kindText(item, key) {
       const seventh = noteName(Note.transpose(key.tonic, '7M'));
       return `${base} Con el ${seventh} de ${label(item.melodic)}, la sexta y la séptima suben a la vez: es la escala menor melódica (${scale}), la «menor del jazz».`;
     }
+    case 'picardy':
+      return picardyText(item, key);
     case 'borrowed': {
       const parallel = keyName({ tonic: key.tonic, mode: item.from });
       const color = item.from === 'minor' ? 'más oscuro, melancólico' : 'más luminoso';

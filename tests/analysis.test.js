@@ -763,3 +763,39 @@ test('la menor melódica, a la vista en la tarjeta de tonalidad', async () => {
   }
   setLatin(false);
 });
+
+test('tercera de picardía: una obra en menor que acaba en mayor', async () => {
+  const { renderProgressionCard, progressionRanges } = await import('../js/ui/render.js');
+  const { setLatin } = await import('../js/core/names.js');
+  const { normalVersion } = await import('../js/core/build.js');
+  setLatin(true);
+  for (const [text, tonic, minorTonic] of [['Lam Rem Mi7 La', 'A', 'Lam'], ['Rem Solm La7 Re', 'D', 'Rem']]) {
+    const r = expectKey(text, tonic, 'minor');
+    assert.equal(romans(r), 'i iv V7 I', text);
+    const last = r.items[3];
+    assert.equal(last.kind, 'picardy', text);
+    assert.equal(last.fn, 'T', text);
+    assert.ok(last.special, text);
+    assert.ok(r.items.slice(0, 3).every((i) => !i.special), text);
+    assert.equal(r.alternative, null, text);
+    const card = renderProgressionCard(r).replace(/<[^>]+>/g, '');
+    assert.match(card, /Tercera de picardía/);
+    assert.match(card, /Un final en mayor en una obra en menor: la tristeza se ilumina en el último momento\. Muy de Bach\./);
+    assert.match(card, /▶ Así suena/);
+    assert.match(card, new RegExp(`▶ Con ${minorTonic} en su lugar`));
+    assert.ok(progressionRanges(r).has(3));
+    // La cadencia final llega al I mayor, no al i.
+    assert.match(card, /\(V → I\)/);
+    const n = normalVersion(last, r.key);
+    assert.equal(n.triad, 'm');
+    assert.ok(r.cadences.some((c) => c.id === 'perfect' && c.atEnd), text);
+  }
+});
+
+test('sin tercera de picardía: en mayor de principio a fin, o en menor con la menor melódica', () => {
+  const major = expectKey('La Re Mi7 La', 'A', 'major');
+  assert.ok(major.items.every((i) => i.kind === 'diatonic'));
+  const melodic = expectKey('Lam Re Mi Lam', 'A', 'minor');
+  assert.ok(melodic.melodic);
+  assert.ok(!melodic.items.some((i) => i.kind === 'picardy'));
+});

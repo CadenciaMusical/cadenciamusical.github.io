@@ -23,6 +23,11 @@ export function analyze(text, { forcedKey = null } = {}) {
   if (!detection) return { parsed, chords, errors, key: null, items: [], progressions: [], cadences: [], modes: null, modal: false, loop: null, bassLines: [], pedal: null, rests };
 
   let { key, alternative, confidence } = detection;
+  const picardy = forcedKey ? null : picardyKey(chords, detection);
+  if (picardy) {
+    key = picardy;
+    alternative = null;
+  }
   if (forcedKey) {
     const { blues } = scoreKey(chords, forcedKey);
     const chosen = { ...forcedKey, blues };
@@ -171,6 +176,22 @@ function analyzeSections({ parsed, chords, errors, rests, sections, key, forced 
     melodic: null,
     mediants: [],
   };
+}
+
+// Tercera de picardía: una progresión claramente menor que acaba en el acorde
+// mayor de su misma tónica (Am Dm E7 A). La detección la oye en mayor (acaba
+// en La), pero todo lo anterior es de La menor: empieza en su tónica, todos
+// sus acordes son suyos y antes del final no hay ningún La mayor. Devuelve
+// la tonalidad menor o null.
+function picardyKey(chords, detection) {
+  const { key } = detection;
+  const last = chords[chords.length - 1];
+  if (chords.length < 3 || key.mode !== 'major' || last.pc !== key.pc || last.triad !== 'M' || isLoopLike(chords)) return null;
+  const minor = detection.ranking.find((k) => k.pc === key.pc && k.mode === 'minor');
+  const before = chords.slice(0, -1);
+  if (!isTonicChord(before[0], minor)) return null;
+  const own = before.every((c, i) => classify(c, minor, chords[i + 1], before[i - 1] ?? null, chords[i + 2] ?? null).kind === 'diatonic');
+  return own ? minor : null;
 }
 
 // Mediantes cromáticas: dos acordes seguidos, los dos mayores (o los dos

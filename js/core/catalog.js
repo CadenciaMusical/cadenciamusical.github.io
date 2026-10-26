@@ -199,7 +199,8 @@ export const CADENCES = [
   {
     id: 'perfect',
     name: 'Cadencia perfecta',
-    steps: ['V', 'i'],
+    // Con el I mayor, la tercera de picardía.
+    steps: ['V', 'i|I'],
     mode: 'minor',
     text: 'La que suena a final rotundo: de la dominante a la tónica (V → i). La tensión se resuelve del todo, como un punto final.',
   },

@@ -186,6 +186,7 @@ export const classifyAlone = () => ({ st: null, roman: '', fn: 'N', kind: 'symme
 //                       explica adónde va (ver classifyDim7)
 //         'dorian'    — el IV mayor en una tonalidad menor («cuarto dórico»)
 //         'modal'     — es del modo de la progresión, no del mayor o el menor
+//         'picardy'   — tercera de picardía: el I mayor al final, en menor
 //         'borrowed'  — préstamo de la tonalidad paralela (mayor ↔ menor)
 //         'chromatic' — ajeno a la tonalidad
 //   fit: cuánto apoya este acorde a la tonalidad (lo usa la detección).
@@ -345,6 +346,12 @@ function classifyChord(chord, key, next, prev, after) {
   // la menor melódica: es el «cuarto dórico».
   if (key.mode === 'minor' && st === 5 && chord.triad === 'M' && (!chord.seventh || chord.seventh === '7')) {
     return { ...base, fn: 'S', kind: 'dorian', fit: 0.3 };
+  }
+
+  // Tercera de picardía: en menor, el acorde mayor de la tónica como último
+  // acorde (A en Am Dm E7 A). Para la tonalidad cuenta como un préstamo.
+  if (key.mode === 'minor' && st === 0 && chord.triad === 'M' && !next && prev) {
+    return { ...base, fn: 'T', kind: 'picardy', from: 'major', fit: 0.3 };
   }
 
   const borrowed = findDegree(st, chord, PARALLEL[key.mode]);

@@ -5,7 +5,7 @@ import { parseChord } from '../core/parser.js';
 import { defaultTonic, isTonicChord } from '../core/key.js';
 import { convertNotation, transposeChord } from '../core/transpose.js';
 import {
-  FUNCTIONS, KEY_TEXT, sectionsText, modulationText, loopText, locrianText, pentatonicText, melodicMinorText, neapolitanText, symmetricScaleText, mediantsText, unclearKeyText, bassLineTitle, bassLineText, pedalText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, alternativeNoteText, kindText,
+  FUNCTIONS, KEY_TEXT, sectionsText, modulationText, loopText, locrianText, pentatonicText, melodicMinorText, neapolitanText, picardyText, symmetricScaleText, mediantsText, unclearKeyText, bassLineTitle, bassLineText, pedalText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, alternativeNoteText, kindText,
   MODE_INFO, VARIANT_INFO, MODES_TEXT, twoChanges, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText, modeListenTitle,
 } from './texts.js';
 import { GLOSSARY, linkTerms, termText } from './glossary.js';
@@ -231,10 +231,15 @@ export function progressionRanges(result) {
     if (m.whole && m.times === 1) continue;
     for (const r of [m, ...inOtherSections(result, m)]) for (let i = r.start; i <= r.end; i++) marked.add(i);
   }
-  // El napolitano tiene su propia tarjeta: se marca dónde está.
+  // El napolitano y la tercera de picardía tienen su propia tarjeta: se marca dónde están.
   neapolitans(result).forEach((i) => marked.add(i));
+  const picardy = picardyAt(result);
+  if (picardy !== undefined) marked.add(picardy);
   return marked;
 }
+
+// La posición de la tercera de picardía (el último acorde), o undefined.
+const picardyAt = (result) => (result.items[result.items.length - 1]?.kind === 'picardy' ? result.items.length - 1 : undefined);
 
 // Las posiciones de los napolitanos (y sextas napolitanas).
 const neapolitans = (result) => result.items.flatMap((item, i) => (item.kind === 'neapolitan' ? [i] : []));
@@ -285,7 +290,8 @@ export function renderProgressionCard(result) {
   const { pedal } = result;
   const mediants = result.mediants ?? [];
   const [neapolitan] = neapolitans(result);
-  if (!progressions.length && !cadence && !loop && !bass.length && !pedal && !mediants.length && neapolitan === undefined) return '';
+  const picardy = picardyAt(result);
+  if (!progressions.length && !cadence && !loop && !bass.length && !pedal && !mediants.length && neapolitan === undefined && picardy === undefined) return '';
 
   const blocks = progressions.map(
     (m, i) => `
@@ -325,6 +331,23 @@ export function renderProgressionCard(result) {
         <div class="button-row">
           ${playRange(span, 'Así suena')}
           <button type="button" class="btn secondary small" data-action="play-swapped" data-start="${span.start}" data-end="${span.end}" data-index="${neapolitan}">▶ Con el ${degree} (${chordLabel(normal)}) en su lugar</button>
+        </div>
+      </div>`);
+  }
+  if (picardy !== undefined) {
+    // Se oye con los dos acordes de antes: la llegada desde la dominante.
+    const item = result.items[picardy];
+    const normal = normalVersion(item, item.key ?? result.key);
+    const span = { start: Math.max(0, picardy - 2), end: picardy };
+    blocks.push(`
+      <div class="match">
+        <p class="eyebrow">✦ Algo especial</p>
+        <h2 class="match-name">Tercera de picardía</h2>
+        <p>${linkTerms(picardyText(item, item.key ?? result.key))}</p>
+        <p class="muted">Es el último acorde, marcado abajo.</p>
+        <div class="button-row">
+          ${playRange(span, 'Así suena')}
+          <button type="button" class="btn secondary small" data-action="play-swapped" data-start="${span.start}" data-end="${span.end}" data-index="${picardy}">▶ Con ${chordLabel(normal)} en su lugar</button>
         </div>
       </div>`);
   }
@@ -371,7 +394,7 @@ export function renderProgressionCard(result) {
       <div class="match">
         <p class="eyebrow">Cómo acaba</p>
         <h2 class="match-name">${cadence.name}</h2>
-        <p>${linkTerms(cadence.text)}</p>
+        <p>${linkTerms(picardy !== undefined ? cadence.text.replace('→ i)', '→ I)') : cadence.text)}</p>
         ${playRange(cadence, `Escuchar el final (${chordsIn(result, cadence, ' → ', { unique: true })})`)}
       </div>`);
   }
