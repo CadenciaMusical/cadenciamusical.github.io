@@ -5,6 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Cadencia</title>
   <meta name="description" content="Escribe unos acordes y descubre su tonalidad, sus grados y su función. Teoría musical para principiantes, para oír y no solo leer.">
+  <!-- La tarjeta al compartir el enlace (WhatsApp, redes…). Las direcciones,
+       completas: quien lee estas etiquetas no conoce la página de origen. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Cadencia">
+  <meta property="og:locale" content="es_ES">
+  <meta property="og:url" content="https://cadenciamusical.github.io/">
+  <meta property="og:title" content="Cadencia: teoría musical para principiantes">
+  <meta property="og:description" content="Escribe unos acordes y descubre su tonalidad, sus grados y su función. Para oír y no solo leer.">
+  <meta property="og:image" content="https://cadenciamusical.github.io/icons/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="El logo de Cadencia, un calderón blanco sobre fondo coral, con los acordes Lam, Fa, Do y Sol.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Cadencia: teoría musical para principiantes">
+  <meta name="twitter:description" content="Escribe unos acordes y descubre su tonalidad, sus grados y su función. Para oír y no solo leer.">
+  <meta name="twitter:image" content="https://cadenciamusical.github.io/icons/og-image.png">
+  <meta name="twitter:image:alt" content="El logo de Cadencia, un calderón blanco sobre fondo coral, con los acordes Lam, Fa, Do y Sol.">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="icon" href="icons/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -73,6 +90,13 @@
     </section>
 
     <section id="result" hidden aria-live="polite">
+      <div class="share-row">
+        <span id="share-status" class="share-status" role="status"></span>
+        <button type="button" id="share" class="btn secondary small">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
+          Compartir
+        </button>
+      </div>
       <div id="key-card" class="card key-card"></div>
       <div id="progression-card" class="card progression-card" hidden></div>
 

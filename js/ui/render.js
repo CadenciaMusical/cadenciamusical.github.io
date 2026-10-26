@@ -229,7 +229,7 @@ export function renderChords(items, { selected = null, marked = new Set(), turns
 
 // Como mucho dos progresiones: las más largas (findMatches ya las ordena).
 // Si una sale varias veces (C F G C F G C), se muestra una sola vez.
-const shownProgressions = (result) =>
+export const shownProgressions = (result) =>
   result.progressions.filter((m, i, all) => all.findIndex((o) => o.id === m.id) === i).slice(0, 2);
 // Si cambia de tonalidad, la misma progresión puede volver en otro tramo
 // (Do Fa Sol Do, y después Mi♭ La♭ Si♭ Mi♭): se muestra una vez y se dice dónde vuelve.

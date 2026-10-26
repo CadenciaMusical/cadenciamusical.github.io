@@ -298,6 +298,18 @@ function loopCluesText(key, alt, chords) {
     : 'Es un bucle: el último acorde no es un final, así que no sirve de pista.';
 }
 
+// El texto al compartir: los acordes y, si la hay, la progresión reconocida.
+// «Lam Fa Do Sol: la del pop en La menor. Analízala en Cadencia». text: lo
+// escrito en la casilla; progression: la primera que se muestra, o null.
+export function shareText(text, result, progression) {
+  const chords = text.trim().replace(/\s+/g, ' ');
+  const keys = result?.sections ? result.sections.map((s) => keyName(s.key)).join(' y luego ') : result?.key && !result.unclear ? keyName(result.key) : null;
+  // «La del pop» → «la del pop»; «ii–V–I» se queda igual.
+  const name = progression && (/^\p{Lu}\p{Ll}/u.test(progression.name) ? progression.name[0].toLowerCase() + progression.name.slice(1) : progression.name);
+  const what = name ? `: ${name}${keys ? ` en ${keys}` : ''}` : keys ? `, en ${keys}` : '';
+  return `${chords}${what}. Analízala en Cadencia`;
+}
+
 // Cambios de tonalidad (result.sections): dónde cambia cada vez. «Empieza en
 // Do mayor y en el acorde 5 cambia a Mi♭ mayor.»
 export function sectionsText(sections) {

@@ -410,6 +410,12 @@ details summary {
 .key-chip { min-width: 56px; justify-content: center; }
 .chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
 
+/* --- Compartir: el botón, encima del análisis, a la derecha --- */
+
+.share-row { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: 8px; }
+.share-row .btn { display: inline-flex; align-items: center; gap: 6px; }
+.share-status { color: var(--accent-text); font-weight: 600; font-size: 0.95rem; }
+
 /* --- Acordes --- */
 
 .section-title { font-size: 1.2rem; margin: 24px 0 0; }

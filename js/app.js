@@ -9,11 +9,12 @@ import { defaultTonic } from './core/key.js';
 import { convertNotation, transposeText } from './core/transpose.js';
 import { playChords, playChord, playNotes, stop } from './audio.js';
 import {
-  escapeHtml, renderEmptyInput, renderErrors, renderKey, renderProgressionCard, progressionRanges, progressionTurns, renderChords, renderDetail, renderGlossaryList, renderTerm, renderTranspose, renderModes,
+  escapeHtml, shownProgressions, renderEmptyInput, renderErrors, renderKey, renderProgressionCard, progressionRanges, progressionTurns, renderChords, renderDetail, renderGlossaryList, renderTerm, renderTranspose, renderModes,
 } from './ui/render.js';
 import { plainScale, typicalProgression } from './core/modes.js';
 import { Interval, Note } from '../vendor/tonal.mjs';
 import { glossaryEntry, searchGlossary, DEFAULT_KEY } from './ui/glossary.js';
+import { shareText } from './ui/texts.js';
 
 const EXAMPLES = [
   { label: 'La del pop', chords: 'C G Am F' },
@@ -49,6 +50,8 @@ const els = {
   glossaryList: $('#glossary-list'),
   glossarySearch: $('#glossary-search'),
   glossaryCount: $('#glossary-count'),
+  share: $('#share'),
+  shareStatus: $('#share-status'),
   termDialog: $('#term-dialog'),
   detailSheet: $('#detail-sheet'),
   detailBody: $('#detail-body'),
@@ -291,6 +294,40 @@ function scaleMidis(scale, pc) {
   const start = 60 + pc;
   return [...scale.map((n) => start + Interval.semitones(Interval.distance(scale[0], n))), start + 12];
 }
+
+// --- Compartir ---
+
+// En el móvil, el menú de compartir del sistema; si no lo hay (o falla),
+// se copia el enlace. El enlace lleva los acordes (ver saveToUrl).
+async function share() {
+  const r = state.result;
+  const url = location.href;
+  const text = shareText(els.input.value, r, r ? shownProgressions(r)[0] ?? null : null);
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Cadencia', text, url });
+      return;
+    } catch (e) {
+      // Cerrar el menú sin compartir no es un error.
+      if (e.name === 'AbortError') return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    showShareStatus('Enlace copiado');
+  } catch {
+    showShareStatus('No se ha podido copiar: copia la dirección de la barra del navegador');
+  }
+}
+
+let shareTimer = null;
+function showShareStatus(message) {
+  els.shareStatus.textContent = message;
+  clearTimeout(shareTimer);
+  shareTimer = setTimeout(() => { els.shareStatus.textContent = ''; }, 3000);
+}
+
+els.share.addEventListener('click', share);
 
 // --- Transportar ---
 
