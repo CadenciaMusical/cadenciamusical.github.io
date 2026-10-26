@@ -305,6 +305,8 @@ function classifyChord(chord, key, next, prev, after) {
         roman: nextSt === 0 ? 'subV7' : `subV7/${targetRoman}`,
         fn: 'D',
         kind: 'tritone',
+        // Sobre el ♭VI y hacia la dominante: en clásica, la sexta aumentada alemana.
+        augmentedSixth: st === 8 && nextSt === 7,
         target: { st: nextSt, triad: target.triad, roman: targetRoman, resolves: true },
         fit: 0.5,
       };

@@ -1,7 +1,8 @@
 // Busca las progresiones y cadencias del catálogo dentro de una progresión.
 
 import { Note } from '../../vendor/tonal.mjs';
-import { PROGRESSIONS, CADENCES } from './catalog.js';
+import { PROGRESSIONS, CADENCES, FIFTHS } from './catalog.js';
+import { romanFor } from './theory.js';
 
 const mod12 = (n) => ((n % 12) + 12) % 12;
 
@@ -153,6 +154,26 @@ function toMatch(entry, run, seq, key, total) {
   };
 }
 
+// Secuencia de quintas: al menos cinco acordes seguidos cuyas fundamentales
+// bajan por quintas (o suben por cuartas) sin salir de la escala. Dentro de
+// la escala, una de esas quintas es disminuida (Fa → Si en Do): seis
+// semitonos en lugar de siete. Los acordes repetidos se juntan.
+const FIFTHS_MIN = 5;
+
+function fifthsRuns(seq, key) {
+  const scale = key.mode === 'minor' ? [...SCALE.minor, 11] : SCALE.major;
+  const inScale = (c) => scale.includes(mod12(c.pc - key.pc)) && ['M', 'm', 'dim'].includes(c.triad);
+  const link = (a, b) => inScale(a) && inScale(b) && [5, 6].includes(mod12(b.pc - a.pc));
+  const runs = [];
+  for (let i = 0; i < seq.length; ) {
+    let j = i;
+    while (j + 1 < seq.length && link(seq[j].chord, seq[j + 1].chord)) j++;
+    if (j - i + 1 >= FIFTHS_MIN) runs.push({ start: i, end: j });
+    i = j > i ? j : i + 1;
+  }
+  return runs;
+}
+
 const RELATIVE = {
   major: { shift: 9, interval: '6M', mode: 'minor' },
   minor: { shift: 3, interval: '3m', mode: 'major' },
@@ -176,10 +197,18 @@ export function findMatches(chords, key, relativeKey = null) {
     for (const run of groupRuns(entry, findRuns(entry, seq, k))) progressions.push(toMatch(entry, run, seq, k, total));
   }
 
+  for (const run of fifthsRuns(collapsed, key)) {
+    const match = toMatch(FIFTHS, run, collapsed, key, total);
+    const steps = collapsed.slice(run.start, run.end + 1).map(({ chord }) => romanFor(mod12(chord.pc - key.pc), chord.triad, null, key.mode));
+    progressions.push({ ...match, label: steps.join('–') });
+  }
+
   // Una progresión que forma parte de otra más larga encontrada no se muestra
-  // aparte (el IV–I–IV–V del final del canon de Pachelbel).
+  // aparte (el IV–I–IV–V del final del canon de Pachelbel). Salvo el ii–V–I
+  // que cierra una secuencia de quintas: es su llegada a casa.
+  const closesFifths = (a) => a.id.startsWith('ii-v-i') && progressions.some((b) => b.id === 'fifths' && b.end === a.end);
   const visible = progressions.filter(
-    (a) => !progressions.some((b) => b !== a && b.start <= a.start && b.end >= a.end && b.end - b.start > a.end - a.start),
+    (a) => closesFifths(a) || !progressions.some((b) => b !== a && b.start <= a.start && b.end >= a.end && b.end - b.start > a.end - a.start),
   );
 
   const cadences = [];

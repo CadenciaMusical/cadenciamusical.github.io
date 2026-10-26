@@ -401,7 +401,14 @@ export function kindText(item, key) {
       // Con los nombres de la dominante normal (Si, no Do♭).
       const shared = normal.notes.filter((n) => item.chord.notes.some((m) => Note.chroma(m) === Note.chroma(n)));
       const towards = item.target.st === 0 ? `la tónica, ${label(target)}` : label(target);
-      return `Es un sustituto tritonal: ocupa el lugar de ${label(normal)}, la dominante de ${towards}. Sus raíces están a un tritono de distancia y comparten las dos notas que crean la tensión (${shared.map((n) => noteName(n)).join(' y ')}), así que empuja igual hacia ${label(target)}, pero con el bajo bajando medio tono. Es muy típico del jazz.`;
+      const tension = shared.map((n) => noteName(n)).join(' y ');
+      if (item.augmentedSixth) {
+        // Su séptima, escrita como la nota medio tono por debajo de la dominante (E♭ → D♯ en La menor).
+        const V = Note.transpose(key.tonic, '5P');
+        const seventh = Note.transpose(V, '-2m');
+        return `En clásica se llama sexta aumentada alemana: su séptima, escrita como ${noteName(seventh)}, sube a ${noteName(V)}. En jazz, el mismo sonido se llama sustituto tritonal de la dominante: ocupa el lugar de ${label(normal)}, la dominante de ${towards}, y comparte con él las dos notas que crean la tensión (${tension}), así que empuja igual hacia ${label(target)}, con el bajo bajando medio tono.`;
+      }
+      return `Es un sustituto tritonal: ocupa el lugar de ${label(normal)}, la dominante de ${towards}. Sus raíces están a un tritono de distancia y comparten las dos notas que crean la tensión (${tension}), así que empuja igual hacia ${label(target)}, pero con el bajo bajando medio tono. Es muy típico del jazz.`;
     }
     case 'backdoor': {
       const normal = normalVersion(item, key);

@@ -237,6 +237,19 @@ export const GLOSSARY = [
     },
   },
   {
+    id: 'sexta-aumentada',
+    term: 'Sexta aumentada',
+    match: ['sextas aumentadas', 'sexta aumentada alemana', 'sexta aumentada'],
+    text: 'El nombre clásico de un acorde con séptima sobre el sexto grado bajado (♭VI) que va a la dominante. Su séptima se escribe como una nota medio tono por debajo de la dominante y sube hasta ella, mientras el bajo baja medio tono. Suena igual que un sustituto tritonal del jazz: dos nombres para el mismo sonido.',
+    example: (k, label) => {
+      const minor = k.mode === 'minor';
+      const I = tonicChord(k);
+      const six = chordOnDegree(k, 8, 'M', '7');
+      const V = chordOnDegree(k, 7, 'M');
+      return { chords: [I, six, V, I], caption: `${label(six)} va a ${label(V)}, la dominante${minor ? '' : ', con su color prestado de la menor'}.` };
+    },
+  },
+  {
     id: 'disminuido',
     term: 'Acorde disminuido',
     match: ['disminuidos', 'disminuido'],

@@ -304,3 +304,47 @@ test('Do Fa Fam Do sigue siendo Do mayor con cadencia plagal menor', () => {
   assert.equal(`${r.key.tonic} ${r.key.mode}`, 'C major');
   assert.ok(r.cadences.some((c) => c.id === 'minor-plagal' && c.atEnd));
 });
+
+test('secuencia de quintas: con nombre, sin las piezas que contiene salvo el ii–V–i final', async () => {
+  const { renderProgressionCard } = await import('../js/ui/render.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  for (const [text, closing, label] of [
+    ['Lam Rem Sol Do Fa Si° Mi Lam', 'ii-v-i-minor', 'i–iv–VII–III–VI–ii°–V–i'],
+    ['Do Fa Si° Mim Lam Rem Sol Do', 'ii-v-i', 'I–IV–vii°–iii–vi–ii–V–I'],
+  ]) {
+    const r = analyze(text);
+    const m = find(r, 'fifths');
+    assert.ok(m?.whole, text);
+    assert.equal(m.label, label, text);
+    assert.equal(find(r, 'turnaround'), undefined, text);
+    const close = find(r, closing);
+    assert.ok(close, text);
+    assert.equal(close.end, 7, text);
+    const card = renderProgressionCard(r).replace(/<[^>]+>/g, '');
+    assert.match(card, /Secuencia de quintas/);
+    assert.match(card, /cada acorde empuja al siguiente, como fichas de dominó/i);
+    assert.match(card, /I Will Survive/);
+    assert.match(card, /Autumn Leaves/);
+  }
+  // Con menos de cinco acordes no es una secuencia.
+  assert.equal(find(analyze('Am Dm G C'), 'fifths'), undefined);
+});
+
+test('sexta aumentada: el nombre clásico junto al del jazz', async () => {
+  const { kindText } = await import('../js/ui/texts.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  for (const [text, seventh, V] of [['Lam Fa7 Mi Lam', 'Re♯', 'Mi'], ['Do Lab7 Sol Do', 'Fa♯', 'Sol']]) {
+    const r = analyze(text);
+    const item = r.items[1];
+    assert.equal(item.roman, 'subV7/V', text);
+    assert.ok(item.augmentedSixth, text);
+    const t = kindText(item, r.key);
+    assert.match(t, new RegExp(`En clásica se llama sexta aumentada alemana: su séptima, escrita como ${seventh}, sube a ${V}\\. En jazz, el mismo sonido se llama sustituto tritonal de la dominante`), text);
+  }
+  const r = analyze('Rem7 Reb7 Domaj7');
+  assert.ok(!r.items[1].augmentedSixth);
+  assert.doesNotMatch(kindText(r.items[1], r.key), /sexta aumentada/);
+  assert.match(kindText(r.items[1], r.key), /sustituto tritonal/);
+});

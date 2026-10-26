@@ -293,3 +293,13 @@ export const CADENCES = [
     text: 'La que suena a pregunta: acabar en la dominante (V) es como poner una coma. La frase se queda en el aire y pide continuar.',
   },
 ];
+
+// La secuencia de quintas no tiene grados fijos: se busca por cómo se mueven
+// las fundamentales (ver fifthsRuns en matcher.js). Aquí, sus datos.
+export const FIFTHS = {
+  id: 'fifths',
+  name: 'Secuencia de quintas',
+  steps: [],
+  text: 'Cada acorde empuja al siguiente, como fichas de dominó: la fundamental baja una quinta cada vez (o sube una cuarta, que acaba en la misma nota) y recorre la escala hasta volver a casa.',
+  songs: ['I Will Survive (Gloria Gaynor)', 'Autumn Leaves'],
+};
