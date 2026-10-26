@@ -17,6 +17,9 @@
 //     bajo, como Am Am/G Am/F♯) también pesa más si es la tónica;
 //   - una nota pedal (el bajo se queda en la misma nota mientras los acordes
 //     cambian, como G C/G G F/G) decide la casa: suma mucho a su tonalidad;
+//   - el IV que se oscurece (F → Fm en Do mayor: el IV y después el iv
+//     prestado de la menor) señala la tonalidad mayor de la que son el IV:
+//     Do Mi Fa Fam (Creep) está en Do mayor, no en Fa menor;
 //   - un riff de acordes de quinta (sin tercera) que empieza en una nota y
 //     cuyas fundamentales son de su pentatónica menor (C5 E♭5 F5 G5 B♭5) es
 //     de esa menor: es lo más típico del rock.
@@ -40,6 +43,7 @@ const BONUS = {
   held: 0.6,
   pedal: 2.5,
   pentatonic: 1.0,
+  darkenedFour: 1.0,
 };
 
 // Las pentatónicas, en semitonos desde la tónica.
@@ -191,6 +195,9 @@ export function scoreKey(chords, key) {
   // Sin tercera, el V5 de un riff puede ser mayor: no falta la sensible.
   else if (key.mode === 'minor' && !chords.some((c) => isLeadingToneChord(c, key) || isOpenDominant(c, key))) score += BONUS.noLeadingTone;
   if (key.mode === 'minor' && pentatonicOf(chords, key) && mod12(chords[0].pc - key.pc) === 0) score += BONUS.pentatonic;
+  if (key.mode === 'major' && chords.some((c, i) => i + 1 < chords.length && mod12(c.pc - key.pc) === 5 && c.triad === 'M' && chords[i + 1].pc === c.pc && chords[i + 1].triad === 'm')) {
+    score += BONUS.darkenedFour;
+  }
   for (let i = 0; i + 1 < chords.length; i++) {
     const backdoor = i > 0 && isBackdoorChord(chords[i], key) && mod12(chords[i - 1].pc - key.pc) !== 0;
     if ((isDominantChord(chords[i], key) || backdoor) && isTonicChord(chords[i + 1], key)) score += BONUS.cadence;
@@ -236,7 +243,8 @@ export function detectKey(chords) {
   const loop = isLoopLike(chords);
   const clear = isTonicChord(chords[0], best) && (loop || isTonicChord(chords[chords.length - 1], best));
   const relative = ranking.find((k) => isRelative(best, k));
-  const relativeClose = !clear && relative.score >= best.score - Math.max(1.0, best.score * 0.12);
+  // Y solo si su tónica suena en algún momento: en Do Mi Fa Fam no hay La menor que oír.
+  const relativeClose = !clear && chords.some((c) => isTonicChord(c, relative)) && relative.score >= best.score - Math.max(1.0, best.score * 0.12);
   // Si la relativa está entre las cercanas, es la duda más interesante de explicar.
   let alternative = relativeClose ? relative : (close[0] ?? null);
   // En un bucle, o si el primer acorde se mantiene, el primer acorde suena a

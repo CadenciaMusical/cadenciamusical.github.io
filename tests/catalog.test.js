@@ -283,3 +283,24 @@ test('el blues de libro sigue siendo el de siempre', () => {
   assert.equal(find(r, 'jazz-blues'), undefined);
   assert.ok(find(analyze('Am7 Am7 Am7 Am7 Dm7 Dm7 Am7 Am7 E7 Dm7 Am7 E7'), 'minor-blues')?.whole);
 });
+
+test('Creep: I–III–IV–iv en la tonalidad mayor del primer acorde', () => {
+  for (const [text, tonic] of [['Do Mi Fa Fam', 'C'], ['Sol Si Do Dom', 'G']]) {
+    const r = analyze(text);
+    assert.equal(`${r.key.tonic} ${r.key.mode}`, `${tonic} major`, text);
+    assert.equal(r.items.map((i) => i.roman).join(' '), 'I III IV iv', text);
+    assert.equal(r.items[1].kind, 'mediant', text);
+    assert.equal(r.items[3].kind, 'borrowed', text);
+    const m = find(r, 'creep');
+    assert.ok(m?.whole, text);
+    assert.deepEqual(m.songs, ['Creep (Radiohead)']);
+    // La relativa no se ofrece: su tónica no suena.
+    assert.ok(!(r.alternative && r.alternativeIsRelative), text);
+  }
+});
+
+test('Do Fa Fam Do sigue siendo Do mayor con cadencia plagal menor', () => {
+  const r = analyze('Do Fa Fam Do');
+  assert.equal(`${r.key.tonic} ${r.key.mode}`, 'C major');
+  assert.ok(r.cadences.some((c) => c.id === 'minor-plagal' && c.atEnd));
+});

@@ -167,6 +167,14 @@ export const PROGRESSIONS = [
     songs: ['Now\'s the Time (Charlie Parker)', 'Billie\'s Bounce (Charlie Parker)', 'Blue Monk (Thelonious Monk)'],
   },
   {
+    id: 'creep',
+    name: 'I–III–IV–iv',
+    steps: ['I', 'III', 'IV', 'iv'],
+    mode: 'major',
+    text: 'Una progresión agridulce: el III mayor (una mediante cromática, que no es de la tonalidad) da un salto luminoso e inesperado, y el IV se oscurece en el iv, prestado de la tonalidad menor, antes de volver a casa. Mucha emoción con solo cuatro acordes.',
+    songs: ['Creep (Radiohead)'],
+  },
+  {
     id: 'minor-blues',
     name: 'Blues menor de 12 compases',
     // En los compases 9 y 10, el V puede ser menor, o llegar desde el ♭VI (The Thrill Is Gone).
