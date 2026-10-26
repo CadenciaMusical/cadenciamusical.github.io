@@ -4,7 +4,8 @@
 //   - cada acorde suma según cuánto encaja (ver classify.js);
 //   - suma acabar en la tónica (mucho), empezar en ella (bastante) y que
 //     aparezca: el primer y el último acorde son las mejores pistas;
-//   - suma que aparezca el acorde de dominante y cada cadencia V → I;
+//   - suma que aparezca el acorde de dominante y cada cadencia V → I (o
+//     ♭VII7 → I, la dominante por la puerta de atrás);
 //   - una menor sin sensible (sin V mayor ni vii°) resta un poco: sin ella,
 //     Am F C G suena más a Do mayor que a La menor;
 //   - un blues (I7, IV7, V7) suma mucho a su tonalidad mayor;
@@ -154,6 +155,9 @@ function heldRuns(chords) {
 export const isTonicChord = (chord, key) =>
   mod12(chord.pc - key.pc) === 0 && (chord.triad === (key.mode === 'major' ? 'M' : 'm') || chord.triad === 'sus' || chord.triad === '5');
 const isDominantChord = (chord, key) => mod12(chord.pc - key.pc) === 7 && (chord.triad === 'M' || chord.altered);
+// El ♭VII7 de la puerta de atrás (B♭7 → C): también llega a casa, si viene
+// de otro acorde que no es la tónica (ver classify).
+const isBackdoorChord = (chord, key) => key.mode === 'major' && mod12(chord.pc - key.pc) === 10 && chord.triad === 'M' && chord.seventh === '7';
 const isLeadingToneChord = (chord, key) => mod12(chord.pc - key.pc) === 11 && chord.triad === 'dim';
 const isOpenDominant = (chord, key) => mod12(chord.pc - key.pc) === 7 && chord.triad === '5';
 
@@ -184,7 +188,8 @@ export function scoreKey(chords, key) {
   else if (key.mode === 'minor' && !chords.some((c) => isLeadingToneChord(c, key) || isOpenDominant(c, key))) score += BONUS.noLeadingTone;
   if (key.mode === 'minor' && pentatonicOf(chords, key) && mod12(chords[0].pc - key.pc) === 0) score += BONUS.pentatonic;
   for (let i = 0; i + 1 < chords.length; i++) {
-    if (isDominantChord(chords[i], key) && isTonicChord(chords[i + 1], key)) score += BONUS.cadence;
+    const backdoor = i > 0 && isBackdoorChord(chords[i], key) && mod12(chords[i - 1].pc - key.pc) !== 0;
+    if ((isDominantChord(chords[i], key) || backdoor) && isTonicChord(chords[i + 1], key)) score += BONUS.cadence;
   }
   return { score, blues: key.blues };
 }

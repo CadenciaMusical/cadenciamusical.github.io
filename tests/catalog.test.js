@@ -223,3 +223,34 @@ test('el ♭II sin séptima de dominante sigue siendo frigio', () => {
   assert.equal(variant('Mim Fa Mim Fa'), 'phrygian');
   assert.ok(analyze('Mim Fa Mim Fa').cadences.some((c) => c.id === 'phrygian'));
 });
+
+test('dominante por la puerta de atrás: iv7–♭VII7–I', async () => {
+  const { renderProgressionCard, renderDetail } = await import('../js/ui/render.js');
+  const { setLatin } = await import('../js/core/names.js');
+  setLatin(true);
+  for (const text of ['Fam7 Sib7 Domaj7', 'Domaj7 Fam7 Sib7 Domaj7']) {
+    const r = analyze(text);
+    assert.equal(`${r.key.tonic} ${r.key.mode}`, 'C major', text);
+    assert.equal(r.items.map((i) => i.roman).slice(-3).join(' '), 'iv7 ♭VII7 Imaj7', text);
+    const sib7 = r.items[r.items.length - 2];
+    assert.equal(sib7.kind, 'backdoor', text);
+    assert.equal(sib7.fn, 'D', text);
+    assert.equal(find(r, 'backdoor').label, 'iv7–♭VII7–I', text);
+    // El nombre sale una vez: la cadencia final ya está en la progresión.
+    const card = renderProgressionCard(r).replace(/<[^>]+>/g, '');
+    assert.equal(card.match(/Dominante por la puerta de atrás/g).length, 1, text);
+    const detail = renderDetail(sib7, r.key).replace(/<[^>]+>/g, '');
+    assert.match(detail, /En lugar de llegar a casa desde Sol7, se llega desde Si♭7, un acorde prestado de Do menor\. Suena más suave y nostálgico; muy del jazz y del soul/);
+    assert.match(detail, /Con Sol7 en su lugar/);
+  }
+  // ♭VII7–I solo: la cadencia.
+  assert.ok(analyze('Dm7 Fm7 Bb7 C').cadences.some((c) => c.id === 'backdoor' && c.atEnd));
+});
+
+test('sin puerta de atrás: mixolidio, final épico y el ♭VII7 que sale de la tónica', () => {
+  const r = analyze('Do Sib Fa Do');
+  assert.equal(r.key.modal?.id, 'mixolydian');
+  assert.ok(analyze('Do Lab Sib Do').cadences.some((c) => c.id === 'epic' && c.atEnd));
+  assert.ok(!analyze('Do Lab Sib Do').cadences.some((c) => c.id === 'backdoor'));
+  assert.equal(analyze('C Bb7 C').items[1].kind, 'borrowed');
+});

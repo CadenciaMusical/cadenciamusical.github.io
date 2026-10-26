@@ -276,7 +276,10 @@ function whereText(result, m) {
 // Tarjeta bajo la tonalidad. Si no hay nada conocido, cadena vacía: no se muestra.
 export function renderProgressionCard(result) {
   const progressions = shownProgressions(result);
-  const cadence = finalCadence(result);
+  // Si el final ya es parte de una progresión mostrada con el mismo nombre
+  // (iv7–♭VII7–I y su cadencia ♭VII7–I), no se repite.
+  const final = finalCadence(result);
+  const cadence = final && !progressions.some((m) => m.id === final.id && m.end === final.end) ? final : null;
   const { loop } = result;
   const bass = result.bassLines ?? [];
   const { pedal } = result;

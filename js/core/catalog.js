@@ -86,6 +86,14 @@ export const PROGRESSIONS = [
     text: 'El ii–V–I del jazz con un truco: en lugar de la dominante (V7) suena su sustituto tritonal, un acorde con séptima medio tono por encima de la tónica. Tiene la misma tensión, pero el bajo baja de medio tono en medio tono hasta casa, más suave y con más color. Es un recurso muy del jazz.',
   },
   {
+    id: 'backdoor',
+    name: 'Dominante por la puerta de atrás',
+    steps: ['iv', '♭VII7', 'I'],
+    label: 'iv7–♭VII7–I',
+    mode: 'major',
+    text: 'En lugar de llegar a casa desde la dominante (V7), se llega desde el ♭VII7, un acorde prestado de la tonalidad menor, preparado por el iv, también prestado. Suena más suave y nostálgico; muy del jazz y del soul.',
+  },
+  {
     id: 'ii-v-i-minor',
     name: 'ii–V–i en menor',
     steps: ['ii°|iiø7', 'V', 'i'],
@@ -214,6 +222,13 @@ export const CADENCES = [
     mode: 'major',
     noDominant7: true,
     text: 'El final flamenco: el acorde que está medio tono por encima de la tónica (el ♭II) baja hasta ella, y el bajo se desliza solo medio tono. Suena a final, como la cadencia perfecta, pero oscuro y con aire español en lugar de rotundo.',
+  },
+  {
+    id: 'backdoor',
+    name: 'Dominante por la puerta de atrás',
+    steps: ['♭VII7', 'I'],
+    mode: 'major',
+    text: 'En lugar de llegar a casa desde la dominante (V7), se llega desde el ♭VII7, un acorde prestado de la tonalidad menor. Suena más suave y nostálgico; muy del jazz y del soul.',
   },
   {
     id: 'epic',

@@ -396,6 +396,10 @@ export function kindText(item, key) {
       const towards = item.target.st === 0 ? `la tónica, ${label(target)}` : label(target);
       return `Es un sustituto tritonal: ocupa el lugar de ${label(normal)}, la dominante de ${towards}. Sus raíces están a un tritono de distancia y comparten las dos notas que crean la tensión (${shared.map((n) => noteName(n)).join(' y ')}), así que empuja igual hacia ${label(target)}, pero con el bajo bajando medio tono. Es muy típico del jazz.`;
     }
+    case 'backdoor': {
+      const normal = normalVersion(item, key);
+      return `Es la dominante por la puerta de atrás. En lugar de llegar a casa desde ${label(normal)}, se llega desde ${label(item.chord)}, un acorde prestado de ${keyName({ tonic: key.tonic, mode: 'minor' })}. Suena más suave y nostálgico; muy del jazz y del soul.`;
+    }
     case 'leading':
       return `Es un acorde disminuido «de paso»: está medio tono por debajo de ${label(target)} y lo prepara, igual que la sensible prepara la tónica. Por eso se escribe ${item.roman}.`;
     case 'dim7':

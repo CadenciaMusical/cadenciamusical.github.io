@@ -178,6 +178,7 @@ export const classifyAlone = () => ({ st: null, roman: '', fn: 'N', kind: 'symme
 //         'neapolitan'— el ♭II mayor que prepara la dominante (napolitano)
 //         'major-two' — el II mayor en una tonalidad mayor que no va al V (Do Re Fa Do)
 //         'tritone'   — sustituto tritonal de una dominante (subV/x)
+//         'backdoor'  — el ♭VII7 que va a la tónica en mayor (puerta de atrás)
 //         'augmented' — dominante aumentada (V+ o V+/x; ver classifyAug)
 //         'altered'   — dominante alterada (V7alt, V7♭9/x; ver classifyAltered)
 //         'symmetric' — sin tonalidad clara (ver classifyAlone)
@@ -307,6 +308,16 @@ function classifyChord(chord, key, next, prev, after) {
         fit: 0.5,
       };
     }
+  }
+
+  // Dominante por la puerta de atrás (backdoor): en mayor, el ♭VII7 que va a
+  // la tónica (B♭7 → C), en lugar del V7. Viene de la menor, pero llega a casa
+  // como una dominante: apoya la tonalidad casi tanto como el V7. Tiene que
+  // llegar desde otro acorde (el iv7, normalmente): el que sale de la tónica
+  // y vuelve (C B♭7 C) es un adorno prestado, y en un bucle como C7 D C7 D
+  // es el color del lidio dominante.
+  if (key.mode === 'major' && st === 10 && chord.triad === 'M' && chord.seventh === '7' && nextSt === 0 && next.triad === 'M' && prev && mod12(prev.pc - key.pc) !== 0) {
+    return { ...base, fn: 'D', kind: 'backdoor', from: 'minor', target: { st: 0, triad: 'M', roman: 'I', resolves: true }, fit: 1 };
   }
 
   // Napolitano: el ♭II mayor que va a la dominante, directamente o pasando

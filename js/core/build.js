@@ -27,6 +27,7 @@ export function normalVersion(item, key) {
   const diatonicAt = (st) => DEGREES[mode].find((d) => d.st === st);
   switch (item.kind) {
     case 'tritone':
+    case 'backdoor':
       return chordOnDegree(key, (item.target.st + 7) % 12, 'M', '7');
     case 'secondary':
     case 'major-two':
