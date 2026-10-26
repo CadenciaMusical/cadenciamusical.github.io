@@ -196,3 +196,30 @@ test('el final épico y la cadencia eólica', () => {
   // Con la dominante, sigue siendo la perfecta.
   assert.equal(ending('Am F E Am'), 'perfect');
 });
+
+test('ii–V–I con sustituto tritonal: Do mayor, sin cadencia frigia ni modo', () => {
+  for (const text of ['Rem7 Reb7 Domaj7', 'Rem7 Reb7 Do', 'Dm7 Db7 Cmaj7']) {
+    const r = analyze(text);
+    assert.equal(`${r.key.tonic} ${r.key.mode}`, 'C major', text);
+    assert.equal(r.key.modal, undefined, text);
+    assert.equal(r.modal, false, text);
+    assert.equal(r.items[1].roman, 'subV7', text);
+    assert.equal(r.items[1].kind, 'tritone', text);
+    const m = find(r, 'ii-subv-i');
+    assert.ok(m?.whole, text);
+    assert.equal(m.label, 'ii–subV7–I');
+    assert.ok(!r.cadences.some((c) => c.id === 'phrygian'), text);
+  }
+  assert.equal(analyze('Rem7 Reb7 Domaj7').items.map((i) => i.roman).join(' '), 'ii7 subV7 Imaj7');
+});
+
+test('el ♭II sin séptima de dominante sigue siendo frigio', () => {
+  const variant = (text) => {
+    const r = analyze(text);
+    return r.key.modal?.variant ?? r.key.modal?.id;
+  };
+  assert.equal(variant('Domaj7 Reb Domaj7 Reb'), 'double-harmonic');
+  assert.equal(variant('Do Reb Do Reb'), 'phrygian-dominant');
+  assert.equal(variant('Mim Fa Mim Fa'), 'phrygian');
+  assert.ok(analyze('Mim Fa Mim Fa').cadences.some((c) => c.id === 'phrygian'));
+});

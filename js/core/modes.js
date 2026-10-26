@@ -256,13 +256,15 @@ export function isClearlyModal(m, chords, key) {
   // Un II7 que va al V (D7 → G en Do) es la dominante de la dominante, no el
   // color lidio. El IV7 → ♭VII del dórico (D7 → G en La) sí es del modo.
   // Tampoco un ♭II que va al V (D♭/F → G7 en Do): es el napolitano, no el
-  // color frigio, que va directo a la tónica.
+  // color frigio, que va directo a la tónica. Ni un ♭II7 que va a la tónica
+  // (D♭7 → Cmaj7): es el sustituto tritonal de la dominante, del jazz.
   const charPc = Note.chroma(m.charNote);
   const toV = (i) => chords.slice(i + 1).find((c) => c.pc !== m.pc)?.pc === mod12(m.pc + 7);
   const resolving = (c, i) =>
     (c.triad === 'M' && c.seventh === '7' && c.pc === mod12(m.pc + 2) && chords[i + 1]?.pc === mod12(m.pc + 7))
     || (c.triad === 'M' && c.pc === mod12(m.pc + 1) && toV(i) && chords[i + 1]?.pc !== m.pc)
-    || (c.triad === 'M' && c.pc === mod12(m.pc + 1) && chords[i + 1]?.pc === m.pc && chords[i + 1].bass && toV(i));
+    || (c.triad === 'M' && c.pc === mod12(m.pc + 1) && chords[i + 1]?.pc === m.pc && chords[i + 1].bass && toV(i))
+    || (c.triad === 'M' && c.seventh === '7' && c.pc === mod12(m.pc + 1) && chords[i + 1]?.pc === m.pc);
   const colored = chords.filter((c, i) => c.notes.some((n) => Note.chroma(n) === charPc) && !resolving(c, i));
   if (colored.length === 0) return false;
   if (m.foreign.length > 0 && !MODAL_VARIANTS.has(m.variant)) return false;

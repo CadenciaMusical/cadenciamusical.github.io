@@ -13,6 +13,8 @@
 // bars: un acorde por compás; no se juntan los acordes repetidos (blues).
 // endOnly: solo cuenta si la progresión acaba así (semicadencia).
 // label: cómo se muestra, si no basta con unir los pasos.
+// noDominant7: los pasos sin «7» no aceptan la séptima de dominante (el ♭II7
+//   que va a la tónica es un sustituto tritonal, no la cadencia frigia).
 
 export const PROGRESSIONS = [
   {
@@ -74,6 +76,14 @@ export const PROGRESSIONS = [
     mode: 'major',
     text: 'El corazón del jazz: preparación (ii), tensión (V) y llegada (I). Cada acorde empuja al siguiente.',
     songs: ['Autumn Leaves', 'Fly Me to the Moon', 'Honeysuckle Rose'],
+  },
+  {
+    id: 'ii-subv-i',
+    name: 'ii–V–I con sustituto tritonal',
+    steps: ['ii', '♭II7', 'I'],
+    label: 'ii–subV7–I',
+    mode: 'major',
+    text: 'El ii–V–I del jazz con un truco: en lugar de la dominante (V7) suena su sustituto tritonal, un acorde con séptima medio tono por encima de la tónica. Tiene la misma tensión, pero el bajo baja de medio tono en medio tono hasta casa, más suave y con más color. Es un recurso muy del jazz.',
   },
   {
     id: 'ii-v-i-minor',
@@ -194,6 +204,7 @@ export const CADENCES = [
     name: 'Cadencia frigia',
     steps: ['♭II', 'i|I'],
     mode: 'minor',
+    noDominant7: true,
     text: 'El final flamenco: el acorde que está medio tono por encima de la tónica (el ♭II) baja hasta ella, y el bajo se desliza solo medio tono. Suena a final, como la cadencia perfecta, pero oscuro y con aire español en lugar de rotundo.',
   },
   {
@@ -201,6 +212,7 @@ export const CADENCES = [
     name: 'Cadencia frigia',
     steps: ['♭II', 'I'],
     mode: 'major',
+    noDominant7: true,
     text: 'El final flamenco: el acorde que está medio tono por encima de la tónica (el ♭II) baja hasta ella, y el bajo se desliza solo medio tono. Suena a final, como la cadencia perfecta, pero oscuro y con aire español en lugar de rotundo.',
   },
   {

@@ -40,10 +40,12 @@ function compile(entry) {
 const COMPILED_PROGRESSIONS = PROGRESSIONS.map(compile);
 const COMPILED_CADENCES = CADENCES.map(compile);
 
-function stepMatches(options, chord, key) {
+// noDominant7 (ver el catálogo): un paso sin «7» no acepta la séptima de dominante.
+function stepMatches(options, chord, key, { noDominant7 = false } = {}) {
   const st = mod12(chord.pc - key.pc);
   return options.some((o) => {
     if (o.st !== st) return false;
+    if (noDominant7 && !o.seventh && chord.seventh === '7') return false;
     // Una dominante alterada (G7alt) hace de V aunque su quinta suba.
     const triadOk = chord.triad === o.triad || ((chord.triad === 'sus' || chord.triad === '5') && o.triad !== 'dim') || (chord.altered && o.triad === 'M');
     return triadOk && (!o.seventh || Boolean(chord.seventh));
@@ -76,13 +78,13 @@ function findRuns(entry, seq, key) {
     for (let i = 0; i < seq.length; i++) {
       for (let r = 0; r < n; r++) {
         let j = i;
-        while (j < seq.length && stepMatches(pattern[(r + j - i) % n], seq[j].chord, key)) j++;
+        while (j < seq.length && stepMatches(pattern[(r + j - i) % n], seq[j].chord, key, entry)) j++;
         if (j - i >= n) runs.push({ start: i, end: j - 1, rotation: r });
       }
     }
   } else {
     for (let i = 0; i + n <= seq.length; i++) {
-      if (pattern.every((opts, k) => stepMatches(opts, seq[i + k].chord, key))) {
+      if (pattern.every((opts, k) => stepMatches(opts, seq[i + k].chord, key, entry))) {
         runs.push({ start: i, end: i + n - 1, rotation: 0 });
       }
     }
