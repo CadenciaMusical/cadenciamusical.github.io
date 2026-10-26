@@ -5,7 +5,7 @@ import { parseChord } from '../core/parser.js';
 import { defaultTonic, isTonicChord } from '../core/key.js';
 import { convertNotation, transposeChord } from '../core/transpose.js';
 import {
-  FUNCTIONS, KEY_TEXT, loopText, locrianText, pentatonicText, melodicMinorText, neapolitanText, symmetricScaleText, mediantsText, unclearKeyText, bassLineTitle, bassLineText, pedalText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, alternativeNoteText, kindText,
+  FUNCTIONS, KEY_TEXT, sectionsText, modulationText, loopText, locrianText, pentatonicText, melodicMinorText, neapolitanText, symmetricScaleText, mediantsText, unclearKeyText, bassLineTitle, bassLineText, pedalText, inversionText, MODE_TEXT, DEGREE_TEXT, CONFIDENCE_TEXT, TRANSPOSE_TEXT, alternativeText, alternativeNoteText, kindText,
   MODE_INFO, VARIANT_INFO, MODES_TEXT, twoChanges, modeName, modeIntroText, parallelKeyName, modeCharText, modeForeignText, modeVsKeyText, modalKeyText, modeListenTitle,
 } from './texts.js';
 import { GLOSSARY, linkTerms, termText } from './glossary.js';
@@ -112,6 +112,26 @@ export function renderKey(result, { transposedFrom = null } = {}) {
       <button type="button" class="btn secondary small" data-action="play-melodic">▶ Escuchar la escala</button>`
     : '';
 
+  // Cambia de tonalidad: dónde y cómo, con un botón para oír cada cambio.
+  if (result.sections) {
+    const { sections, chords } = result;
+    const changes = sections.slice(1).map((s, i) => {
+      const span = { start: Math.max(0, s.start - 2), end: Math.min(chords.length - 1, s.start + 2) };
+      const path = chords.slice(span.start, span.end + 1).map((c) => chordLabel(c)).join(' → ');
+      return `
+      <div class="modulation">
+        <p>${linkTerms(modulationText(sections[i], s))}</p>
+        <button type="button" class="btn secondary small" data-action="play-range" data-start="${span.start}" data-end="${span.end}">▶ Escuchar el cambio (${path})</button>
+      </div>`;
+    });
+    return `
+      <p class="eyebrow">Tonalidad: cambia</p>
+      <h2 class="key-name">${sections.map((s) => keyName(s.key)).join(' → ')}</h2>
+      <p>${linkTerms(sectionsText(sections))}</p>
+      ${changes.join('')}
+      ${more}`;
+  }
+
   // Duda razonable en la tonalidad detectada: las dos opciones, a la vista.
   if (alternative && !forced && !transposedFrom) {
     return `
@@ -164,7 +184,13 @@ const REST_CARD = `
           <span class="badge">Silencio</span>
         </div>`;
 
-export function renderChords(items, { selected = null, marked = new Set(), turns = new Map(), rests = [] } = {}) {
+// sections: los tramos si cambia de tonalidad (result.sections); antes del
+// primer acorde de cada uno, una línea con la nueva tonalidad.
+export function renderChords(items, { selected = null, marked = new Set(), turns = new Map(), rests = [], sections = null } = {}) {
+  const change = (i) => {
+    const s = sections?.find((sec) => sec.start === i && i > 0);
+    return s ? `<p class="section-break"><span>Cambia a ${keyName(s.key)}</span></p>` : '';
+  };
   const restsAt = (i) => REST_CARD.repeat(rests.filter((r) => r === i).length);
   return items
     .map((item, i) => {
@@ -180,7 +206,7 @@ export function renderChords(items, { selected = null, marked = new Set(), turns
           <span class="badge">${FUNCTIONS[f].name}</span>
         </button>`;
     })
-    .map((html, i) => restsAt(i) + html)
+    .map((html, i) => change(i) + restsAt(i) + html)
     .join('') + restsAt(items.length);
 }
 
@@ -190,6 +216,10 @@ export function renderChords(items, { selected = null, marked = new Set(), turns
 // Si una sale varias veces (C F G C F G C), se muestra una sola vez.
 const shownProgressions = (result) =>
   result.progressions.filter((m, i, all) => all.findIndex((o) => o.id === m.id) === i).slice(0, 2);
+// Si cambia de tonalidad, la misma progresión puede volver en otro tramo
+// (Do Fa Sol Do, y después Mi♭ La♭ Si♭ Mi♭): se muestra una vez y se dice dónde vuelve.
+const inOtherSections = (result, m) =>
+  result.sections ? result.progressions.filter((o) => o.id === m.id && o.section !== m.section) : [];
 const finalCadence = (result) => result.cadences.find((c) => c.atEnd) ?? null;
 
 // Las posiciones que se marcan en las tarjetas de los acordes: si la
@@ -199,7 +229,7 @@ export function progressionRanges(result) {
   const marked = new Set();
   for (const m of shownProgressions(result)) {
     if (m.whole && m.times === 1) continue;
-    for (let i = m.start; i <= m.end; i++) marked.add(i);
+    for (const r of [m, ...inOtherSections(result, m)]) for (let i = r.start; i <= r.end; i++) marked.add(i);
   }
   // El napolitano tiene su propia tarjeta: se marca dónde está.
   neapolitans(result).forEach((i) => marked.add(i));
@@ -236,7 +266,10 @@ function whereText(result, m) {
     parts.push(m.whole ? `Se repite ${times}: es tu progresión entera, marcada abajo.` : `Se repite ${times}, en los acordes ${m.start + 1} a ${m.end + 1}, marcados abajo.`);
   } else if (m.whole) parts.push('Es tu progresión entera.');
   else parts.push(`Son los acordes ${m.start + 1} a ${m.end + 1} (${chordsIn(result, m, ' ')}), marcados abajo.`);
-  if (m.key.mode !== result.key.mode) parts.push(`Los grados se cuentan desde ${keyName(m.key)}, su tonalidad relativa.`);
+  for (const o of inOtherSections(result, m)) parts.push(`Vuelve en ${keyName(o.key)}, en los acordes ${o.start + 1} a ${o.end + 1} (${chordsIn(result, o, ' ')}).`);
+  const home = result.sections ? result.sections[m.section].key : result.key;
+  if (m.key.mode !== home.mode) parts.push(`Los grados se cuentan desde ${keyName(m.key)}, su tonalidad relativa.`);
+  else if (result.sections && m.section > 0) parts.push(`Los grados se cuentan desde ${keyName(m.key)}, la tonalidad de ese tramo.`);
   return parts.join(' ');
 }
 
@@ -276,14 +309,15 @@ export function renderProgressionCard(result) {
     // Se oye con el acorde de antes y los dos de después: hasta la dominante
     // o su llegada (Lam Sib/Re Mi7 Lam).
     const item = result.items[neapolitan];
-    const normal = normalVersion(item, result.key);
+    const key = item.key ?? result.key;
+    const normal = normalVersion(item, key);
     const span = { start: Math.max(0, neapolitan - 1), end: Math.min(result.chords.length - 1, neapolitan + 2) };
-    const degree = result.key.mode === 'minor' ? 'iv' : 'IV';
+    const degree = key.mode === 'minor' ? 'iv' : 'IV';
     blocks.push(`
       <div class="match">
         <p class="eyebrow">✦ Algo especial</p>
         <h2 class="match-name">${item.sixth ? 'Sexta napolitana' : 'Acorde napolitano'}</h2>
-        <p>${linkTerms(neapolitanText(item, result.key, normal))}</p>
+        <p>${linkTerms(neapolitanText(item, key, normal))}</p>
         <p class="muted">Es el acorde ${neapolitan + 1}, marcado abajo.</p>
         <div class="button-row">
           ${playRange(span, 'Así suena')}

@@ -6,6 +6,7 @@ import { classify, classifyAlone } from './classify.js';
 import { findMatches, relativeOf } from './matcher.js';
 import { detectModes, isClearlyModal, modeById, modeDegrees, modeScale } from './modes.js';
 import { bassLines, inversionOf, pedalLine } from './bass.js';
+import { detectSections } from './sections.js';
 import { Note } from '../../vendor/tonal.mjs';
 
 const mod12 = (n) => ((n % 12) + 12) % 12;
@@ -43,6 +44,12 @@ export function analyze(text, { forcedKey = null } = {}) {
       progressions: [], cadences: [], modes: null, modal: false, loop: null, bassLines: [], pedal: null, rests,
     };
   }
+
+  // Cambios de tonalidad: cada tramo se analiza en la suya. Si el usuario ha
+  // elegido la tonalidad, solo si es la del primer tramo (al transportar).
+  let sections = detectSections(chords);
+  if (sections && forcedKey && !(sections[0].key.pc === key.pc && sections[0].key.mode === key.mode)) sections = null;
+  if (sections) return analyzeSections({ parsed, chords, errors, rests, sections, key, forced: Boolean(forcedKey) });
 
   const modes = detectModes(chords, key);
   // La tarjeta del modo solo se muestra si aporta algo.
@@ -107,6 +114,62 @@ export function analyze(text, { forcedKey = null } = {}) {
     melodic: melodicMinor(chords, key),
     mediants,
     rests,
+  };
+}
+
+// Una progresión que cambia de tonalidad (ver detectSections): cada acorde se
+// numera en la tonalidad de su tramo (item.key, item.section) y las
+// progresiones y cadencias se buscan en cada tramo. result.key es la de
+// partida. Sin modos ni escalas de toda la progresión: no hay una sola casa.
+function analyzeSections({ parsed, chords, errors, rests, sections, key, forced }) {
+  // La de partida, escrita como la ha elegido el usuario si la ha elegido.
+  sections = sections.map((s, i) => (i === 0 ? { ...s, key: { ...s.key, tonic: forced ? key.tonic : s.key.tonic } } : s));
+  const items = [];
+  const progressions = [];
+  const cadences = [];
+  sections.forEach((section, n) => {
+    const part = chords.slice(section.start, section.end + 1);
+    part.forEach((chord, i) => {
+      const item = { chord, ...classify(chord, section.key, part[i + 1] ?? null, part[i - 1] ?? null, part[i + 2] ?? null), key: section.key, section: n };
+      item.special = isSpecial(item, section.key);
+      item.inversion = inversionOf(chord, chords[section.start + i + 1] ?? null);
+      items.push(item);
+    });
+    const shift = (m) => ({
+      ...m,
+      start: m.start + section.start,
+      end: m.end + section.start,
+      turns: m.turns.map((t) => t + section.start),
+      whole: false,
+      atEnd: m.end + section.start === chords.length - 1,
+      section: n,
+    });
+    const found = findMatches(part, section.key, relativeOf(section.key));
+    progressions.push(...found.progressions.map(shift));
+    cadences.push(...found.cadences.map(shift));
+  });
+  progressions.sort((a, b) => b.end - b.start - (a.end - a.start) || a.start - b.start);
+  cadences.sort((a, b) => Number(b.atEnd) - Number(a.atEnd) || a.start - b.start);
+  return {
+    parsed, chords, errors, rests,
+    key: sections[0].key,
+    confidence: 'alta',
+    forced,
+    alternative: null,
+    alternativeIsRelative: false,
+    sections,
+    items,
+    progressions,
+    cadences,
+    modes: null,
+    modal: false,
+    loop: null,
+    bassLines: bassLines(chords, sections[0].key),
+    pedal: pedalLine(chords, pedalOf(chords)),
+    locrian: null,
+    pentatonic: null,
+    melodic: null,
+    mediants: [],
   };
 }
 

@@ -120,6 +120,21 @@ export const GLOSSARY = [
     },
   },
   {
+    id: 'modulacion',
+    term: 'Cambio de tonalidad (modulación)',
+    match: ['cambios de tonalidad', 'cambio de tonalidad', 'modulaciones', 'modulación'],
+    text: 'Cuando la casa se muda a mitad de la música: a partir de un momento, los acordes dejan de encajar en la tonalidad del principio y una cadencia asienta la nueva. Los grados se cuentan entonces desde la nueva tónica.',
+    example: (k, label) => {
+      const d = degrees(k);
+      // En mayor, a la dominante (con su V7); en menor, a la relativa (con el VII7).
+      const major = k.mode === 'major';
+      const to = { tonic: Note.transpose(k.tonic, major ? '5P' : '3m'), mode: 'major' };
+      const prep = major ? chordOnDegree(k, 2, 'M', '7') : chordOnDegree(k, 10, 'M', '7');
+      const home = major ? d.V : chordOnDegree(k, 3, 'M');
+      return { chords: [d.I, d.IV, d.V, d.I, prep, home, prep, home], caption: `Empieza en ${keyName(k)} y, con ${label(prep)} → ${label(home)}, cambia a ${keyName(to)}.` };
+    },
+  },
+  {
     id: 'cadencia',
     term: 'Cadencia',
     match: ['cadencias', 'cadencia'],

@@ -355,6 +355,8 @@ details summary {
   color: var(--accent-text);
 }
 .match .btn { margin-top: 4px; }
+.modulation { margin: 10px 0; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 10px 10px 0; }
+.modulation p { margin: 0 0 8px; }
 
 /* Los acordes de una progresión conocida dentro de otra más larga. */
 /* Donde empieza otra vuelta de una progresión que se repite. */
@@ -441,6 +443,19 @@ details summary {
 /* Acorde especial (prestado, dominante secundaria…): una estrella en la esquina. */
 .chord .star { position: absolute; top: 4px; right: 8px; color: var(--fn); font-size: 0.85rem; line-height: 1; }
 .chord.selected { border-color: var(--fn); border-top-width: 6px; }
+/* Cambio de tonalidad: una línea a lo ancho, antes del primer acorde del tramo nuevo. */
+.section-break {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 2px;
+  color: var(--accent-text);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.section-break::before,
+.section-break::after { content: ""; flex: 1; border-top: 2px dashed var(--accent); }
 /* «N.C.»: un silencio, sin acorde. */
 .chord.rest { border-style: dashed; cursor: default; color: var(--muted); }
 .chord.playing { transform: translateY(-3px); box-shadow: 0 0 0 3px var(--fn); }

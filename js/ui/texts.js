@@ -296,6 +296,38 @@ function loopCluesText(key, alt, chords) {
     : 'Es un bucle: el último acorde no es un final, así que no sirve de pista.';
 }
 
+// Cambios de tonalidad (result.sections): dónde cambia cada vez. «Empieza en
+// Do mayor y en el acorde 5 cambia a Mi♭ mayor.»
+export function sectionsText(sections) {
+  const [first, ...rest] = sections;
+  const changes = rest.map((s, i) => (i === 0 ? `en el acorde ${s.start + 1} cambia a ${keyName(s.key)}` : `en el acorde ${s.start + 1}, a ${keyName(s.key)}`));
+  const list = changes.length === 1 ? changes[0] : `${changes.slice(0, -1).join(', ')} y ${changes[changes.length - 1]}`;
+  return `Empieza en ${keyName(first.key)} y ${list}. Es un cambio de tonalidad: la casa se muda a otra nota, y los grados de cada tramo se cuentan desde la suya.`;
+}
+
+// Qué tipo de cambio es (section.type, ver modulationType en core/sections.js).
+export function modulationText(from, to) {
+  const a = keyName(from.key);
+  const b = keyName(to.key);
+  const up = (to.key.pc - from.key.pc + 12) % 12;
+  switch (to.type) {
+    case 'relative':
+      return `De ${a} a ${b}, su relativa: el cambio más natural, a una tonalidad vecina. Usan las mismas notas; solo cambia cuál suena a casa.`;
+    case 'dominant':
+      return `De ${a} a ${b}, la tonalidad de su dominante: el cambio más natural, a una tonalidad vecina.`;
+    case 'subdominant':
+      return `De ${a} a ${b}, la tonalidad de su subdominante: un cambio suave, a una tonalidad vecina.`;
+    case 'near':
+      return `De ${a} a ${b}: un cambio suave, a una tonalidad vecina, con casi todas las notas en común.`;
+    case 'parallel':
+      return `De ${a} a ${b}: la casa es la misma nota, pero cambia de ${from.key.mode === 'major' ? 'mayor a menor y la luz se vuelve sombra' : 'menor a mayor y la sombra se vuelve luz'}.`;
+    case 'lift':
+      return `De ${a} a ${b}, ${up === 1 ? 'medio tono' : 'un tono'} más arriba: el salto del último estribillo, para darle más energía.`;
+    default:
+      return `De ${a} a ${b}: un cambio brusco, de color muy distinto.`;
+  }
+}
+
 // Un riff de acordes de quinta sacado de una pentatónica (result.pentatonic).
 export function pentatonicText(p) {
   const which = p.mode === 'minor'

@@ -185,7 +185,7 @@ const originalKeyName = () => (state.original ? keyName(state.original.key) : nu
 
 function renderGrid() {
   const r = state.result;
-  els.grid.innerHTML = renderChords(r.items, { selected: state.selected, marked: progressionRanges(r), turns: progressionTurns(r), rests: r.rests });
+  els.grid.innerHTML = renderChords(r.items, { selected: state.selected, marked: progressionRanges(r), turns: progressionTurns(r), rests: r.rests, sections: r.sections });
   const progression = renderProgressionCard(r);
   els.progressionCard.hidden = !progression;
   els.progressionCard.innerHTML = progression;
@@ -205,7 +205,7 @@ const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 // Repinta el detalle donde se esté viendo (al cambiar de instrumento, etc.).
 function renderSelected() {
   const item = state.result.items[state.selected];
-  const html = item ? renderDetail(item, state.result.key, { instrument: state.instrument, position: state.position }) : '';
+  const html = item ? renderDetail(item, item.key ?? state.result.key, { instrument: state.instrument, position: state.position }) : '';
   if (els.detailSheet.open) {
     if (item) els.detailBody.innerHTML = html;
     else els.detailSheet.close();
@@ -454,7 +454,7 @@ document.addEventListener('click', (e) => {
       const start = Number(btn.dataset.start);
       const i = Number(btn.dataset.index);
       const chords = r.chords.slice(start, Number(btn.dataset.end) + 1);
-      chords[i - start] = normalVersion(r.items[i], r.key);
+      chords[i - start] = normalVersion(r.items[i], r.items[i].key ?? r.key);
       playList(chords, { highlightGrid: true, offset: start });
       break;
     }
@@ -483,7 +483,7 @@ document.addEventListener('click', (e) => {
       const i = state.selected;
       const start = Math.max(0, i - 1);
       const chords = r.chords.slice(start, i + 2);
-      if (btn.dataset.action === 'context-normal') chords[i - start] = normalVersion(r.items[i], r.key);
+      if (btn.dataset.action === 'context-normal') chords[i - start] = normalVersion(r.items[i], r.items[i].key ?? r.key);
       playList(chords, { highlightGrid: true, offset: start });
       break;
     }

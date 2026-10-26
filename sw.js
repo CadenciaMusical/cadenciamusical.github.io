@@ -27,6 +27,7 @@ const ASSETS = [
   'js/core/modes.js',
   'js/core/names.js',
   'js/core/parser.js',
+  'js/core/sections.js',
   'js/core/theory.js',
   'js/core/transpose.js',
   'js/ui/glossary.js',
