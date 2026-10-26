@@ -143,6 +143,29 @@ export const PROGRESSIONS = [
     text: 'La forma del blues: 12 compases repartidos entre I, IV y V, normalmente todos con séptima. Escrito con un acorde por compás.',
     songs: ['Johnny B. Goode (Chuck Berry)', 'Hound Dog (Elvis Presley)', 'Sweet Home Chicago'],
   },
+  // El de jazz: el IV7 en el compás 2, el VI7 que lleva al ii en el 8, el
+  // ii–V en el 9 y el 10, y una vuelta al final: I–V7 en los compases 11 y
+  // 12, o I–VI7–ii–V (dos acordes por compás, así que son 14).
+  {
+    id: 'jazz-blues',
+    name: 'Blues de 12 compases (de jazz)',
+    steps: ['I', 'I|IV', 'I', 'I', 'IV', 'IV', 'I', 'I|VI7', 'ii', 'V', 'I', 'I|V'],
+    mode: 'major',
+    bars: true,
+    label: 'I – IV – I – VI7 – ii – V – I',
+    text: 'La forma del blues tal como la tocan los músicos de jazz: los mismos 12 compases, pero con acordes de paso que empujan hacia el final. En lugar de V–IV, llega un ii–V (el corazón del jazz), a menudo preparado por una dominante secundaria (VI7) y con una vuelta al final para empezar otra vez.',
+    songs: ['Now\'s the Time (Charlie Parker)', 'Billie\'s Bounce (Charlie Parker)', 'Blue Monk (Thelonious Monk)'],
+  },
+  {
+    id: 'jazz-blues',
+    name: 'Blues de 12 compases (de jazz)',
+    steps: ['I', 'I|IV', 'I', 'I', 'IV', 'IV', 'I', 'I|VI7', 'ii', 'V', 'I', 'VI7', 'ii', 'V'],
+    mode: 'major',
+    bars: true,
+    label: 'I – IV – I – VI7 – ii – V – I – VI7 – ii – V',
+    text: 'La forma del blues tal como la tocan los músicos de jazz: los mismos 12 compases, pero con acordes de paso que empujan hacia el final. En lugar de V–IV, llega un ii–V (el corazón del jazz), a menudo preparado por una dominante secundaria (VI7) y con una vuelta al final (I–VI7–ii–V, dos acordes por compás) para empezar otra vez.',
+    songs: ['Now\'s the Time (Charlie Parker)', 'Billie\'s Bounce (Charlie Parker)', 'Blue Monk (Thelonious Monk)'],
+  },
   {
     id: 'minor-blues',
     name: 'Blues menor de 12 compases',

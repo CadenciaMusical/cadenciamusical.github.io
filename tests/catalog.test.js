@@ -254,3 +254,32 @@ test('sin puerta de atrás: mixolidio, final épico y el ♭VII7 que sale de la 
   assert.ok(!analyze('Do Lab Sib Do').cadences.some((c) => c.id === 'backdoor'));
   assert.equal(analyze('C Bb7 C').items[1].kind, 'borrowed');
 });
+
+test('blues de jazz: quick change, VI7, ii–V y vuelta final', () => {
+  const jazz = (text) => {
+    const r = analyze(text);
+    assert.equal(`${r.key.tonic} ${r.key.mode}`, 'C major', text);
+    assert.ok(r.key.blues, text);
+    const m = find(r, 'jazz-blues');
+    assert.ok(m?.whole, text);
+    assert.equal(m.name, 'Blues de 12 compases (de jazz)');
+    // Uno de los dos, no los dos a la vez.
+    assert.equal(find(r, 'blues'), undefined, text);
+    return r;
+  };
+  const r = jazz('Do7 Fa7 Do7 Do7 Fa7 Fa7 Do7 La7 Rem7 Sol7 Do7 Sol7');
+  assert.equal(r.items.map((i) => i.roman).join(' '), 'I7 IV7 I7 I7 IV7 IV7 I7 V7/ii ii7 V7 I7 V7');
+  // Sin quick change ni VI7, solo con el ii–V.
+  jazz('C7 C7 C7 C7 F7 F7 C7 C7 Dm7 G7 C7 G7');
+  // Con la vuelta I–VI7–ii–V al final (dos acordes por compás).
+  jazz('C7 F7 C7 C7 F7 F7 C7 A7 Dm7 G7 C7 A7 Dm7 G7');
+  // En otra tonalidad.
+  assert.ok(find(analyze('F7 Bb7 F7 F7 Bb7 Bb7 F7 D7 Gm7 C7 F7 C7'), 'jazz-blues')?.whole);
+});
+
+test('el blues de libro sigue siendo el de siempre', () => {
+  const r = analyze('Do7 Do7 Do7 Do7 Fa7 Fa7 Do7 Do7 Sol7 Fa7 Do7 Sol7');
+  assert.ok(find(r, 'blues')?.whole);
+  assert.equal(find(r, 'jazz-blues'), undefined);
+  assert.ok(find(analyze('Am7 Am7 Am7 Am7 Dm7 Dm7 Am7 Am7 E7 Dm7 Am7 E7'), 'minor-blues')?.whole);
+});

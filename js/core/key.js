@@ -8,7 +8,8 @@
 //     ♭VII7 → I, la dominante por la puerta de atrás);
 //   - una menor sin sensible (sin V mayor ni vii°) resta un poco: sin ella,
 //     Am F C G suena más a Do mayor que a La menor;
-//   - un blues (I7, IV7, V7) suma mucho a su tonalidad mayor;
+//   - un blues (I7, IV7, V7; en el de jazz, también VI7 y ii7) suma mucho a
+//     su tonalidad mayor;
 //   - en un bucle (un patrón que se repite entero, como Am Em Am Em, o que
 //     va y vuelve, como Em F G F) el último acorde no es un final: todo el
 //     peso va al primero;
@@ -161,11 +162,14 @@ const isBackdoorChord = (chord, key) => key.mode === 'major' && mod12(chord.pc -
 const isLeadingToneChord = (chord, key) => mod12(chord.pc - key.pc) === 11 && chord.triad === 'dim';
 const isOpenDominant = (chord, key) => mod12(chord.pc - key.pc) === 7 && chord.triad === '5';
 
+// Un blues: I7 y IV7, y nada más que I, IV y V. En el de jazz, también el VI7
+// que lleva al ii, y el ii (el ii–V de los compases 9 y 10).
 function isBlues(chords, key) {
   if (key.mode !== 'major') return false;
-  const steps = new Set(chords.map((c) => mod12(c.pc - key.pc)));
-  const dom7On = (st) => chords.some((c) => c.seventh === '7' && mod12(c.pc - key.pc) === st);
-  return dom7On(0) && dom7On(5) && [...steps].every((s) => s === 0 || s === 5 || s === 7);
+  const st = (c) => mod12(c.pc - key.pc);
+  const dom7On = (s) => chords.some((c) => c.seventh === '7' && st(c) === s);
+  const own = (c) => [0, 5, 7].includes(st(c)) || (st(c) === 9 && c.triad === 'M' && c.seventh === '7') || (st(c) === 2 && c.triad === 'm');
+  return dom7On(0) && dom7On(5) && chords.every(own);
 }
 
 export function scoreKey(chords, key) {
