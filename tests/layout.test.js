@@ -118,3 +118,20 @@ test('el logo va dentro de la página, igual que icons/icon.svg, para que no par
   const file = /<svg[^>]*>([\s\S]*?)<\/svg>/.exec(readFileSync(join(root, 'icons/icon.svg'), 'utf8'))[1];
   assert.equal(inline, file);
 });
+
+test('las etiquetas de función nunca parten palabras: «Subdom.» si no cabe', async () => {
+  const { renderChords } = await import('../js/ui/render.js');
+  const { analyze } = await import('../js/core/analysis.js');
+  const badge = /\.chord \.badge \{([^}]*)\}/.exec(css)[1];
+  assert.doesNotMatch(badge, /hyphens: auto/);
+  assert.match(badge, /hyphens: manual/);
+  // La abreviatura depende del ancho de la tarjeta, no del de la pantalla.
+  assert.match(css, /\.chord \{ container: chord \/ inline-size; \}/);
+  assert.match(css, /@container chord \(max-width: 112px\) \{[\s\S]*?\.chord \.badge-short \{ display: inline; \}/);
+  // En pantallas anchas, tarjetas con sitio para la palabra entera.
+  assert.match(css, /@media \(min-width: 600px\) \{\s*\.chord-grid \{ grid-template-columns: repeat\(auto-fill, minmax\(124px, 1fr\)\); \}/);
+  // El lector de pantalla lee «Subdominante»; la abreviatura queda oculta para él.
+  const html = renderChords(analyze('C F G C').items);
+  assert.match(html, /<span class="badge-full">Subdominante<\/span><span class="badge-short" aria-hidden="true">Subdom\.<\/span>/);
+  assert.match(html, /<span class="badge">Tónica<\/span>/);
+});

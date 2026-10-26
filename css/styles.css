@@ -420,6 +420,11 @@ details summary {
   gap: 8px;
   margin: 12px 0;
 }
+/* En pantallas anchas hay sitio: tarjetas algo más anchas, para que
+   «Subdominante» se lea entera. */
+@media (min-width: 600px) {
+  .chord-grid { grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); }
+}
 
 .chord {
   display: flex;
@@ -439,8 +444,23 @@ details summary {
 .chord .symbol { font-size: 1.5rem; font-weight: 700; line-height: 1.15; text-align: center; text-wrap: balance; max-width: 100%; margin-bottom: 4px; }
 .chord .symbol.mid { font-size: 1.25rem; }
 .chord .symbol.long { font-size: 1.05rem; }
-/* «Fuera de la tonalidad» no cabe en una línea: se parte en dos, centrada. */
-.chord .badge { margin-top: auto; max-width: 100%; padding: 2px 6px; font-size: 0.75rem; white-space: normal; text-align: center; text-wrap: balance; hyphens: auto; line-height: 1.25; border-radius: 10px; }
+/* «Fuera de la tonalidad» no cabe en una línea: se parte en dos, centrada,
+   entre palabras. Las palabras nunca se parten: si «Subdominante» no cabe,
+   se ve abreviada («Subdom.») y el lector de pantalla lee la entera. */
+.chord { container: chord / inline-size; }
+.chord .badge { margin-top: auto; max-width: 100%; padding: 2px 6px; font-size: 0.75rem; white-space: normal; text-align: center; text-wrap: balance; hyphens: manual; overflow-wrap: normal; line-height: 1.25; border-radius: 10px; }
+.chord .badge-short { display: none; }
+@container chord (max-width: 112px) {
+  .chord .badge-full {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .chord .badge-short { display: inline; }
+}
 /* Acorde especial (prestado, dominante secundaria…): una estrella en la esquina. */
 .chord .star { position: absolute; top: 4px; right: 8px; color: var(--fn); font-size: 0.85rem; line-height: 1; }
 .chord.selected { border-color: var(--fn); border-top-width: 6px; }

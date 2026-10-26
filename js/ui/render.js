@@ -180,6 +180,15 @@ function cardSymbol(label) {
   return `<span class="symbol${size}">${escapeHtml(label).replace(/[(/]/g, '<wbr>$&')}</span>`;
 }
 
+// La etiqueta de la función en la tarjeta. Las palabras nunca se parten: si
+// una tarjeta es demasiado estrecha para «Subdominante», se ve «Subdom.» (el
+// CSS elige cuál según el ancho de la tarjeta) y el lector de pantalla sigue
+// leyendo el nombre entero.
+function fnBadge(fn) {
+  if (!fn.abbr) return `<span class="badge">${fn.name}</span>`;
+  return `<span class="badge"><span class="badge-full">${fn.name}</span><span class="badge-short" aria-hidden="true">${fn.abbr}</span></span>`;
+}
+
 // marked: posiciones que forman una progresión conocida (ver progressionRanges).
 // turns: dónde empieza cada vuelta de una progresión repetida (ver progressionTurns).
 // rests: antes de qué acordes va un silencio (result.rests); se dibuja
@@ -209,7 +218,7 @@ export function renderChords(items, { selected = null, marked = new Set(), turns
           ${item.roman ? `<span class="roman">${item.roman}</span>` : ''}
           ${cardSymbol(chordLabel(item.chord))}
           ${special ? '<span class="star" title="Algo especial">✦</span>' : ''}
-          <span class="badge">${FUNCTIONS[f].name}</span>
+          ${fnBadge(FUNCTIONS[f])}
         </button>`;
     })
     .map((html, i) => change(i) + restsAt(i) + html)

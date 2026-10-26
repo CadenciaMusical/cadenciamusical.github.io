@@ -15,6 +15,8 @@ export const FUNCTIONS = {
   },
   S: {
     name: 'Subdominante',
+    // En una tarjeta estrecha, la etiqueta abreviada (ver renderChords).
+    abbr: 'Subdom.',
     short: 'Movimiento',
     text: 'Te aleja de casa. Da sensación de avanzar, de salir de paseo, sin llegar a ser tensa.',
   },
